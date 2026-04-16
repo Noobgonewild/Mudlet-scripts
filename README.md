@@ -23,7 +23,7 @@ Keydedup, it adds keys to keyring and removes old keys:
 <img width="427" height="186" alt="2026-04-16 22_41_05-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/ded1082d-5eae-4cd7-b2a8-0cf0df2ec0b3" />
 
 
-Character stats window. It supports reporting of instinct/mastery/resists over a channel. Stats support vertical/horizontal display and short/long tags
+Character stats window. It supports reporting of instinct/mastery/resists over a channel. Stats support vertical/horizontal display and short/long tags. I removed gold/tp/qp so you guys don't laugh of how poor I am.
 
 <img width="245" height="461" alt="2026-04-16 22_41_46-NVIDIA GeForce Overlay" src="https://github.com/user-attachments/assets/09ad7879-19a6-469d-ad37-4f5b6877ceb8" />
 

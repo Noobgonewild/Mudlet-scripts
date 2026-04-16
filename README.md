@@ -15,7 +15,8 @@ Autotrainer based on main class and stat weights. Set and forget or use pre-defi
 
 Communication window. It supports multi tab channels, history, history search, timestamps, channel gags etc
 
-<img width="700" height="295" alt="2026-04-16 22_39_19-NVIDIA GeForce Overlay" src="https://github.com/user-attachments/assets/bb3a4dc1-a357-4c6f-82da-568f49901e9e" />
+<img width="702" height="758" alt="2026-04-16 23_53_32-NVIDIA GeForce Overlay" src="https://github.com/user-attachments/assets/640afd5d-2120-465f-a69f-62d97b6e9475" />
+
 
 
 Keydedup, it adds keys to keyring and removes old keys:

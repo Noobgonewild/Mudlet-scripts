@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <!-- ============================================================
+       GQuest_Warning v2.1 – Mudlet Port (initial)
+       Original Author: Gizmmo (MUSHclient plugin)
+       Purpose: Plays sound and sends channel text for joinable GQs.
+       ============================================================ -->
+
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>G_GlobalCampaignAnnouncer</name>
+      <script></script>
+      <conditionLineDelta>0</conditionLineDelta>
+      <mStayOpen>0</mStayOpen>
+      <mCommand></mCommand>
+      <packageName>G_GlobalCampaignAnnouncer</packageName>
+      <mFgColor></mFgColor>
+      <mBgColor></mBgColor>
+      <mSoundFile></mSoundFile>
+      <colorTriggerFgColor></colorTriggerFgColor>
+      <colorTriggerBgColor></colorTriggerBgColor>
+      <regexCodeList>
+        <string></string>
+      </regexCodeList>
+      <regexCodePropertyList>
+        <integer>0</integer>
+      </regexCodePropertyList>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>GQ_Join_Alert</name>
+        <script>GQWarn_OnTrigger(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^Global Quest: See 'Help Global Quests', or, type 'Gquest Join \d+' to take part\.?\s*$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <!-- <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>GQ_Join_Alert_Fallback</name>
+        <script>GQWarn_OnTrigger(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^.*to take part.*$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger> -->
+    </TriggerGroup>
+  </TriggerPackage>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>G_GlobalCampaignAnnouncer</name>
+      <script></script>
+      <command></command>
+      <packageName>G_GlobalCampaignAnnouncer</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>GQWarn_Help</name>
+        <script>GQWarn_Cmd_Help()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gqwarn(?:\s+help)?$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>GQWarn_Debug</name>
+        <script>GQWarn_Cmd_Debug(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gqwarn\s+debug\s+(on|off)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>GQWarn_Channel</name>
+        <script>GQWarn_Cmd_Channel(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gqwarn\s+channel\s*(.*)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>GQWarn_Text</name>
+        <script>GQWarn_Cmd_Text(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gqwarn\s+text\s+(.+)$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>G_GlobalCampaignAnnouncer</name>
+      <script></script>
+      <packageName>G_GlobalCampaignAnnouncer</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>GQWarn_Script</name>
+        <script><![CDATA[
+---------------------------------------------------------------------------
+-- GQuest_Warning v2.1 - Mudlet Port (initial)
+---------------------------------------------------------------------------
+
+GQWarn = GQWarn or {}
+
+local SOUND_FILE = "GQ about to start.wav"
+local DEFAULT_CHANNEL = "note"
+
+local function trim(s)
+  return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function note(msg)
+  cecho("<gold>[GQWarn] <white>" .. msg .. "\n")
+end
+
+local function dbg(msg)
+  if GQWarn.debug_on then
+    cecho("<dodger_blue>[GQDebug] <white>" .. msg .. "\n")
+  end
+end
+
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local STATE_FILE = persistence_dir() .. "/gqwarn_state.lua"
+
+local function load_state()
+  local function resolve_table_save_refs(node, root, seen)
+    if type(node) ~= "table" then return node end
+    if rawget(node, 1) ~= nil and rawget(node, 2) == nil and next(node, 1) == nil
+      and type(node[1]) == "number" and type(root[node[1]]) == "table"
+    then
+      return resolve_table_save_refs(root[node[1]], root, seen)
+    end
+    seen = seen or {}
+    if seen[node] then return seen[node] end
+    local out = {}
+    seen[node] = out
+    for k, v in pairs(node) do
+      out[resolve_table_save_refs(k, root, seen)] = resolve_table_save_refs(v, root, seen)
+    end
+    return out
+  end
+
+  local loaded = nil
+  local ok, data = pcall(dofile, STATE_FILE)
+  if ok and type(data) == "table" then
+    loaded = data
+    if type(loaded[1]) == "table"
+      and type(loaded.channel) ~= "string"
+      and type(loaded.debug_on) ~= "boolean"
+    then
+      loaded = resolve_table_save_refs(loaded[1], loaded, {})
+    end
+  end
+  if not loaded and type(table) == "table" and type(table.load) == "function" then
+    local f = io.open(STATE_FILE, "r")
+    if f then
+      f:close()
+      local ok2, data2 = pcall(table.load, STATE_FILE)
+      if ok2 and type(data2) == "table" then loaded = data2 end
+    end
+  end
+  loaded = loaded or {}
+
+  GQWarn.channel = trim(loaded.channel)
+  if GQWarn.channel == "" then
+    GQWarn.channel = DEFAULT_CHANNEL
+  end
+  GQWarn.debug_on = (loaded.debug_on == true)
+end
+
+local function save_state()
+  local payload = {
+    channel = GQWarn.channel,
+    debug_on = (GQWarn.debug_on == true),
+  }
+
+  local f = io.open(STATE_FILE, "w")
+  if f then
+    f:write("return " .. string.format("{ channel = %q, debug_on = %s }", payload.channel or "", tostring(payload.debug_on)))
+    f:close()
+  end
+end
+
+local function get_channel()
+  local ch = trim(GQWarn.channel)
+  if ch == "" then return DEFAULT_CHANNEL end
+  return ch
+end
+
+local function file_exists(path)
+  local f = io.open(path, "rb")
+  if f then f:close() return true end
+  return false
+end
+
+local function try_play_sound()
+  local home = ""
+  if type(getMudletHomeDir) == "function" then
+    home = trim(getMudletHomeDir())
+  end
+
+  local candidates = {
+    SOUND_FILE,
+    "Sounds/" .. SOUND_FILE,
+    "sounds/" .. SOUND_FILE,
+  }
+
+  if home ~= "" then
+    table.insert(candidates, home .. "/" .. SOUND_FILE)
+    table.insert(candidates, home .. "/Sounds/" .. SOUND_FILE)
+    table.insert(candidates, home .. "/sounds/" .. SOUND_FILE)
+  end
+
+  for _, path in ipairs(candidates) do
+    if file_exists(path) then
+      dbg("Playing sound: " .. path)
+      if type(playSoundFile) == "function" then
+        playSoundFile(path)
+      elseif type(playSound) == "function" then
+        playSound(path)
+      else
+        note("Sound API unavailable in this Mudlet build.")
+      end
+      return
+    end
+  end
+
+  note("Sound file '" .. SOUND_FILE .. "' not found in expected locations.")
+  dbg("Searched: " .. table.concat(candidates, ", "))
+end
+
+local function send_channel_message(message, is_test)
+  local channel = get_channel()
+  local prefix = is_test and "[Test] " or ""
+
+  if channel == "note" then
+    cecho("\n<cyan>" .. prefix .. message .. "\n")
+    return
+  end
+
+  local cmd = channel .. " " .. message
+  if is_test then
+    cmd = channel .. " " .. prefix .. message
+  end
+
+  if type(send) == "function" then
+    send(cmd, false)
+  end
+end
+
+function GQWarn_OnTrigger(_)
+  dbg("Joinable global quest trigger fired.")
+  try_play_sound()
+
+  local msg = "You can join a global quest."
+  send_channel_message(msg, false)
+  dbg("Notification sent to channel '" .. get_channel() .. "'.")
+end
+
+function GQWarn_Cmd_Help()
+  note("--- Global Quest Warning Help ---")
+  note("gqwarn help             : Shows this help.")
+  note("gqwarn channel [name]   : Sets the warning channel (e.g., ct).")
+  note("                          Use 'note' to print locally.")
+  note("gqwarn text <message>   : Sends a test message to current channel.")
+  note("gqwarn debug [on|off]   : Toggles debug messages.")
+  note("---------------------------------")
+  note("Current Channel: " .. get_channel())
+  note("Current Debug: " .. (GQWarn.debug_on and "ON" or "OFF"))
+end
+
+function GQWarn_Cmd_Debug(matches)
+  local status = trim(matches[2]):lower()
+  GQWarn.debug_on = (status == "on")
+  save_state()
+  note("Debug mode is now " .. (GQWarn.debug_on and "ON" or "OFF") .. ".")
+end
+
+function GQWarn_Cmd_Channel(matches)
+  local channel = trim(matches[2])
+  if channel == "" then
+    note("Current warning channel: " .. get_channel())
+    return
+  end
+
+  GQWarn.channel = channel:lower()
+  save_state()
+  note("Warning channel set to: " .. GQWarn.channel)
+end
+
+function GQWarn_Cmd_Text(matches)
+  local message = trim(matches[2])
+  if message == "" then
+    note("You must provide a message. Example: gqwarn text hello")
+    return
+  end
+
+  send_channel_message(message, true)
+  note("Test message sent to channel '" .. get_channel() .. "'.")
+end
+
+local function init()
+  load_state()
+  dbg("Initialized with channel='" .. get_channel() .. "'.")
+end
+
+init()
+]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

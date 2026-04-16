@@ -1,0 +1,1072 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <!-- ============================================================
+       G_areapicker v4.4 – Mudlet Port
+       Original Author: Gizmmo (MUSHclient plugin)
+       Ported to Mudlet format
+
+       Purpose: Displays level-appropriate areas with persistent renaming
+       ============================================================ -->
+
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>G_areapicker</name>
+      <script></script>
+      <conditionLineDelta>0</conditionLineDelta>
+      <mStayOpen>0</mStayOpen>
+      <mCommand></mCommand>
+      <packageName>G_areapicker</packageName>
+      <mFgColor></mFgColor>
+      <mBgColor></mBgColor>
+      <mSoundFile></mSoundFile>
+      <colorTriggerFgColor></colorTriggerFgColor>
+      <colorTriggerBgColor></colorTriggerBgColor>
+      <regexCodeList>
+        <string></string>
+      </regexCodeList>
+      <regexCodePropertyList>
+        <integer>0</integer>
+      </regexCodePropertyList>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_LevelFallback</name>
+        <script>AreaPicker_HandleLevelFallback(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You are level (\d+)\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+    </TriggerGroup>
+  </TriggerPackage>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>G_areapicker</name>
+      <script></script>
+      <command></command>
+      <packageName>G_areapicker</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_Lvl</name>
+        <script>AreaPicker_HandleLvl(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlIncrease</name>
+        <script>AreaPicker_HandleLvlIncrease(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl increase (\d+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlDecrease</name>
+        <script>AreaPicker_HandleLvlDecrease(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl decrease (\d+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlReset</name>
+        <script>AreaPicker_HandleLvlReset(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl reset$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlAlign</name>
+        <script>AreaPicker_HandleLvlAlign(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl align &quot;([^&quot;]+)&quot; (good|evil|neutral|g|e|n)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlSetAlign</name>
+        <script>AreaPicker_HandleLvlSetAlign(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl setalign (.+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlSetAlignReset</name>
+        <script>AreaPicker_HandleLvlSetAlignReset(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl setalign$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlKey</name>
+        <script>AreaPicker_HandleLvlKey(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl key &quot;([^&quot;]+)&quot; (.+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlHelp</name>
+        <script>AreaPicker_HandleLvlHelp(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl help$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AP_LvlDebug</name>
+        <script>AreaPicker_HandleLvlDebug(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^lvl debug (on|off)$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>G_areapicker</name>
+      <script></script>
+      <packageName>G_areapicker</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>AreaPickerScript</name>
+        <script><![CDATA[
+---------------------------------------------------------------------------
+-- G_areapicker v4.4 (Mudlet Port)
+-- Persistence uses file-only state (g_areapicker_state.lua)
+---------------------------------------------------------------------------
+
+if not string.trim then
+  function string.trim(s)
+    return (s:gsub("^%s+", ""):gsub("%s+$", ""))
+  end
+end
+
+local state
+
+-- =======================================================================================
+-- OUTPUT HELPERS
+-- =======================================================================================
+
+local function safe_cecho(text)
+  if type(cecho) == "function" then
+    local ok = pcall(cecho, text)
+    if ok then return end
+  end
+  if type(echo) == "function" then
+    local plain = text:gsub("<[^>]->", "")
+    pcall(echo, plain)
+  end
+end
+
+local function msg(s)  safe_cecho(string.format("<gold>[G_areapicker] %s\n", s)) end
+local function warn(s) safe_cecho(string.format("<tomato>[G_areapicker] %s\n", s)) end
+local function okm(s)  safe_cecho(string.format("<LimeGreen>[G_areapicker] %s\n", s)) end
+
+local function dbg(s)
+  if state and state.debug_on then
+    safe_cecho(string.format("<DodgerBlue>[AP:debug] %s\n", s))
+  end
+end
+
+-- =======================================================================================
+-- FILE-ONLY PERSISTENCE
+-- =======================================================================================
+
+local STATE_FILE = "g_areapicker_state.lua"
+
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local function get_state_file_path()
+  return persistence_dir() .. "/" .. STATE_FILE
+end
+
+local function normalize_loaded_vars(source)
+  source = type(source) == "table" and source or {}
+
+  -- table.save()/table.load() data can be wrapped in an array where index 1
+  -- holds the actual root table and later entries are reference tables.
+  if type(source[1]) == "table"
+    and source.level_offset == nil
+    and source.area_alignments == nil
+    and source.area_keys == nil
+    and source.alignment_filter == nil
+    and source.debug_on == nil then
+    source = source[1]
+  end
+
+  return {
+    level_offset = tonumber(source.level_offset) or 0,
+    area_alignments = type(source.area_alignments) == "table" and source.area_alignments or {},
+    area_keys = type(source.area_keys) == "table" and source.area_keys or {},
+    alignment_filter = type(source.alignment_filter) == "table" and source.alignment_filter or {},
+    debug_on = type(source.debug_on) == "boolean" and source.debug_on
+      or tostring(source.debug_on or "true"):lower() == "true",
+  }
+end
+
+local function load_from_state_file()
+  local path = get_state_file_path()
+
+  if type(table) == "table" and type(table.load) == "function" then
+    local file = io.open(path, "r")
+    if file then
+      file:close()
+      local ok, loaded = pcall(table.load, path)
+      if ok and type(loaded) == "table" then
+        return normalize_loaded_vars(loaded)
+      end
+    end
+  end
+
+  local ok, loaded = pcall(dofile, path)
+  if ok and type(loaded) == "table" then
+    return normalize_loaded_vars(loaded)
+  end
+
+  return normalize_loaded_vars({})
+end
+
+local function save_to_state_file(payload)
+  local path = get_state_file_path()
+
+  if type(table) == "table" and type(table.save) == "function" then
+    local ok, err = pcall(table.save, path, payload)
+    if ok then return true end
+    warn("Warning: failed writing state file via table.save: " .. tostring(err))
+  end
+
+  local ok, err = pcall(function()
+    local f = assert(io.open(path, "w"))
+    local function serialize(v)
+      if type(v) == "number" then return tostring(v) end
+      if type(v) == "boolean" then return v and "true" or "false" end
+      if type(v) == "string" then return string.format("%q", v) end
+      if type(v) == "table" then
+        local out = {"{"}
+        for k, val in pairs(v) do
+          local key
+          if type(k) == "string" then
+            key = string.format("[%q]", k)
+          else
+            key = "[" .. tostring(k) .. "]"
+          end
+          table.insert(out, key .. " = " .. serialize(val) .. ",")
+        end
+        table.insert(out, "}")
+        return table.concat(out)
+      end
+      return "nil"
+    end
+
+    f:write("return ", serialize(payload), "\n")
+    f:close()
+  end)
+
+  if not ok then
+    warn("Warning: failed writing state file: " .. tostring(err))
+  end
+  return ok
+end
+
+local function persist_load()
+  local loaded = load_from_state_file()
+  state.level_offset = loaded.level_offset
+  state.area_alignments = loaded.area_alignments
+  state.area_keys = loaded.area_keys
+  state.alignment_filter = loaded.alignment_filter
+  state.debug_on = loaded.debug_on
+end
+
+local function persist_save()
+  save_to_state_file({
+    level_offset = state.level_offset,
+    area_alignments = state.area_alignments,
+    area_keys = state.area_keys,
+    alignment_filter = state.alignment_filter,
+    debug_on = state.debug_on,
+  })
+end
+
+-- =======================================================================================
+-- STATE
+-- =======================================================================================
+
+state = type(_G.GAreaPickerState) == "table" and _G.GAreaPickerState or {}
+_G.GAreaPickerState = state
+
+if state.my_level ~= nil then state.my_level = tonumber(state.my_level) end
+state.level_offset = tonumber(state.level_offset) or 0
+state.area_alignments = type(state.area_alignments) == "table" and state.area_alignments or {}
+state.area_keys = type(state.area_keys) == "table" and state.area_keys or {}
+state.alignment_filter = type(state.alignment_filter) == "table" and state.alignment_filter or {}
+if type(state.debug_on) ~= "boolean" then state.debug_on = true end
+state.areas = type(state.areas) == "table" and state.areas or {}
+state.original_area_names = type(state.original_area_names) == "table" and state.original_area_names or {}
+
+local MAX_LEVEL_RANGE = 80
+local ALIGNMENT_COLORS = { good = "yellow", evil = "red", neutral = "gray" }
+local REVERSE_ALIGNMENT_COLORS = {}
+for name, color in pairs(ALIGNMENT_COLORS) do REVERSE_ALIGNMENT_COLORS[color] = name end
+
+-- =======================================================================================
+-- HELPERS
+-- =======================================================================================
+
+local function send_no_echo(cmd)
+  if type(send) == "function" then
+    send(cmd, false)
+  end
+end
+
+local function gmcp_level()
+  if type(gmcp) ~= "table" then return nil end
+  if type(gmcp.char) == "table" then
+    if type(gmcp.char.status) == "table" and gmcp.char.status.level then
+      return tonumber(gmcp.char.status.level)
+    end
+    if type(gmcp.char.base) == "table" and gmcp.char.base.level then
+      return tonumber(gmcp.char.base.level)
+    end
+  end
+  return nil
+end
+
+local function update_level_from_gmcp()
+  local lvl = gmcp_level()
+  if lvl and lvl ~= state.my_level then
+    state.my_level = lvl
+    msg("Level updated to " .. tostring(lvl) .. " via GMCP.")
+  end
+end
+
+local function match_alignment_token(token)
+  local map = {
+    g = "good", good = "good",
+    e = "evil", evil = "evil",
+    n = "neutral", neutral = "neutral",
+  }
+  return map[token]
+end
+
+local function output_link(text, command, hint, color)
+  if type(cechoLink) == "function" then
+    cechoLink(string.format("<%s>%s", color, text), command, hint or command, true)
+    return
+  end
+  if type(echoLink) == "function" then
+    echoLink(text, command, hint or command, true)
+    return
+  end
+  safe_cecho(string.format("<%s>%s", color, text))
+end
+
+local function print_area_line(item)
+  local area = item.area
+  local original_name = item.original_name
+  local level_str = string.format("[%3d-%3d]", area.min, area.max)
+  local level_color = state.area_alignments[original_name] or "cyan"
+  local key = state.area_keys[original_name]
+
+  safe_cecho(string.format("<%s>%s ", level_color, level_str))
+
+  if not key or key == "" then
+    safe_cecho(area.name)
+    return
+  end
+
+  local s, e = string.find(area.name:lower(), key:lower(), 1, true)
+  if not s then
+    safe_cecho(area.name)
+    return
+  end
+
+  local pre = area.name:sub(1, s - 1)
+  local match = area.name:sub(s, e)
+  local post = area.name:sub(e + 1)
+  local action = "xrt " .. key
+  local lua_action = string.format("send(%q, false, false)", action)
+
+  safe_cecho(pre)
+  output_link(match, lua_action, action, "yellow")
+  safe_cecho(post)
+end
+
+-- =======================================================================================
+-- DISPLAY
+-- =======================================================================================
+
+local function display_areas()
+  dbg("Starting area display. Current offset: " .. tostring(state.level_offset))
+  if not state.areas or #state.areas == 0 then
+    dbg("Area list missing or empty. Rebuilding area data.")
+    parse_areas()
+  end
+  update_level_from_gmcp()
+
+  if not state.my_level then
+    warn("Level not found via GMCP. Sending 'level' command as fallback.")
+    send_no_echo("level")
+    return
+  end
+
+  if not state.areas or #state.areas == 0 then
+    warn("Area data could not be loaded. Please reload the package.")
+    return
+  end
+
+  local target_level = state.my_level + state.level_offset
+  local found_areas = {}
+  for i, area in ipairs(state.areas) do
+    if target_level >= area.min and target_level <= area.max then
+      table.insert(found_areas, { area = area, original_name = state.original_area_names[i] })
+    end
+  end
+
+  local filtered_areas = {}
+  local filter_active = false
+  for _ in pairs(state.alignment_filter) do filter_active = true break end
+
+  if not filter_active then
+    filtered_areas = found_areas
+    dbg("No alignment filter active. Total areas found: " .. tostring(#found_areas))
+  else
+    dbg("Alignment filter active.")
+    for _, item in ipairs(found_areas) do
+      local color = state.area_alignments[item.original_name]
+      if not color then
+        table.insert(filtered_areas, item)
+      else
+        local alignment_name = REVERSE_ALIGNMENT_COLORS[color]
+        if state.alignment_filter[alignment_name] then
+          table.insert(filtered_areas, item)
+        end
+      end
+    end
+    dbg("Total areas after filter: " .. tostring(#filtered_areas))
+  end
+
+  safe_cecho("\n")
+  if #filtered_areas == 0 then
+    safe_cecho(string.format("<yellow>--- No suitable areas found for Level %d with the current filter ---\n\n", target_level))
+    return
+  end
+
+  table.sort(filtered_areas, function(a, b)
+    if a.area.min == b.area.min then return a.area.name < b.area.name end
+    return a.area.min < b.area.min
+  end)
+
+  local total_found = #filtered_areas
+  local midpoint = math.ceil(total_found / 2)
+  local LEFT_COLUMN_WIDTH = 60
+
+  local max_right_len = 0
+  for i = midpoint + 1, total_found do
+    local item = filtered_areas[i]
+    local level_str = string.format("[%3d-%3d]", item.area.min, item.area.max)
+    local uncolored_len = #level_str + 1 + #item.area.name
+    if uncolored_len > max_right_len then
+      max_right_len = uncolored_len
+    end
+  end
+
+  local total_width = 2 + LEFT_COLUMN_WIDTH + 3 + max_right_len
+  local offset_str = (state.level_offset ~= 0) and string.format(" (%d %+d offset)", state.my_level, state.level_offset) or ""
+  local header_text = string.format(" Areas for Level %d%s ", target_level, offset_str)
+  local header_dashes = total_width - #header_text
+  if header_dashes < 0 then header_dashes = 0 end
+  local left_dashes = math.floor(header_dashes / 2)
+  local right_dashes = math.ceil(header_dashes / 2)
+
+  safe_cecho(string.format("<yellow>%s%s%s\n",
+    string.rep("-", left_dashes), header_text, string.rep("-", right_dashes)))
+
+  for i = 1, midpoint do
+    local left_item = filtered_areas[i]
+    local left_level_str = string.format("[%3d-%3d]", left_item.area.min, left_item.area.max)
+    local left_uncolored_len = #left_level_str + 1 + #left_item.area.name
+
+    safe_cecho("  ")
+    print_area_line(left_item)
+
+    local padding = LEFT_COLUMN_WIDTH - left_uncolored_len
+    if padding > 0 then
+      safe_cecho(string.rep(" ", padding))
+    end
+
+    local right_index = i + midpoint
+    if right_index <= total_found then
+      safe_cecho(" | ")
+      print_area_line(filtered_areas[right_index])
+    end
+
+    safe_cecho("\n")
+  end
+
+  safe_cecho(string.format("<yellow>%s\n\n", string.rep("-", total_width)))
+end
+
+-- =======================================================================================
+-- AREA DATA
+-- =======================================================================================
+
+local function parse_areas()
+  state.areas = {}
+  state.original_area_names = {}
+  local function extract_area_name(rest)
+    local value = rest
+    if value:match("^%s*%d+%s+") then
+      value = value:gsub("^%s*%d+%s+", "", 1)
+    end
+
+    -- Aligned table data separates builder and area with 2+ spaces.
+    local area_name = value:match("^.-%s%s+(.+)$")
+    if area_name then
+      return string.trim(area_name)
+    end
+
+    -- Fallback for compact data where builder/area are single-space separated.
+    area_name = value:match("^%S+%s+(.+)$") or value
+    return string.trim(area_name)
+  end
+
+  local area_data_string = [[
+   1    5       Domain           Kimr's Farm                   
+   1    5       Klauwaard        Lowlands Paradise '96         
+   1   10       Jehanine & Maar  The Forest of Li'Dnesh        
+   1   10       Domain           The Path of the Believer      
+   1   10       Timeghost        Tournament Camps              
+   1   15       Xcalibre & King  Art of Melody                 
+   1   15       Rezit            The Call of Heroes            
+   1   20       Pentane & Chipp  Hotel Orlando                 
+   1   20       Morrigu          Land of Legend                
+   1   20       Tsubaki          Sen'narre Lake                
+   1   20       Artemis          The Land of the Beer Goblins  
+   1   30       Drew             Gallows Hill                  
+   1   40       Domain           Jotunheim                     
+   1  201    1  Aardwolf         Challenge Area                
+   1  201       Sammael          Fractals of the Weave         
+   1  201       Lasher           The Aylorian Academy          
+   1  201       Aardwolf         The Grand City of Aylor       
+   1  210       Lasher           A Bad Trip                    
+   1  210       Lasher           Alagh, the Blood Lands        
+   1  210       Lasher           Gelidus                       
+   1  210       Lasher           The Continent of Mesolar      
+   1  210       Lasher           The Dark Continent, Abend     
+   1  210    1  Lasher           The Laser Zone                
+   1  210       Lasher           The Southern Ocean            
+   1  210       Lasher           The Uncharted Oceans          
+   1  210       Lasher           The Warzone                   
+   1  210       Lasher           Vidblain, the Ever Dark       
+   1  220       Aardwolf         Aardwolf Birthday Area        
+   5   15       Aardwolf Commun  Chaprenula's Laboratory       
+   5   15       Nikkei & Nasdaq  Siren's Oasis Resort          
+   5   15       Tsubaki          The Fire Swamp                
+   5   15       Flat Doa         The First Ascent              
+   5   15       Valkur           The Graveyard                 
+   5   20       Madrox           Den of Thieves                
+   5   20       Ardhiel & Tymme  Giant's Pet Store             
+   5   20       Aardwolf Commun  Sundered Vale                 
+   5   20       Valkur           The Amusement Park            
+   5   20       Valkur           The Chessboard                
+   5   25       Vladia           Child's Play                  
+   5   25       Calabus          Dortmund                      
+   5   30       Aardwolf Commun  Canyon Memorial Hospital      
+   5   30       Tsubaki          Fantasy Fields                
+   5   30       C.A.W.           Kerofk                        
+   5   30       Valkur           The Gauntlet                  
+   5   30       Rundvelt         The Wood Elves of Nalondir    
+   5   35       Nalani & Ronnie  A Magical Hodgepodge          
+   5   35       Xoe              Aardwolf Zoological Park      
+   5   35       Lumina           Brightsea and Glimmerdim      
+   5   35       Aardwolf Commun  Cloud City of Gnomalin        
+   5   35       Zendalonii       Olde Worlde Carnivale         
+   5   35       Rundvelt         The Infestation               
+   5   35       Aardwolf Commun  The Shadows of Minos          
+   5   35       Zafirah          The Town of Solan             
+   5   35       Calabus Iker Te  War of the Wizards            
+   5   45       Aardwolf Commun  Hatchling Aerie               
+   5   50       Lumina           Adventures in Sendhia         
+   5   50       Aardwolf Commun  Swordbreaker's Hoard          
+  10   20       Gastro           The Chasm and The Catacombs   
+  10   20       Drakus Dras Lya  Warrior's Training Camp       
+  10   30       Zendalonii       All in a Fayke Day            
+  10   30       Plaideleon & Ki  Guardian's Spyre of Knowledge 
+  10   30       Aardwolf Commun  Sho'aram, Castle in the Sand  
+  10   35       Vladia           Fort Terramire                
+  10   35       Anonymous        New Thalos                    
+  10   35       Moonbender       Storm Mountain                
+  10   40       Leaf             Jungles of Verume             
+  10   40       Khelda           Wildwood                      
+  10   50       Rumour           Dhal'Gora Outlands            
+  10   50       Kali & Phalae    The Temple of Shouggoth       
+  10  201       Lumina           Keep of the Kobaloi           
+  15   30       Rhuli            Aerial City of Cineko         
+  15   30   10  Valkur           Kul Tiras                     
+  15   30       Timeghost & Gim  Necromancers' Guild           
+  15   50       Silence          The UnderDark                 
+  20   30       Aardwolf Commun  Realm of the Zodiac           
+  20   40       Domain           Atlantis                      
+  20   40       Citron & Terril  Death's Manor                 
+  20   40       Valkur Zafirah   The Fractured Lands           
+  20   40       Zafirah          Weather Observatory           
+  20   45       Aardwolf Commun  The Maelstrom                 
+  20   50       Bellerophon Rhu  Ancient Greece                
+  20   50       Zendalonii       Kingdom of Ahner              
+  20   50       Rhuli            Thandeld's Conflict           
+  25   35       Dras             Sheila's Cat Sanctuary        
+  30   40       Lumina           Mudwog's Swamp                
+  30   50       Tir              Cradlebrook                   
+  30   50       Valkur           The Coral Kingdom             
+  30   60   15  Vladia           The Labyrinth                 
+  30   65       Domain           Kingsholm                     
+  30   70   15  Aelfwyne         Gold Rush                     
+  30  100   15  Rekhart          The Imperial City of Reme     
+  30  100       Gack             The Silver Volcano            
+  35   55       Strahd           Descent to Hell               
+  35   55       Aardwolf Commun  Onyx Bazaar                   
+  35   60       Domain           The Blighted Tundra of Andarin
+  35   85   25  Philondra        Diamond Soul Revelation       
+  40   50   15  Claire           The Great Salt Flats          
+  40   60       Xoe              Raganatittu                   
+  40   60       Cajun Zafirah    The Darkside of the Fractured 
+  40   60       Derar & Lorelei  The Wobbly Woes of Woobleville
+  40   60   30  Gastro           Zangar's Demonic Grotto       
+  40   70   20  Straw & Rampagn  The Land of Oz                
+  50   70   20  Vladia           Paradise Lost                 
+  50   70   20  Jakalair         The Flying Citadel            
+  50   80   30  Valkur           Castle Vlad-Shamir            
+  50   80   30  Crazybabe        Earth Plane 4                 
+  50   80   25  Kormregort       The Old Cathedral             
+  50   80       Rhuli            Tilule Rehabilitation Clinic  
+  50  100   24  Kali Rhuli       Jenny's Tavern                
+  50  100   30  Lumina Maerchyn  Storm Ships of Lem-Dagor      
+  50  100   24  Kali Rhuli       The Yurgach Domain            
+  60   80       Rumour           Hedgehogs' Paradise           
+  60   80       Falkon Pursia    Plains of Nulan'Boar          
+  60   80   30  Calabus          The Goblin Fortress           
+  60   80   30  Furdael          The Great City of Knossos     
+  60   80   40  Madrox           The Killing Fields            
+  60   80   30  Dreamfyre        The Palace of Song            
+  60   80   25  Dirtworm         The Three Pillars of Diatz    
+  60   85       Korridel         Realm of Deneria              
+  60  100   50  Valkur           The Upper Planes              
+  60  120   30  Randprin Redryn  The DarkLight                 
+  60  120   35  Vanguard         The Ruins of Diamond Reach    
+  60  150   25  Citron Raymn     Rosewood Castle               
+  65  201   20  Domain & OrcWar  Imperial Nation               
+  70   90       Rumour           Aardington Estate             
+  70   90   40  Rayna            The Tournament of Illoria     
+  70   90       Accora           Wayward Alehouse              
+  70  100   50  SonRokito Lumin  Nenukon and the Far Country   
+  70  100   50  Valkur           The Lower Planes              
+  70  100   50  Leonassan Rhuli  The Relinquished Tombs        
+  70  110   40  Lantenon         Tai'rha Laym                  
+  70  130   40  Ragnar           The Empire of Talsa           
+  70  130   40  Jeet & Trippita  The Fabled City of Stone      
+  70  140   50  Ragnar           Northstar                     
+  80   90   70  Teleron          The Keep of the Asherodan     
+  80  100       Stutz Xadyen     Kobold Siege Camp             
+  80  100   65  Halo & Ikyu      Snuckles Village              
+  80  100       Atreidess        The Gladiator's Arena         
+  80  100       Domain           The Realm of the Hawklords    
+  80  100   50  Windjammer & Ja  Wedded Bliss                  
+  80  110   50  Maerchyng        Anthrox                       
+  80  110   50  Terrill & Citro  Island of Lost Time           
+  80  110   50  Lumina Timeghos  Realm of the Firebird         
+  80  110       Myrddin          Svrogan's Logging Camp        
+  80  130   60  Chade            Deathtrap Dungeon             
+  90  110   70  Schizo & Cera    Pompeii                       
+  90  110   60  Jardin           The Scarred Lands             
+  90  120   50  Trenos           The Monastery                 
+  90  125   40  Cirion & Mendy   Dark Elf Stronghold           
+  90  150       Alixana & Kalis  Elemental Chaos               
+  95  115   70  Calabus          Halls of the Damned           
+  95  115       Oladon           Insanitaria                   
+ 100  120   90  Guinness         Ascension Bluff Nursing Home  
+ 100  120  100  Trepid           Dusk Valley                   
+ 100  120   90  Citron           Faerie Tales                  
+ 100  120   70  Zendalonii       Seven Wonders                 
+ 100  120   80  Gastro & Cariss  Xyl's Mosaic                  
+ 100  125   70  Lumina Maerchyn  Prosper's Island              
+ 100  130   80  Ikyu & Halo      Masquerade Island             
+ 100  200   60  Jubilee Teleron  Into the Long Night           
+ 100  201   75  Taath & Bremen   Sanctity of Eternal Damnation 
+ 105  125       Stutz Xadyen     Gnoll's Quarry                
+ 105  125   60  Pursia & Falkon  The Marshlands of Agroth      
+ 110  130   80  Teleron          Arboretum                     
+ 110  130   80  Rhuli            Tairayden Peninsula           
+ 110  130   30  Daimbert         The Stuff of Shadows          
+ 110  140   70  Paramore         Living Mines of Dak'Tai       
+ 110  150  100  BlueKnight       Christmas Vacation            
+ 115  135   80  Jardin           The Misty Shores of Yarr      
+ 120  140   80  Citron           Gilda And The Dragon          
+ 120  140   90  Vladia           The Eighteenth Dynasty        
+ 120  140   70  Laren Raistlin   The Sanguine Tavern           
+ 120  140   80  Tsubaki          Verdure Estate                
+ 120  145   95  Kergin FireW     The Slaughter House           
+ 120  150  100  Citron           Faerie Tales II               
+ 120  150   90  Akirian          House of Cards                
+ 120  150   90  Gastro & Dras    The Archipelago of Entropy    
+ 120  160  100  Korridel & Guin  The Uprising                  
+ 120  170   90  SonRokito Lumin  The Broken Halls of Horath    
+ 120  175  110  Blueknight       The School of Horror          
+ 120  201  100  Philondra Corde  The Amazon Nation             
+ 125  145  100  Rhuli            Tumari's Diner                
+ 125  201  100  Lumina Vesse &   The Blood Opal of Rauko'ra    
+ 125  201  110  Blueknight       The School of Horror          
+ 130  140  115  Citron           Foolish Promises              
+ 130  150  100  Rundvelt         The Dark Temple of Zyian      
+ 130  150  100  Gamble           The Drageran Empire           
+ 130  150  100  Blunt & Ciaran   Tir na nOg                    
+ 130  160  100  Saibot           A Peaceful Giant Village      
+ 130  170   95  Zaister          The Reman Conspiracy          
+ 130  175  100  Tai              The Mountains of Desolation   
+ 130  201  110  Ragnar           The Desert Prison             
+ 135  150  115  Windu & Maraude  Desert Doom                   
+ 140  160       Rhuli            Imagi's Nation                
+ 140  160  110  Kahr             Nanjiki Ruins                 
+ 140  160  100  Daithi & Caoili  The Abyssal Caverns of Sahuagi
+ 140  160  100  Whitdjinn        The Cougarian Queendom        
+ 140  170  110  Paramore Sagen   The Gathering Horde           
+ 140  170       Vladia           Unearthly Bonds               
+ 140  180  100  Cordelia Sagen   The Empire of Aiighialla      
+ 140  201  115  Anne             Takeda's Warcamp              
+ 150  170  130  Alhena           Arisian Realm                 
+ 150  170  130  Sammael Obyron   Fellchantry                   
+ 150  170  110  Zafirah Maarek   Winterlands                   
+ 150  180  120  Blackheart       Battlefields of Adaldar       
+ 150  180  130  Tsubaki          Sagewood Grove                
+ 150  185  150  Riot & Radrat    Skeletal Remains              
+ 150  190  120  Lumina Jernau    Rebellion of the Nix          
+ 150  201  120  Baktosh          The Cataclysm                 
+ 150  201  130  Domain           The Ruins of Stormhaven       
+ 155  195  120  Dirtworm         Black Lagoon                  
+ 160  180  140  Broud & Guinnes  Annwn                         
+ 160  180  140  Mars & Sheol     Dread Tower                   
+ 160  180  130  Wilderness       Helegear Sea                  
+ 160  201  120  Kate             The Covenant of Mistridge     
+ 160  201  130  Lumina & Darlat  The Witches of Omen Tor       
+ 165  190  150  Rhuli            Tribal Origins                
+ 170  190  140  Leaf             Avian Kingdom                 
+ 170  200  140  Paramore Falkon  Empyrean, Streets of Downfall 
+ 170  201       Tir              Eternal Autumn                
+ 170  201  140  Ragnar Lumina    The Glamdursil                
+ 170  201  150  Faylen           The Tree of Life              
+ 175  201  140  Sylvain          Black Rose                    
+ 175  201  150  Akirian Lumina   Intrigues of Times Past       
+ 175  201  160  Zafirah          Mount duNoir                  
+ 175  201  135  Tai              The Deadlights                
+ 175  201  140  Galos Lupercus   The Keep of Kearvek           
+ 180  201  140  Korridel         Artificer's Mayhem            
+ 180  201       Guinness         Chakra Spire                  
+ 180  201  160  Sammael Castiel  Dunes in Gold                 
+ 180  201  170  Rumour           Tanra'vea                     
+ 180  201  150  Trippitaka       The Astral Travels            
+ 180  201  180  Sammael          The Blood Sanctum             
+ 180  201  170  Valkur           The Nine Hells                
+ 180  201  150  SonRokito Lumin  The Partroxis                 
+ 180  201  160  Dominian         The Temple of Shal'indrael    
+ 180  201  150  Vokial & Ishkur  Yggdrasil: The World Tree     
+ 190  200  150  Bottomfeeder     Kiksaadi Cove                 
+ 190  201  160  Drakus           Entrance to Hades             
+ 190  201  180  Zendalonii       Nottingham                    
+ 190  201  175  Vilgan & Leaf    The Council of the Wyrm       
+ 190  201  150  Valkur           The Icy Caldera of Mauldoon   
+ 190  201  185  Lumina Kalince   The Trouble with Gwillimberry 
+ 195  201  185  Sammael Dreamfy  Crynn's Church                
+ 195  201  175  Rayna            Umari's Castle                
+ 200  201  200  Nikkei Wire      A Genie's Last Wish           
+ 200  201       Trepid           Afterglow                     
+ 200  201  150  Guinness & Robb  An Auspicious Star's Zenith   
+ 200  201  175  Guinness         Andolor's Ocean Adventure Park
+ 200  201  200  Guinness and Ro  Bloodlust Dungeon             
+ 200  201  170  Madrox Myrkul    Fury City                     
+ 200  201  200  Yowza            Icefall                       
+ 200  201  200  Quadrapus        Journey to the Inferno        
+ 200  201       Tir              Ketu Uplands                  
+ 200  201  185  Yowza            Nebulous Horizon              
+ 200  201  160  Rhuli            Ookushka Garrison             
+ 200  201  201  Vilgan           Oradrin's Chosen              
+ 200  201       Shaelynne        Radiance Woods                
+ 200  201  180  Domain           Realm of the Sacred Flame     
+ 200  201  190  Trepid           Shadow's End                  
+ 200  201  200  Redryn           The Cracks of Terra           
+ 200  201  160  Calabus          The Curse of the Midnight Fens
+ 200  201  180  Valkur           The Dungeon of Doom           
+ 200  201  175  Domain           The Earth Lords               
+ 200  201  175  Madrox Rapscall  The Nyne Woods                
+ 200  201  190  Rok Lumina       The Realm of Infamy           
+ 200  201  200  Redryn & Koala   The Titans' Keep              
+ 200  201  180  Valkur           The Were Wood                 
+ 200  201  180  Redryn           Transcendence                 
+ 200  201       Justme & Rumour  Wayfarer's Caravan            
+ 200  201       Rezit            Winds of Fate                 
+ 200  220       Gastro & Ninja   Qong                          
+ 201  201       Castiel          Black Claw Crag               
+ 201  201  201  Robbo & Guinnes  Crossroads of Fortune         
+ 201  201  201  Sammael Quadrap  Sea King's Dominion           
+ 201  201  201  Castiel          White Claw Cavern             
+ 210  210       Aardwolf         A Clearing in the Woods       
+ 210  210       Aardwolf         Cathedral of the Elements     
+ 210  210       Aardwolf         Dark Temple of Zhamet         
+ 210  210       Aardwolf         Disciples of Hassan Clan Hall 
+ 210  210       Aardwolf         Dominion Clan Area            
+ 210  210       Aardwolf         Isle of Anglesey              
+ 210  210       Aardwolf         Loqui Clan Area               
+ 210  210       Aardwolf         Masaki Clan Area              
+ 210  210       Aardwolf         Midgaardian Publishing House  
+ 210  210       Aardwolf         Old clan holding area 1       
+ 210  210       Aardwolf         Old clan holding area 2       
+ 210  210       Aardwolf         Old clan holding area 3       
+ 210  210       Aardwolf         Old clan holding area 4       
+ 210  210       Aardwolf         Perdition Clan Area           
+ 210  210       Aardwolf         Rogues Clan Hall              
+ 210  210  200  Aardwolf (Oby &  Secret Imm Project #69        
+ 210  210       Aardwolf         The Bard Clan                 
+ 210  210       Aardwolf         The Boot Lyceum               
+ 210  210       Aardwolf         The Children of Ba'alzamon HQ 
+ 210  210       Aardwolf         The Collective Mind of Tao    
+ 210  210       Aardwolf         The Crimson Horde Clan Hall   
+ 210  210       Aardwolf         The Crusader Clan             
+ 210  210       Aardwolf         The Emerald Clan HQ           
+ 210  210       Aardwolf         The Fortress of Knowledge     
+ 210  210       Aardwolf         The Halls of Retribution      
+ 210  210       Aardwolf         The Halls of Vanir            
+ 210  210       Aardwolf         The Ivory City                
+ 210  210       Aardwolf         The Legendary City of Tanelorn
+ 210  210       Aardwolf         The Order of Light            
+ 210  210       Aardwolf         The Realm of Chaos            
+ 210  210       Aardwolf         The S.S. Hook                 
+ 210  210       Aardwolf         The Shadokil Guildhouse       
+ 210  210       Aardwolf         The Stronghold of the Imperium
+ 210  210       Aardwolf         The Twinlobe Clan HQ          
+ 210  210       Aardwolf         The Underground Hall          
+ 210  210       Aardwolf         The White Dragon Clan         
+ 210  210       Aardwolf         The World of the Watchmen     
+ 210  210       Aardwolf         The Xunti Cult                
+ 210  210       Aardwolf         Touchstone Cavern             
+ 210  210       Aardwolf         Twilight Hall                 
+]]
+
+  for line in area_data_string:gmatch("[^\r\n]+") do
+    local min_lvl, max_lvl, rest = line:match("^%s*(%d+)%s+(%d+)%s+(.+)$")
+    if min_lvl and max_lvl and rest then
+      min_lvl = tonumber(min_lvl)
+      max_lvl = tonumber(max_lvl)
+      if (max_lvl - min_lvl) <= MAX_LEVEL_RANGE then
+        local clean_name = extract_area_name(rest)
+        table.insert(state.areas, { min = min_lvl, max = max_lvl, name = clean_name })
+        table.insert(state.original_area_names, clean_name)
+      end
+    end
+  end
+end
+
+-- =======================================================================================
+-- HANDLERS
+-- =======================================================================================
+
+function AreaPicker_HandleLevelFallback(matches)
+  state.my_level = tonumber(matches[2])
+  dbg("Fallback level trigger fired.")
+  msg("Level detected via fallback as " .. tostring(matches[2]) .. ".")
+  display_areas()
+end
+
+function AreaPicker_HandleLvl()
+  dbg("lvl command fired.")
+  display_areas()
+end
+
+function AreaPicker_HandleLvlIncrease(matches)
+  local value = tonumber(matches[2])
+  if value then
+    state.level_offset = state.level_offset + value
+    persist_save()
+    dbg("Level offset increased to: " .. tostring(state.level_offset))
+    msg("Level offset is now " .. string.format("%+d", state.level_offset) .. ". Settings saved.")
+  end
+end
+
+function AreaPicker_HandleLvlDecrease(matches)
+  local value = tonumber(matches[2])
+  if value then
+    state.level_offset = state.level_offset - value
+    persist_save()
+    dbg("Level offset decreased to: " .. tostring(state.level_offset))
+    msg("Level offset is now " .. string.format("%+d", state.level_offset) .. ". Settings saved.")
+  end
+end
+
+function AreaPicker_HandleLvlReset()
+  state.level_offset = 0
+  persist_save()
+  dbg("Level offset reset to: " .. tostring(state.level_offset))
+  msg("Level offset has been reset to 0. Settings saved.")
+end
+
+function AreaPicker_HandleLvlAlign(matches)
+  local partial_name = matches[2]:lower()
+  local alignment = match_alignment_token(matches[3]:lower())
+  if not alignment then
+    warn("Unknown alignment '" .. tostring(matches[3]) .. "'.")
+    return
+  end
+
+  local found_index, match_count = nil, 0
+  for i, area in ipairs(state.areas) do
+    if area.name:lower():find(partial_name, 1, true) then
+      found_index = i
+      match_count = match_count + 1
+    end
+  end
+
+  if match_count == 0 then
+    warn("No area found matching '" .. matches[2] .. "'.")
+  elseif match_count > 1 then
+    warn("Multiple areas match '" .. matches[2] .. "'. Please be more specific.")
+  else
+    local original_name = state.original_area_names[found_index]
+    local color = ALIGNMENT_COLORS[alignment]
+    state.area_alignments[original_name] = color
+    persist_save()
+    dbg("Area '" .. original_name .. "' alignment set to " .. alignment)
+    msg(string.format("Marked '%s' as %s. Settings saved.", state.areas[found_index].name, alignment))
+  end
+end
+
+function AreaPicker_HandleLvlSetAlign(matches)
+  local args = matches[2]:lower()
+  state.alignment_filter = {}
+  local valid_aligns = {}
+  for align_word in string.gmatch(args, "%w+") do
+    local mapped = match_alignment_token(align_word)
+    if mapped then
+      state.alignment_filter[mapped] = true
+      table.insert(valid_aligns, mapped)
+    end
+  end
+
+  if #valid_aligns > 0 then
+    persist_save()
+    dbg("Alignment filter set to: " .. table.concat(valid_aligns, ", "))
+    msg("Display filter set to: " .. table.concat(valid_aligns, ", ") .. " (and unaligned). Settings saved.")
+  else
+    AreaPicker_HandleLvlSetAlignReset()
+  end
+end
+
+function AreaPicker_HandleLvlSetAlignReset()
+  state.alignment_filter = {}
+  persist_save()
+  dbg("Alignment filter reset.")
+  msg("Alignment filter cleared and saved. Displaying all areas.")
+end
+
+function AreaPicker_HandleLvlKey(matches)
+  local partial_name = matches[2]:lower()
+  local keyname = matches[3]
+  local found_index, match_count = nil, 0
+
+  for i, area in ipairs(state.areas) do
+    if area.name:lower():find(partial_name, 1, true) then
+      found_index = i
+      match_count = match_count + 1
+    end
+  end
+
+  if match_count == 0 then
+    warn("No area found matching '" .. matches[2] .. "'.")
+  elseif match_count > 1 then
+    warn("Multiple areas match '" .. matches[2] .. "'. Please be more specific.")
+  else
+    local original_name = state.original_area_names[found_index]
+    state.area_keys[original_name] = keyname
+    persist_save()
+    dbg("Area '" .. original_name .. "' key set to '" .. keyname .. "'.")
+    msg(string.format("Marked '%s' with key '%s'. Settings saved.", state.areas[found_index].name, keyname))
+  end
+end
+
+function AreaPicker_HandleLvlDebug(matches)
+  local state_str = matches[2]:lower()
+  state.debug_on = (state_str == "on")
+  persist_save()
+  okm("Debug mode is now " .. (state.debug_on and "ON" or "OFF") .. ". Setting saved.")
+end
+
+function AreaPicker_HandleLvlHelp()
+  local help_width = 80
+  safe_cecho("\n")
+  safe_cecho(string.format("<yellow>%s\n", string.rep("-", help_width)))
+  safe_cecho("\n                               G_areapicker Help\n")
+  safe_cecho(string.format("<yellow>%s\n\n", string.rep("-", help_width)))
+
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl", "Shows areas for your current level."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl key \"<area>\" <key>", "Highlights a keyword within an area's name."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl align \"<area>\" <g|e|n>", "Marks an area as 'good', 'evil', or 'neutral'."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl debug on|off", "Toggles blue debug logs (auto-saved)."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl increase <value>", "Increases the search level (auto-saved)."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl decrease <value>", "Decreases the search level (auto-saved)."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl reset", "Resets the level offset (auto-saved)."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl setalign [g|e|n]...", "Filters display. Shows all if no args."))
+  safe_cecho(string.format("<cyan>  %-35s<ansi_white>%s\n", "lvl help", "Displays this help message."))
+
+  safe_cecho(string.format("<yellow>%s\n\n", string.rep("-", help_width)))
+end
+
+function AreaPicker_OnGMCP()
+  update_level_from_gmcp()
+end
+
+-- =======================================================================================
+-- INIT
+-- =======================================================================================
+
+local function init_areapicker()
+  persist_load()
+  parse_areas()
+  update_level_from_gmcp()
+
+  if type(registerAnonymousEventHandler) == "function" then
+    registerAnonymousEventHandler("gmcp.char.status", "AreaPicker_OnGMCP")
+    registerAnonymousEventHandler("gmcp.char.base", "AreaPicker_OnGMCP")
+    dbg("Registered GMCP handlers for gmcp.char.status/base.")
+  end
+
+  msg("Addon loaded (v4.4). Type 'lvl help' for commands.")
+end
+
+init_areapicker()
+]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

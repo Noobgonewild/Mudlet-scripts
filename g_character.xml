@@ -1,0 +1,718 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage/>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>g_character</name>
+      <script><![CDATA[]]></script>
+      <command></command>
+      <packageName>g_character</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>g_character_cmd</name>
+        <script><![CDATA[if GSTATS and GSTATS.command then GSTATS.command(matches[2] or "") end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gstats(?:\s+(.*))?$</regex>
+      </Alias>
+
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>g_character</name>
+      <script></script>
+      <packageName>g_character</packageName>
+
+      <Script isActive="yes" isFolder="no">
+      <name>g_character_main</name>
+      <packageName>g_character</packageName>
+      <script><![CDATA[GSTATS = GSTATS or {}
+
+local function gstats_persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+GSTATS.state_file = gstats_persistence_dir() .. "/g_character_state.lua"
+GSTATS.defaults = {
+  x = "0%",
+  y = "70%",
+  width = "70%",
+  height = "30%",
+  fontsize = 9,
+  visible = true,
+  layout = "horizontal",
+  compact = false,
+  report_channel = "gt",
+}
+GSTATS.state = GSTATS.state or {}
+GSTATS.ui = GSTATS.ui or {}
+GSTATS.last = GSTATS.last or nil
+GSTATS.capture = GSTATS.capture or {}
+
+function GSTATS.merge_defaults()
+  if GSTATS.state.font ~= nil and GSTATS.state.fontsize == nil then
+    GSTATS.state.fontsize = GSTATS.state.font
+  end
+  GSTATS.state.font = nil
+  for k, v in pairs(GSTATS.defaults) do
+    if GSTATS.state[k] == nil then GSTATS.state[k] = v end
+  end
+end
+
+function GSTATS.load_state()
+  if type(table.load) == "function" then
+    local loaded_into = {}
+    local ok, loaded_a, loaded_b = pcall(table.load, GSTATS.state_file, loaded_into)
+    if ok then
+      if next(loaded_into) ~= nil then
+        GSTATS.state = loaded_into
+      elseif type(loaded_a) == "table" then
+        GSTATS.state = loaded_a
+      elseif loaded_a == true and type(loaded_b) == "table" then
+        GSTATS.state = loaded_b
+      end
+    end
+  elseif yajl and yajl.to_value then
+    local f = io.open(GSTATS.state_file, "r")
+    if f then
+      local raw = f:read("*a")
+      f:close()
+      local ok, loaded = pcall(yajl.to_value, raw)
+      if ok and type(loaded) == "table" then GSTATS.state = loaded end
+    end
+  end
+  GSTATS.merge_defaults()
+end
+
+function GSTATS.save_state()
+  if GSTATS.ui and GSTATS.ui.container then
+    if GSTATS.ui.container.get_x then GSTATS.state.x = GSTATS.ui.container:get_x() end
+    if GSTATS.ui.container.get_y then GSTATS.state.y = GSTATS.ui.container:get_y() end
+    if GSTATS.ui.container.get_width then GSTATS.state.width = GSTATS.ui.container:get_width() end
+    if GSTATS.ui.container.get_height then GSTATS.state.height = GSTATS.ui.container:get_height() end
+  end
+  if type(table.save) == "function" then
+    local ok = pcall(table.save, GSTATS.state_file, GSTATS.state)
+    if ok then return true end
+  end
+
+  if yajl and yajl.to_string then
+    local ok, payload = pcall(yajl.to_string, GSTATS.state)
+    if ok and payload then
+      local f = io.open(GSTATS.state_file, "w")
+      if f then
+        f:write(payload)
+        f:close()
+        return true
+      end
+    end
+  end
+  return false
+end
+
+function GSTATS.ensure_ui()
+  if not Geyser then return end
+
+  if not GSTATS.ui.container then
+    local container
+    if Adjustable and Adjustable.Container and Adjustable.Container.new then
+      local ok, adj = pcall(function()
+        return Adjustable.Container:new({
+          name = "GSTATSContainer",
+          x = GSTATS.state.x,
+          y = GSTATS.state.y,
+          width = GSTATS.state.width,
+          height = GSTATS.state.height,
+          adjLabelstyle = "border: 1px solid #4a4a4a; background-color: #101010;",
+          buttonstyle = "",
+          lockStyle = "border: 0px;",
+          titleText = "",
+          titleTxtColor = "white",
+        })
+      end)
+      if ok then container = adj end
+    end
+
+    if not container then
+      container = Geyser.Container:new({
+        name = "GSTATSContainer",
+        x = GSTATS.state.x,
+        y = GSTATS.state.y,
+        width = GSTATS.state.width,
+        height = GSTATS.state.height,
+      })
+      if container.enableDrag then container:enableDrag() end
+    end
+
+    GSTATS.ui.container = container
+    GSTATS.ui.console = Geyser.MiniConsole:new({
+      name = "GSTATSConsole",
+      x = 0, y = 0, width = "100%", height = "100%",
+    }, container)
+    GSTATS.ui.console:setColor(0, 0, 0, 120)
+    GSTATS.ui.console:setFontSize(tonumber(GSTATS.state.fontsize) or 9)
+    GSTATS.ui.console:setWrap(300)
+  end
+
+  if GSTATS.state.visible then GSTATS.ui.container:show() else GSTATS.ui.container:hide() end
+end
+
+function GSTATS.player_name()
+  if gmcp and gmcp.char and gmcp.char.base and gmcp.char.base.name then
+    return tostring(gmcp.char.base.name)
+  end
+  if gmcp and gmcp.char and gmcp.char.status and gmcp.char.status.name then
+    return tostring(gmcp.char.status.name)
+  end
+  if gmcp and gmcp.Char and gmcp.Char.Status and gmcp.Char.Status.name then
+    return tostring(gmcp.Char.Status.name)
+  end
+  if gmcp and gmcp.Char and gmcp.Char.Name and gmcp.Char.Name.name then
+    return tostring(gmcp.Char.Name.name)
+  end
+  return "Unknown"
+end
+
+function GSTATS.safe_number(...)
+  for i = 1, select("#", ...) do
+    local v = select(i, ...)
+    if v ~= nil then
+      local n = tonumber(v)
+      if n then return n end
+    end
+  end
+  return 0
+end
+
+function GSTATS.format_compact_number(value)
+  local n = GSTATS.safe_number(value)
+  local sign = ""
+  if n < 0 then
+    sign = "-"
+    n = math.abs(n)
+  end
+
+  if n < 1000 then
+    return string.format("%s%d", sign, n)
+  end
+
+  local scales = {
+    { value = 1000000000000, suffix = "t" },
+    { value = 1000000000, suffix = "b" },
+    { value = 1000000, suffix = "m" },
+    { value = 1000, suffix = "k" },
+  }
+
+  for _, scale in ipairs(scales) do
+    if n >= scale.value then
+      local scaled = n / scale.value
+      local rounded = math.floor(scaled * 10 + 0.5) / 10
+      local text = string.format("%.1f", rounded):gsub("%.0$", "")
+      return string.format("%s%s%s", sign, text, scale.suffix)
+    end
+  end
+
+  return string.format("%s%d", sign, n)
+end
+
+function GSTATS.from_gmcp()
+  local c = (gmcp and gmcp.char) or {}
+  local s = c.status or {}
+  local v = c.vitals or {}
+  local m = c.maxstats or {}
+  local b = c.base or {}
+  local st = c.stats or {}
+  local w = c.worth or {}
+
+  local d = {}
+  local standing_map = { [1] = "at login screen", [2] = "logging in", [3] = "standing", [4] = "afk", [5] = "writing a note", [6] = "editing a note", [7] = "at paged output prompt", [8] = "in combat", [9] = "sleeping", [11] = "resting", [12] = "running" }
+  local standing_num = GSTATS.safe_number(s.state, s.pos, s.position)
+  d.standing = standing_map[standing_num] or tostring(s.state or s.pos or s.position or ""):lower()
+  d.hp = GSTATS.safe_number(v.hp, s.hp)
+  d.maxhp = GSTATS.safe_number(m.maxhp, v.maxhp, s.maxhp)
+  d.mana = GSTATS.safe_number(v.mana, s.mana)
+  d.maxmana = GSTATS.safe_number(m.maxmana, v.maxmana, s.maxmana)
+  d.moves = GSTATS.safe_number(v.moves, s.moves)
+  d.maxmoves = GSTATS.safe_number(m.maxmoves, v.maxmoves, s.maxmoves)
+  d.hitroll = GSTATS.safe_number(st.hr, st.hitroll, s.hitroll, s.hit)
+  d.damroll = GSTATS.safe_number(st.dr, st.damroll, s.damroll, s.dam)
+  d.tnl = GSTATS.safe_number(s.tnl, b.perlevel)
+  d.level = GSTATS.safe_number(s.level, b.level)
+  d.align = GSTATS.safe_number(s.align)
+  d.gold = GSTATS.safe_number(w.gold)
+  d.qp = GSTATS.safe_number(w.qp)
+  d.tp = GSTATS.safe_number(w.tp)
+  d.trains = GSTATS.safe_number(w.trains)
+  d.pracs = GSTATS.safe_number(w.pracs)
+
+  d.str = GSTATS.safe_number(st.str, s.str)
+  d.maxstr = GSTATS.safe_number(st.maxstr, m.maxstr, d.str)
+  d.int = GSTATS.safe_number(st.int, s.int)
+  d.maxint = GSTATS.safe_number(st.maxint, m.maxint, d.int)
+  d.wis = GSTATS.safe_number(st.wis, s.wis)
+  d.maxwis = GSTATS.safe_number(st.maxwis, m.maxwis, d.wis)
+  d.dex = GSTATS.safe_number(st.dex, s.dex)
+  d.maxdex = GSTATS.safe_number(st.maxdex, m.maxdex, d.dex)
+  d.con = GSTATS.safe_number(st.con, s.con)
+  d.maxcon = GSTATS.safe_number(st.maxcon, m.maxcon, d.con)
+  d.luck = GSTATS.safe_number(st.luck, s.luck)
+  d.maxluck = GSTATS.safe_number(st.maxluck, m.maxluck, d.luck)
+  return d
+end
+
+function GSTATS.gmcp_has_stats()
+  if type(gmcp) ~= "table" then return false end
+  if type(gmcp.char) ~= "table" then return false end
+  local c = gmcp.char
+  if type(c.vitals) == "table" and (c.vitals.hp ~= nil or c.vitals.mana ~= nil or c.vitals.moves ~= nil) then return true end
+  if type(c.status) == "table" and (c.status.level ~= nil or c.status.state ~= nil) then return true end
+  if type(c.worth) == "table" and (c.worth.gold ~= nil or c.worth.qp ~= nil or c.worth.tp ~= nil) then return true end
+  return false
+end
+
+function GSTATS.format_stats(data)
+  if GSTATS.state.layout == "vertical" then
+    return GSTATS.format_stats_vertical(data)
+  end
+  return GSTATS.format_stats_horizontal(data)
+end
+
+function GSTATS.label(name)
+  local compact = GSTATS.state.compact == true
+  if not compact then return name end
+  local labels = {
+    Strength = "Str",
+    Hitroll = "HR",
+    Damroll = "DR",
+    Luck = "Luk",
+    Health = "Hp",
+    Moves = "Mvs",
+    Intelligence = "Int",
+    Wisdom = "Wis",
+    Dexterity = "Dex",
+    Constitution = "Con",
+    Mana = "Mana",
+    Gold = "Gold",
+    Level = "Lvl",
+    TNL = "TNL",
+    QP = "QP",
+    TP = "TP",
+    Align = "Align",
+    Trains = "Trains",
+    Pracs = "Pracs",
+  }
+  return labels[name] or name
+end
+
+function GSTATS.format_value_pair(current, maximum)
+  return string.format("%d/%d", GSTATS.safe_number(current), GSTATS.safe_number(maximum))
+end
+
+function GSTATS.format_line(label, value, width)
+  return string.format("<cyan>%-" .. tostring(width) .. "s : <white>%s\n", label, tostring(value))
+end
+
+function GSTATS.format_stats_vertical(data)
+  local groups = {
+    {
+      { "Strength", GSTATS.format_value_pair(data.str, data.maxstr) },
+      { "Intelligence", GSTATS.format_value_pair(data.int, data.maxint) },
+      { "Wisdom", GSTATS.format_value_pair(data.wis, data.maxwis) },
+      { "Dexterity", GSTATS.format_value_pair(data.dex, data.maxdex) },
+      { "Constitution", GSTATS.format_value_pair(data.con, data.maxcon) },
+      { "Luck", GSTATS.format_value_pair(data.luck, data.maxluck) },
+      { "Hitroll", GSTATS.safe_number(data.hitroll) },
+      { "Damroll", GSTATS.safe_number(data.damroll) },
+    },
+    {
+      { "Trains", GSTATS.safe_number(data.trains) },
+      { "Pracs", GSTATS.safe_number(data.pracs) },
+      { "Gold", GSTATS.format_compact_number(data.gold) },
+      { "TP", GSTATS.format_compact_number(data.tp) },
+      { "QP", GSTATS.format_compact_number(data.qp) },
+    },
+    {
+      { "Level", GSTATS.safe_number(data.level) },
+      { "TNL", GSTATS.safe_number(data.tnl) },
+      { "Align", GSTATS.safe_number(data.align) },
+    },
+    {
+      { "Health", GSTATS.format_value_pair(data.hp, data.maxhp) },
+      { "Mana", GSTATS.format_value_pair(data.mana, data.maxmana) },
+      { "Moves", GSTATS.format_value_pair(data.moves, data.maxmoves) },
+    },
+  }
+
+  local max_label = 0
+  for _, group in ipairs(groups) do
+    for _, item in ipairs(group) do
+      local label = GSTATS.label(item[1])
+      if #label > max_label then max_label = #label end
+    end
+  end
+
+  local out = ""
+  for i, group in ipairs(groups) do
+    for _, item in ipairs(group) do
+      out = out .. GSTATS.format_line(GSTATS.label(item[1]), item[2], max_label)
+    end
+    if i < #groups then out = out .. "\n" end
+  end
+  return out
+end
+
+function GSTATS.format_stats_horizontal(data)
+  local name = GSTATS.player_name()
+  local out = ""
+  local l_health = GSTATS.label("Health")
+  local l_mana = GSTATS.label("Mana")
+  local l_moves = GSTATS.label("Moves")
+  local l_hitroll = GSTATS.label("Hitroll")
+  local l_damroll = GSTATS.label("Damroll")
+  local l_strength = GSTATS.label("Strength")
+  local l_int = GSTATS.label("Intelligence")
+  local l_wis = GSTATS.label("Wisdom")
+  local l_dex = GSTATS.label("Dexterity")
+  local l_con = GSTATS.label("Constitution")
+  local l_luck = GSTATS.label("Luck")
+  local left_width = math.max(#l_health, #l_mana, #l_moves, #l_hitroll, #l_damroll)
+  local right_width = math.max(#l_strength, #l_int, #l_wis, #l_dex, #l_con, #l_luck)
+  out = out .. string.format("<cyan>%-" .. tostring(left_width) .. "s : <white>%5d<cyan>/<white>%5d      <cyan>%-" .. tostring(right_width) .. "s : <white>%3d<cyan>/<white>%3d\n", l_health, data.hp, data.maxhp, l_strength, data.str, data.maxstr)
+  out = out .. string.format("<cyan>%-" .. tostring(left_width) .. "s : <white>%5d<cyan>/<white>%5d      <cyan>%-" .. tostring(right_width) .. "s : <white>%3d<cyan>/<white>%3d\n", l_mana, data.mana, data.maxmana, l_int, data.int, data.maxint)
+  out = out .. string.format("<cyan>%-" .. tostring(left_width) .. "s : <white>%5d<cyan>/<white>%5d      <cyan>%-" .. tostring(right_width) .. "s : <white>%3d<cyan>/<white>%3d\n", l_moves, data.moves, data.maxmoves, l_wis, data.wis, data.maxwis)
+  out = out .. string.format("<cyan>%-" .. tostring(left_width) .. "s : <white>%11d      <cyan>%-" .. tostring(right_width) .. "s : <white>%3d<cyan>/<white>%3d\n", l_hitroll, data.hitroll, l_dex, data.dex, data.maxdex)
+  out = out .. string.format("<cyan>%-" .. tostring(left_width) .. "s : <white>%11d      <cyan>%-" .. tostring(right_width) .. "s : <white>%3d<cyan>/<white>%3d\n", l_damroll, data.damroll, l_con, data.con, data.maxcon)
+  out = out .. string.format("<cyan>%s      <cyan>%-" .. tostring(right_width) .. "s : <white>%3d<cyan>/<white>%3d\n", string.rep(" ", left_width + 15), l_luck, data.luck, data.maxluck)
+  out = out .. "\n"
+  out = out .. string.format("<cyan>%-7s : <white>%11d      <cyan>%-12s : <green>%7d\n", GSTATS.label("TNL"), data.tnl, GSTATS.label("Level"), data.level)
+  out = out .. string.format("<cyan>%-7s : <white>%11d      <cyan>%-12s : <white>%7s\n", GSTATS.label("Align"), data.align, GSTATS.label("Gold"), GSTATS.format_compact_number(data.gold))
+  out = out .. string.format("<cyan>%-7s : <white>%11d      <cyan>%-12s : <white>%7s\n", GSTATS.label("Trains"), data.trains, GSTATS.label("QP"), GSTATS.format_compact_number(data.qp))
+  out = out .. string.format("<cyan>%-7s : <white>%11d      <cyan>%-12s : <white>%7s\n", GSTATS.label("Pracs"), data.pracs, GSTATS.label("TP"), GSTATS.format_compact_number(data.tp))
+  out = out .. "\n"
+  out = out .. string.format("<cyan>You are : <white>%s (%s)\n", data.standing or "", name)
+  return out
+end
+
+function GSTATS.render_from_gmcp()
+  GSTATS.ensure_ui()
+  if GSTATS.gmcp_has_stats() then
+    GSTATS.last = GSTATS.from_gmcp()
+    GSTATS.state.last_stats = GSTATS.last
+    GSTATS.save_state()
+  elseif not GSTATS.last and type(GSTATS.state.last_stats) == "table" then
+    GSTATS.last = GSTATS.state.last_stats
+  end
+  if not GSTATS.last then
+    GSTATS.last = GSTATS.from_gmcp()
+  end
+  GSTATS.ui.console:clear()
+  GSTATS.ui.console:cecho(GSTATS.format_stats(GSTATS.last))
+end
+
+function GSTATS.on_gmcp()
+  GSTATS.render_from_gmcp()
+end
+
+function GSTATS.trim(s)
+  return tostring(s or ""):match("^%s*(.-)%s*$")
+end
+
+function GSTATS.resolve_report_channel(channel)
+  local chosen = GSTATS.trim(channel)
+  if chosen == "" then
+    chosen = GSTATS.trim(GSTATS.state.report_channel or GSTATS.defaults.report_channel or "gt")
+  end
+  return chosen
+end
+
+function GSTATS.c_label(text)
+  return "@c" .. tostring(text or "")
+end
+
+function GSTATS.c_value(text)
+  return "@W" .. tostring(text or "")
+end
+
+function GSTATS.c_high(text)
+  return "@C" .. tostring(text or "")
+end
+
+function GSTATS.report_segment(label, value, suffix)
+  local piece = GSTATS.c_label("[") .. GSTATS.c_high(label) .. GSTATS.c_label("|") .. GSTATS.c_value(value)
+  if suffix and suffix ~= "" then
+    piece = piece .. GSTATS.c_label("/") .. GSTATS.c_value(suffix)
+  end
+  return piece .. GSTATS.c_label("]")
+end
+
+function GSTATS.send_channel_report(report, channel)
+  local target = GSTATS.resolve_report_channel(channel)
+  if target == "" then
+    cecho(string.format("<tomato>gstats: no report channel configured.\n"))
+    return
+  end
+  send(target .. " " .. tostring(report or "") .. "@w", false)
+end
+
+function GSTATS.report_stats(channel)
+  local stats = GSTATS.from_gmcp()
+  local parts = {
+    GSTATS.report_segment("STR", GSTATS.safe_number(stats.str), GSTATS.safe_number(stats.maxstr)),
+    GSTATS.report_segment("INT", GSTATS.safe_number(stats.int), GSTATS.safe_number(stats.maxint)),
+    GSTATS.report_segment("WIS", GSTATS.safe_number(stats.wis), GSTATS.safe_number(stats.maxwis)),
+    GSTATS.report_segment("DEX", GSTATS.safe_number(stats.dex), GSTATS.safe_number(stats.maxdex)),
+    GSTATS.report_segment("CON", GSTATS.safe_number(stats.con), GSTATS.safe_number(stats.maxcon)),
+    GSTATS.report_segment("LUK", GSTATS.safe_number(stats.luck), GSTATS.safe_number(stats.maxluck)),
+    GSTATS.report_segment("HR", GSTATS.safe_number(stats.hitroll)),
+    GSTATS.report_segment("DR", GSTATS.safe_number(stats.damroll)),
+    GSTATS.report_segment("HP", GSTATS.safe_number(stats.hp), GSTATS.safe_number(stats.maxhp)),
+    GSTATS.report_segment("MN", GSTATS.safe_number(stats.mana), GSTATS.safe_number(stats.maxmana)),
+    GSTATS.report_segment("MV", GSTATS.safe_number(stats.moves), GSTATS.safe_number(stats.maxmoves)),
+  }
+  GSTATS.send_channel_report(table.concat(parts, " "), channel)
+end
+
+function GSTATS.kill_capture_triggers(kind)
+  local capture = GSTATS.capture[kind]
+  if not capture or type(capture.triggers) ~= "table" then return end
+  for _, trig in ipairs(capture.triggers) do
+    if trig then pcall(killTrigger, trig) end
+  end
+  capture.triggers = {}
+end
+
+function GSTATS.bump_capture_timer(kind, delay)
+  local capture = GSTATS.capture[kind]
+  if not capture then return end
+  if capture.timer then pcall(killTimer, capture.timer) end
+  capture.timer = tempTimer(delay or 0.2, function()
+    if GSTATS["finish_" .. kind] then GSTATS["finish_" .. kind]() end
+  end)
+end
+
+function GSTATS.report_mastery(channel)
+  GSTATS.capture.mastery = { channel = channel, rows = {}, triggers = {}, timer = nil }
+  local pattern = "^(Bash|Pierce|Slash|Acid|Air|Cold|Disease|Earth|Electric|Energy|Fire|Holy|Light|Magic|Mental|Negative|Poison|Shadow|Sonic|Water)\\s+([0-9]+)\\s*[0-9]+\\s*[0-9,]+$"
+  local trig = tempRegexTrigger(pattern, function()
+    local name = matches[2]
+    local amount = tonumber(matches[3]) or 0
+    GSTATS.capture.mastery.rows[name] = amount
+    GSTATS.bump_capture_timer("mastery", 0.12)
+  end)
+  table.insert(GSTATS.capture.mastery.triggers, trig)
+  send("mastery", false)
+end
+
+function GSTATS.finish_mastery()
+  local capture = GSTATS.capture.mastery
+  if not capture then return end
+  GSTATS.kill_capture_triggers("mastery")
+  if capture.timer then pcall(killTimer, capture.timer) end
+  local keys = {}
+  for k, _ in pairs(capture.rows) do table.insert(keys, k) end
+  table.sort(keys, function(a, b) return (capture.rows[a] or 0) > (capture.rows[b] or 0) end)
+  local out = {}
+  for _, k in ipairs(keys) do
+    if (capture.rows[k] or 0) > 0 then
+      table.insert(out, GSTATS.report_segment(k, capture.rows[k]))
+    end
+  end
+  if #out == 0 then table.insert(out, GSTATS.report_segment("MASTERY", "none")) end
+  GSTATS.send_channel_report(table.concat(out, " "), capture.channel)
+end
+
+function GSTATS.report_instinct(channel)
+  GSTATS.capture.instinct = { channel = channel, rows = {}, triggers = {}, timer = nil }
+  local pattern = "^\\s*(?:Level\\s+\\d+\\s*:\\s*)?([A-Za-z][A-Za-z\\s\\-']*[A-Za-z])\\s+\\d+\\s+(?:[0-9]+%|N/A)\\s+([0-9]+)\\s+(?:[0-9,]+|N/A)\\s+(?:[0-9,]+|N/A)(?:\\s+.*)?$"
+  local trig = tempRegexTrigger(pattern, function()
+    local skill = GSTATS.trim(matches[2] or "")
+    local amount = tonumber(matches[3]) or 0
+    if skill ~= "" then
+      GSTATS.capture.instinct.rows[skill] = amount
+      GSTATS.bump_capture_timer("instinct", 0.12)
+    end
+  end)
+  table.insert(GSTATS.capture.instinct.triggers, trig)
+  send("instinct", false)
+end
+
+function GSTATS.finish_instinct()
+  local capture = GSTATS.capture.instinct
+  if not capture then return end
+  GSTATS.kill_capture_triggers("instinct")
+  if capture.timer then pcall(killTimer, capture.timer) end
+  local keys = {}
+  for k, _ in pairs(capture.rows) do table.insert(keys, k) end
+  table.sort(keys, function(a, b) return (capture.rows[a] or 0) > (capture.rows[b] or 0) end)
+  local out = {}
+  for _, k in ipairs(keys) do
+    if (capture.rows[k] or 0) > 0 then
+      table.insert(out, GSTATS.report_segment(k, capture.rows[k]))
+    end
+  end
+  if #out == 0 then table.insert(out, GSTATS.report_segment("INSTINCT", "none")) end
+  GSTATS.send_channel_report(table.concat(out, " "), capture.channel)
+end
+
+function GSTATS.report_resists(channel)
+  GSTATS.capture.resists = { channel = channel, rows = {}, triggers = {}, timer = nil }
+  local pattern = "^\\s*(Bash|Pierce|Slash|Acid|Air|Cold|Disease|Earth|Electric|Energy|Fire|Holy|Light|Magic|Mental|Negative|Poison|Shadow|Sonic|Water)\\s+[-+]?\\d+%\\s+\\d+\\s+[-+]?\\d+(?:\\.\\d+)?%\\s+([-+]?\\d+(?:\\.\\d+)?)%\\s*$"
+  local trig = tempRegexTrigger(pattern, function()
+    local damtype = GSTATS.trim(matches[2] or "")
+    local amount = tonumber(matches[3]) or 0
+    if damtype ~= "" then
+      GSTATS.capture.resists.rows[damtype] = amount
+      GSTATS.bump_capture_timer("resists", 0.12)
+    end
+  end)
+  table.insert(GSTATS.capture.resists.triggers, trig)
+  send("resists", false)
+end
+
+function GSTATS.finish_resists()
+  local capture = GSTATS.capture.resists
+  if not capture then return end
+  GSTATS.kill_capture_triggers("resists")
+  if capture.timer then pcall(killTimer, capture.timer) end
+  local keys = {}
+  for k, _ in pairs(capture.rows) do table.insert(keys, k) end
+  table.sort(keys, function(a, b) return (capture.rows[a] or 0) > (capture.rows[b] or 0) end)
+  local out = {}
+  for _, k in ipairs(keys) do
+    if (capture.rows[k] or 0) > 0 then
+      table.insert(out, GSTATS.report_segment(k, capture.rows[k]))
+    end
+  end
+  if #out == 0 then table.insert(out, GSTATS.report_segment("RESISTS", "none")) end
+  GSTATS.send_channel_report(table.concat(out, " "), capture.channel)
+end
+
+function GSTATS.help()
+  cecho("\n<cyan>g_character commands\n")
+  cecho("  <white>gstats help<grey>            - show this help\n")
+  cecho("  <white>gstats show|hide<grey>       - toggle window visibility\n")
+  cecho("  <white>gstats horizontal|vertical<grey> - set layout mode\n")
+  cecho("  <white>gstats fontsize [size]<grey> - show/set font size\n")
+  cecho("  <white>gstats compact on|off<grey>  - compact labels mode\n")
+  cecho("  <white>gstats stats [channel]<grey> - report core stats to channel\n")
+  cecho("  <white>gstats mastery [channel]<grey> - report non-zero mastery values\n")
+  cecho("  <white>gstats instinct [channel]<grey> - report non-zero instinct values\n")
+  cecho("  <white>gstats resists [channel]<grey> - report positive resist values\n")
+  cecho("  <white>gstats reset<grey>           - reset defaults\n")
+end
+
+function GSTATS.command(arg)
+  GSTATS.ensure_ui()
+  local cmd = (arg or ""):match("^%s*(.-)%s*$")
+  if cmd == "" then return GSTATS.help() end
+
+  local report_type, report_channel = cmd:match("^(%S+)%s*(.-)%s*$")
+  if report_type == "stats" or report_type == "mastery" or report_type == "instinct" or report_type == "resists" then
+    if report_type == "stats" then
+      GSTATS.report_stats(report_channel)
+    elseif report_type == "mastery" then
+      GSTATS.report_mastery(report_channel)
+    elseif report_type == "instinct" then
+      GSTATS.report_instinct(report_channel)
+    else
+      GSTATS.report_resists(report_channel)
+    end
+    return
+  end
+
+  if cmd == "show" then
+    GSTATS.state.visible = true
+    GSTATS.ensure_ui()
+    GSTATS.ui.container:show()
+    return GSTATS.save_state()
+  elseif cmd == "hide" then
+    GSTATS.state.visible = false
+    GSTATS.ensure_ui()
+    GSTATS.ui.container:hide()
+    return GSTATS.save_state()
+  elseif cmd == "reset" then
+    GSTATS.state = {}
+    GSTATS.merge_defaults()
+    if GSTATS.ui and GSTATS.ui.container then GSTATS.ui.container:move(GSTATS.state.x, GSTATS.state.y) GSTATS.ui.container:resize(GSTATS.state.width, GSTATS.state.height) end
+    if GSTATS.last then GSTATS.render_from_gmcp() end
+    return GSTATS.save_state()
+  elseif cmd == "vertical" or cmd == "horizontal" then
+    GSTATS.state.layout = cmd
+    if GSTATS.last then GSTATS.render_from_gmcp() end
+    GSTATS.save_state()
+    cecho(string.format("<cyan>gstats layout set to: <white>%s\n", cmd))
+    return
+  elseif cmd == "compact on" or cmd == "compact off" then
+    GSTATS.state.compact = (cmd == "compact on")
+    if GSTATS.last then GSTATS.render_from_gmcp() end
+    GSTATS.save_state()
+    cecho(string.format("<cyan>gstats compact is now: <white>%s\n", GSTATS.state.compact and "on" or "off"))
+    return
+  elseif cmd == "compact" then
+    cecho("<cyan>Usage: <white>gstats compact on|off\n")
+    cecho(string.format("<cyan>Current compact mode: <white>%s\n", GSTATS.state.compact and "on" or "off"))
+    return
+  end
+
+  local font = tonumber(cmd:match("^fontsize%s+(%d+)$")) or tonumber(cmd:match("^font%s+(%d+)$"))
+  if font then
+    GSTATS.state.fontsize = font
+    GSTATS.ui.console:setFontSize(font)
+    if GSTATS.last then GSTATS.render_from_gmcp() end
+    GSTATS.save_state()
+    cecho(string.format("<cyan>gstats font size set to: <white>%d\n", font))
+    return
+  end
+
+  if cmd == "fontsize" or cmd == "font" then
+    local current = tonumber(GSTATS.state.fontsize) or 9
+    cecho(string.format("<cyan>Current gstats font size: <white>%d\n", current))
+    return
+  end
+
+  GSTATS.help()
+end
+
+function GSTATS.command_compact(arg)
+  GSTATS.ensure_ui()
+  local cmd = (arg or ""):match("^%s*(.-)%s*$"):lower()
+  if cmd == "compact on" then
+    GSTATS.state.compact = true
+  elseif cmd == "compact off" then
+    GSTATS.state.compact = false
+  else
+    cecho("<cyan>Usage: <white>gcom compact on|off\n")
+    cecho(string.format("<cyan>Current compact mode: <white>%s\n", GSTATS.state.compact and "on" or "off"))
+    return
+  end
+  if GSTATS.last then GSTATS.render_from_gmcp() end
+  GSTATS.save_state()
+  cecho(string.format("<cyan>gcom compact is now: <white>%s\n", GSTATS.state.compact and "on" or "off"))
+end
+
+if not GSTATS.initialized then
+  GSTATS.initialized = true
+  GSTATS.load_state()
+  GSTATS.ensure_ui()
+  GSTATS.render_from_gmcp()
+  registerAnonymousEventHandler("gmcp.char.base", "GSTATS.on_gmcp")
+  registerAnonymousEventHandler("gmcp.char.status", "GSTATS.on_gmcp")
+  registerAnonymousEventHandler("gmcp.char.vitals", "GSTATS.on_gmcp")
+  registerAnonymousEventHandler("gmcp.char.maxstats", "GSTATS.on_gmcp")
+  registerAnonymousEventHandler("gmcp.char.stats", "GSTATS.on_gmcp")
+  registerAnonymousEventHandler("gmcp.char.worth", "GSTATS.on_gmcp")
+  registerAnonymousEventHandler("sysExitEvent", "GSTATS.save_state")
+end]]></script>
+      <eventHandlerList/>
+    </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

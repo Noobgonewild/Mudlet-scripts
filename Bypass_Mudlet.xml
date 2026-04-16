@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <!-- ============================================================
+       Bypass v1.0 – Mudlet Port (initial)
+       Original Author: Durel (MUSHclient plugin)
+       Purpose: Sets bypass list automatically on level-up.
+       ============================================================ -->
+
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>Bypass</name>
+      <script></script>
+      <conditionLineDelta>0</conditionLineDelta>
+      <mStayOpen>0</mStayOpen>
+      <mCommand></mCommand>
+      <packageName>Bypass</packageName>
+      <mFgColor></mFgColor>
+      <mBgColor></mBgColor>
+      <mSoundFile></mSoundFile>
+      <colorTriggerFgColor></colorTriggerFgColor>
+      <colorTriggerBgColor></colorTriggerBgColor>
+      <regexCodeList>
+        <string></string>
+      </regexCodeList>
+      <regexCodePropertyList>
+        <integer>0</integer>
+      </regexCodePropertyList>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>Bypass_LevelUp</name>
+        <script>Bypass_OnLevelUp(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You raise a level\! You are now level ([0-9]+)\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>Bypass_CaptureBypassedArea</name>
+        <script>Bypass_OnBypassLine(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You are now bypassing (.+) \(([^)]+)\)\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+    </TriggerGroup>
+  </TriggerPackage>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>Bypass</name>
+      <script></script>
+      <command></command>
+      <packageName>Bypass</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>Bypass_ApplyCurrentLevel</name>
+        <script>Bypass_ApplyCurrentLevel()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^bypass\s+apply$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>Bypass</name>
+      <script></script>
+      <packageName>Bypass</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>Bypass_Script</name>
+        <script><![CDATA[
+Bypass = Bypass or {}
+
+local function bypass_note(msg)
+  if type(cecho) == "function" then
+    cecho("<gold>[Bypass] <white>" .. msg .. "\n")
+  elseif type(echo) == "function" then
+    echo("[Bypass] " .. msg .. "\n")
+  end
+end
+
+local function format_bypass_shortname(area_code)
+  local code = tostring(area_code or "")
+  if code == "" then return code end
+  if string.len(code) <= 4 then
+    return string.upper(code)
+  end
+  return (code:gsub("(%a)([%w']*)", function(first, rest)
+    return string.upper(first) .. string.lower(rest)
+  end))
+end
+
+local function gmcp_get(path)
+  local node = gmcp
+  for part in string.gmatch(path, "[^%.]+") do
+    if type(node) ~= "table" then return nil end
+    node = node[part]
+  end
+  return node
+end
+
+local function to_num(v)
+  local n = tonumber(v)
+  if not n then return 0 end
+  return n
+end
+
+local function get_slots()
+  local slots = 2
+  local subclass = tostring(gmcp_get("char.base.subclass") or "")
+  if subclass == "Navigator" then
+    slots = slots + 2
+  end
+
+  local int_plus_wis = to_num(gmcp_get("char.stats.int")) + to_num(gmcp_get("char.stats.wis"))
+  if int_plus_wis >= 800 then
+    slots = slots + 1
+  end
+
+  return slots
+end
+
+local function run_bypass_commands(commands)
+  Bypass.bypassed_areas = {}
+  Bypass.bypassed_lookup = {}
+  if Bypass.summary_timer then
+    killTimer(Bypass.summary_timer)
+    Bypass.summary_timer = nil
+  end
+
+  send("bypass clear", false)
+  for _, cmd in ipairs(commands) do
+    send("bypass " .. cmd, false)
+  end
+end
+
+local function report_bypass_summary()
+  local list = Bypass.bypassed_areas or {}
+  if #list == 0 then
+    return
+  end
+
+  local summary = table.concat(list, ", ")
+  if type(cecho) == "function" then
+    cecho(string.format("<ansiCyan>[INFO] <white>You are now bypassing %d areas: %s\n", #list, summary))
+  elseif type(echo) == "function" then
+    echo(string.format("[INFO] You are now bypassing %d areas: %s\n", #list, summary))
+  end
+end
+
+local function commands_for_level(level, slots)
+  if level >= 2 and level <= 14 then
+    if slots == 4 then
+      return { "graveyard", "gauntlet", "chessboard", "maelstrom" }
+    end
+    return { "graveyard", "gauntlet" }
+  elseif level >= 15 and level <= 29 then
+    if slots == 4 then
+      return { "gauntlet", "kul tiras", "chessboard", "maelstrom" }
+    end
+    return { "gauntlet", "kul tiras" }
+  elseif level >= 30 and level <= 39 then
+    if slots == 4 then
+      return { "kingsholm", "dsr", "verume", "maelstrom" }
+    end
+    return { "kingsholm", "dsr" }
+  elseif level >= 40 and level <= 54 then
+    if slots == 4 then
+      return { "kingsholm", "zangar", "citadel", "maelstrom" }
+    end
+    return { "kingsholm", "zangar" }
+  elseif level >= 55 and level <= 59 then
+    if slots == 4 then
+      return { "zangar", "gold rush", "citadel", "uplanes" }
+    end
+    return { "zangar", "gold rush" }
+  elseif level >= 60 and level <= 69 then
+    if slots == 4 then
+      return { "upper planes", "flying citadel", "goldrush", "lplanes" }
+    end
+    return { "upper planes", "flying citadel" }
+  elseif level >= 70 and level <= 99 then
+    if slots == 4 then
+      return { "lower planes", "upper planes", "goldrush", "citadel" }
+    end
+    return { "lower planes", "upper planes" }
+  elseif level >= 100 and level <= 114 then
+    if slots == 4 then
+      return { "xyl", "halls of the damned", "deathtrap", "talsa" }
+    end
+    return { "xyl", "halls of the damned" }
+  elseif level >= 115 and level <= 119 then
+    if slots == 4 then
+      return { "xyl", "deathtrap dungeon", "damned", "talsa" }
+    end
+    return { "xyl", "deathtrap dungeon" }
+  elseif level >= 120 and level <= 129 then
+    if slots == 4 then
+      return { "talsa", "deathtrap dungeon", "ftii", "horath" }
+    end
+    return { "talsa", "deathtrap dungeon" }
+  elseif level >= 130 and level <= 139 then
+    if slots == 4 then
+      return { "deathtrap dungeon", "zyian", "masquerade", "ftii" }
+    end
+    return { "deathtrap dungeon", "zyian" }
+  elseif level >= 140 and level <= 149 then
+    if slots == 4 then
+      return { "cougarian", "cataclysm", "masquerade", "ftii" }
+    end
+    return { "cougarian", "cataclysm" }
+  elseif level >= 150 and level <= 174 then
+    if slots == 4 then
+      return { "cataclysm", "cougarian", "deadlights", "helegear" }
+    end
+    return { "cataclysm", "cougarian" }
+  elseif level >= 175 and level <= 179 then
+    if slots == 4 then
+      return { "deadlights", "cataclysm", "deadlights", "helegear" }
+    end
+    return { "deadlights", "cataclysm" }
+  elseif level >= 180 and level <= 200 then
+    if slots == 4 then
+      return { "partroxis", "nine hells", "deadlights", "helegear" }
+    end
+    return { "partroxis", "nine hells" }
+  elseif level == 201 then
+    if slots == 4 then
+      return { "partroxis", "nine hells", "deadlights", "wyrm" }
+    end
+    return { "partroxis", "nine hells" }
+  end
+
+  return nil
+end
+
+function Bypass_ApplyLevel(level)
+  local commands = commands_for_level(level, get_slots())
+  if not commands then
+    return
+  end
+
+  run_bypass_commands(commands)
+end
+
+function Bypass_ApplyCurrentLevel()
+  local level = to_num(gmcp_get("char.base.level"))
+  if level <= 0 then
+    bypass_note("No GMCP level yet. Try again after score/level data arrives.")
+    return
+  end
+
+  Bypass_ApplyLevel(level)
+end
+
+function Bypass_OnLevelUp(matches)
+  local level = to_num(matches[2])
+  if level <= 0 then
+    return
+  end
+
+  Bypass_ApplyLevel(level)
+end
+
+function Bypass_OnBypassLine(matches)
+  local short_name = format_bypass_shortname(matches[3])
+  if short_name ~= "" then
+    Bypass.bypassed_areas = Bypass.bypassed_areas or {}
+    Bypass.bypassed_lookup = Bypass.bypassed_lookup or {}
+    if not Bypass.bypassed_lookup[short_name] then
+      table.insert(Bypass.bypassed_areas, short_name)
+      Bypass.bypassed_lookup[short_name] = true
+    end
+  end
+
+  if Bypass.summary_timer then
+    killTimer(Bypass.summary_timer)
+  end
+  Bypass.summary_timer = tempTimer(0.35, function()
+    Bypass.summary_timer = nil
+    report_bypass_summary()
+  end)
+
+  deleteLine()
+end
+
+bypass_note("Loaded. Use 'bypass apply' to apply bypasses for current level.")
+        ]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

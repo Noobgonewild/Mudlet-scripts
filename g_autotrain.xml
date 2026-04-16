@@ -1,0 +1,1174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <!-- ============================================================
+       Gizmmo_AutoTrainer v6.6 – Mudlet Port
+       Original Author: Gizmmo (MUSHclient plugin)
+       Ported to Mudlet format
+
+       Purpose: Auto-train batches with weighted stat planning
+       ============================================================ -->
+
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>Gizmmo_AutoTrainer</name>
+      <script></script>
+      <conditionLineDelta>0</conditionLineDelta>
+      <mStayOpen>0</mStayOpen>
+      <mCommand></mCommand>
+      <packageName>Gizmmo_AutoTrainer</packageName>
+      <mFgColor></mFgColor>
+      <mBgColor></mBgColor>
+      <mSoundFile></mSoundFile>
+      <colorTriggerFgColor></colorTriggerFgColor>
+      <colorTriggerBgColor></colorTriggerBgColor>
+      <regexCodeList>
+        <string></string>
+      </regexCodeList>
+      <regexCodePropertyList>
+        <integer>0</integer>
+      </regexCodePropertyList>
+
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_TRAIN_FULL</name>
+        <script>CaptureTrainFull(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^\s*(Strength|Intelligence|Wisdom|Dexterity|Constitution|Luck)\s*:\s*(\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)\s+(\d+)\*?\s*$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_TRAIN_MIN</name>
+        <script>CaptureTrainMinimal(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^\s*(Strength|Intelligence|Wisdom|Dexterity|Constitution|Luck)\s*:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\*?\s*$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_TRAIN_TRN1</name>
+        <script>CaptureTrainCount(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You have (\d+) training sessions available\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_TRAIN_TRN2</name>
+        <script>CaptureTrainCount(matches)</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You have (\d+) trains? available\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_TRAIN_END</name>
+        <script>MarkEnd()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You have \d+ training sessions available\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_TRAIN_END2</name>
+        <script>MarkEnd()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You have \d+ practice sessions available\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>TR_TRAIN_END3</name>
+        <script>EndTrainSnapshot()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You have \d+ total stats out of \d+ maximum\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+    </TriggerGroup>
+  </TriggerPackage>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>Gizmmo_AutoTrainer</name>
+      <script></script>
+      <command></command>
+      <packageName>Gizmmo_AutoTrainer</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>AutoTrain</name>
+        <script>Cmd_AutoTrain(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^autotrain\b\s*(.*)$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>Gizmmo_AutoTrainer</name>
+      <script></script>
+      <packageName>Gizmmo_AutoTrainer</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>AutoTrainerScript</name>
+        <script><![CDATA[
+---------------------------------------------------------------------------
+-- AutoTrainer v6.6 (Mudlet Port)
+-- Changes from v6.6:
+-- 1. Persistence migrated to file-based state stored in the Mudlet home dir.
+---------------------------------------------------------------------------
+
+if not string.trim then
+  function string.trim(s)
+    return (s:gsub("^%s+", ""):gsub("%s+$", ""))
+  end
+end
+
+-- =======================================================================================
+-- OUTPUT HELPERS  (every output goes through safe_cecho)
+-- =======================================================================================
+
+local function safe_cecho(text)
+  -- Try cecho first (colored output)
+  if type(cecho) == "function" then
+    local ok, err = pcall(cecho, text)
+    if ok then return end
+  end
+  -- Fallback: strip color tags and use echo
+  if type(echo) == "function" then
+    local plain = text:gsub("<[^>]->", "")
+    pcall(echo, plain)
+  end
+end
+
+local function msg(s)      safe_cecho(string.format("<gold>[AutoTrainer] %s\n", s)) end
+local function warn(s)     safe_cecho(string.format("<tomato>[AutoTrainer] %s\n", s)) end
+local function okm(s)      safe_cecho(string.format("<LimeGreen>[AutoTrainer] %s\n", s)) end
+local function sim_msg(s)  safe_cecho(string.format("<cyan>[AT:Check]    %s\n", s)) end
+local function note(s)     safe_cecho(s .. "\n") end
+
+local function dbg(s)
+  if state and state.debug_on then
+    safe_cecho(string.format("<DodgerBlue>[AT:debug] %s\n", s))
+  end
+end
+
+-- Stats / weights
+local STATS = { "Strength", "Intelligence", "Wisdom", "Dexterity", "Constitution", "Luck" }
+
+local CLASS_WEIGHTS = {
+  warrior = { Strength = 100, Dexterity = 60, Constitution = 60, Luck = 30, Wisdom = 5, Intelligence = 5 },
+  thief   = { Dexterity = 100, Strength = 60, Luck = 60, Constitution = 35, Wisdom = 5, Intelligence = 5 },
+  mage    = { Intelligence = 100, Wisdom = 100, Luck = 90, Constitution = 75, Dexterity = 25, Strength = 25 },
+  cleric  = { Wisdom = 100, Intelligence = 60, Luck = 50, Strength = 25, Dexterity = 25, Constitution = 25 },
+  psi     = { Intelligence = 90, Wisdom = 90, Luck = 50, Strength = 25, Dexterity = 25, Constitution = 25 },
+  ranger  = { Constitution = 100, Strength = 60, Dexterity = 60, Wisdom = 50, Luck = 30, Intelligence = 20 },
+  paladin = { Constitution = 90, Intelligence = 90, Wisdom = 60, Strength = 30, Dexterity = 30, Luck = 25 },
+}
+local CLASSES = { "warrior", "thief", "mage", "cleric", "psi", "ranger", "paladin" }
+
+-- Cost brackets
+local COST_BRACKETS = {
+  { min = 0,   max = 70,  cost = 1 }, { min = 71,  max = 90,  cost = 2 }, { min = 91,  max = 130, cost = 3 },
+  { min = 131, max = 170, cost = 4 }, { min = 171, max = 200, cost = 6 }, { min = 201, max = 224, cost = 9 },
+  { min = 225, max = 250, cost = 11 }, { min = 251, max = 275, cost = 15 }, { min = 276, max = 290, cost = 17 },
+  { min = 291, max = 300, cost = 20 }, { min = 301, max = 325, cost = 25 }, { min = 326, max = 350, cost = 35 },
+  { min = 351, max = 375, cost = 50 }, { min = 376, max = 400, cost = 60 },
+}
+
+-- =======================================================================================
+-- JSON SHIM
+-- =======================================================================================
+local JSON
+local json_module_name = ""
+
+do
+  local ok, mod = pcall(require, "yajl")
+  if ok and mod then
+    JSON = { encode = mod.to_string, decode = mod.to_value }
+    json_module_name = "yajl"
+  else
+    ok, mod = pcall(require, "dkjson")
+    if ok and mod then
+      JSON = mod
+      json_module_name = "dkjson"
+    end
+  end
+  if not JSON then
+    JSON = { encode = function(_) return "{}" end, decode = function(_) return {} end }
+    json_module_name = "none (using dummy)"
+  end
+end
+
+-- =======================================================================================
+-- FILE-BASED PERSISTENCE
+-- =======================================================================================
+
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local SETTINGS_FILE = persistence_dir() .. "/g_autotrain_state.lua"
+
+local function lua_serialize(value)
+  local t = type(value)
+  if t == "number" or t == "boolean" then return tostring(value) end
+  if t == "string" then return string.format("%q", value) end
+  if t == "table" then
+    local out = {"{"}
+    for k, v in pairs(value) do
+      local key = (type(k) == "string" and k:match("^[%a_][%w_]*$")) and k or ("[" .. lua_serialize(k) .. "]")
+      out[#out + 1] = key .. " = " .. lua_serialize(v) .. ","
+    end
+    out[#out + 1] = "}"
+    return table.concat(out, " ")
+  end
+  return "nil"
+end
+
+
+local DEBUG_STATE_FILE = "autotrain_debug_state.txt"
+
+local function get_debug_state_paths()
+  local paths, seen = {}, {}
+
+  local function add_path(path)
+    if type(path) ~= "string" or path == "" then return end
+    if seen[path] then return end
+    seen[path] = true
+    table.insert(paths, path)
+  end
+
+  if type(getMudletHomeDir) == "function" then
+    local home = getMudletHomeDir()
+    if type(home) == "string" and home ~= "" then
+      add_path(persistence_dir() .. "/" .. DEBUG_STATE_FILE)
+      if type(getProfileName) == "function" then
+        local profile = getProfileName()
+        if type(profile) == "string" and profile ~= "" then
+          add_path(home .. "/profiles/" .. profile .. "/" .. DEBUG_STATE_FILE)
+        end
+      end
+    end
+  end
+
+  -- Final fallback for unusual environments.
+  add_path(DEBUG_STATE_FILE)
+  return paths
+end
+
+local function save_debug_state_file(value)
+  local last_err = nil
+  for _, path in ipairs(get_debug_state_paths()) do
+    local ok, err = pcall(function()
+      local f = assert(io.open(path, "w"))
+      f:write(value and "true" or "false")
+      f:close()
+    end)
+    if ok then
+      dbg("Debug state file saved: " .. path)
+      return true
+    end
+    last_err = err
+  end
+  warn("Warning: failed writing debug state file: " .. tostring(last_err))
+  return false
+end
+
+local function load_debug_state_file()
+  for _, path in ipairs(get_debug_state_paths()) do
+    local ok, value = pcall(function()
+      local f = io.open(path, "r")
+      if not f then return nil end
+      local content = f:read("*a")
+      f:close()
+      return content
+    end)
+    if ok and type(value) == "string" then
+      value = value:gsub("%s+", ""):lower()
+      if value == "true" then
+        dbg("Debug state file loaded: " .. path .. " (true)")
+        return true
+      end
+      if value == "false" then
+        dbg("Debug state file loaded: " .. path .. " (false)")
+        return false
+      end
+    end
+  end
+  return nil
+end
+
+local function persist_load()
+  local function resolve_table_save_refs(node, root, seen)
+    if type(node) ~= "table" then return node end
+
+    -- table.save reference style: { <number> } points to root[index]
+    if rawget(node, 1) ~= nil and rawget(node, 2) == nil and next(node, 1) == nil
+      and type(node[1]) == "number" and type(root[node[1]]) == "table"
+    then
+      return resolve_table_save_refs(root[node[1]], root, seen)
+    end
+
+    seen = seen or {}
+    if seen[node] then return seen[node] end
+
+    local out = {}
+    seen[node] = out
+    for k, v in pairs(node) do
+      out[resolve_table_save_refs(k, root, seen)] = resolve_table_save_refs(v, root, seen)
+    end
+    return out
+  end
+
+  local ok, loaded = pcall(dofile, SETTINGS_FILE)
+  if ok and type(loaded) == "table" then
+    -- Defensive support for legacy table.save/table.load style payloads,
+    -- where the first array slot is the persisted root table.
+    if type(loaded[1]) == "table"
+      and type(loaded.primary) ~= "string"
+      and type(loaded.primary_manual) ~= "boolean"
+      and type(loaded.debug_on) ~= "boolean"
+      and type(loaded.custom_weights) ~= "table"
+    then
+      loaded = resolve_table_save_refs(loaded[1], loaded, {})
+    end
+
+    if type(loaded.primary) == "string"
+      or type(loaded.primary_manual) == "boolean"
+      or type(loaded.debug_on) == "boolean"
+      or type(loaded.custom_weights) == "table"
+    then
+      return loaded
+    end
+  end
+
+  -- Fallback for older environments that still have table.load available.
+  if type(table) == "table" and type(table.load) == "function" then
+    local f = io.open(SETTINGS_FILE, "r")
+    if f then
+      f:close()
+      local ok2, loaded2 = pcall(table.load, SETTINGS_FILE)
+      if ok2 and type(loaded2) == "table" then
+        return loaded2
+      end
+    end
+  end
+
+  return {}
+end
+
+local function persist_save(payload)
+  local f = io.open(SETTINGS_FILE, "w")
+  if f then
+    f:write("return " .. lua_serialize(payload))
+    f:close()
+  end
+end
+
+local function send_no_echo(cmd)
+  if type(send) == "function" then
+    pcall(function() send(cmd, false) end)
+  end
+end
+
+local function set_trigger(name, enabled)
+  local fn = enabled and enableTrigger or disableTrigger
+  pcall(fn, name)
+end
+
+-- =======================================================================================
+-- GLOBAL STATE
+-- =======================================================================================
+
+state = {
+  primary        = "warrior",
+  primary_manual = false,     -- true when user explicitly set via "autotrain primary"
+  debug_on       = true,
+  convert_pracs  = false,     -- when true, send "train convertall" before autotrain run/check
+  loop_trains    = 0,
+  exec_mode      = "run",
+  custom_weights = {},
+  _timer_id      = 0,
+  _fb_tries      = 0,
+}
+
+-- =======================================================================================
+-- CLASS HELPERS
+-- =======================================================================================
+
+local function normalize_class(s)
+  s = (s or ""):lower()
+  s = s:gsub("^%s+", ""):gsub("%s+$", "")
+  local map = {
+    warrior = "warrior", mage = "mage", cleric = "cleric", thief = "thief",
+    psion = "psi", psionicist = "psi", psionic = "psi", psychic = "psi", mindmage = "psi", psi = "psi",
+    ranger = "ranger", paladin = "paladin",
+  }
+  return map[s]
+end
+
+local function gmcp_class_via_handler()
+  if type(gmcp) ~= "table" then return nil end
+  if type(gmcp.char) ~= "table" then return nil end
+  if type(gmcp.char.base) ~= "table" then return nil end
+  local class = gmcp.char.base.class or gmcp.char.base.Class or gmcp.char.base.CLASS
+  if type(class) == "string" and class ~= "" then
+    return normalize_class(class)
+  end
+  return nil
+end
+
+local function debug_gmcp_snapshot(context)
+  if not (state and state.debug_on) then return end
+  local has_gmcp = (type(gmcp) == "table")
+  local has_char = has_gmcp and (type(gmcp.char) == "table")
+  local has_base = has_char and (type(gmcp.char.base) == "table")
+  local class = has_base and (gmcp.char.base.class or "nil") or "nil"
+  dbg(string.format("GMCP snapshot (%s): gmcp=%s char=%s base=%s class=%s",
+    context or "unknown",
+    tostring(has_gmcp), tostring(has_char), tostring(has_base), tostring(class)))
+end
+
+-- =======================================================================================
+-- SAVE / LOAD LOGIC
+-- =======================================================================================
+
+function save_all_settings()
+  save_debug_state_file(state.debug_on)
+
+  persist_save({
+    primary = state.primary,
+    primary_manual = state.primary_manual,
+    debug_on = state.debug_on,
+    convert_pracs = (state.convert_pracs == true),
+    custom_weights = state.custom_weights or {},
+  })
+
+  dbg(string.format("Settings saved: primary=%s manual=%s debug=%s",
+    state.primary, tostring(state.primary_manual), tostring(state.debug_on)))
+end
+
+function load_all_settings()
+  local loaded = persist_load()
+
+  state.primary        = (type(loaded.primary) == "string" and loaded.primary ~= "") and loaded.primary or "warrior"
+  state.primary_manual = (loaded.primary_manual == true)
+  state.debug_on       = (loaded.debug_on == nil) and true or (loaded.debug_on == true)
+  state.convert_pracs  = (loaded.convert_pracs == true)
+  state.custom_weights = type(loaded.custom_weights) == "table" and loaded.custom_weights or {}
+
+  local file_debug = load_debug_state_file()
+  if type(file_debug) == "boolean" then
+    state.debug_on = file_debug
+  end
+
+  -- Only apply GMCP class if user has NOT manually overridden
+  if not state.primary_manual then
+    local gc = gmcp_class_via_handler()
+    if gc then
+      state.primary = gc
+    end
+  end
+
+  dbg(string.format("Settings loaded: primary=%s manual=%s debug=%s",
+    state.primary, tostring(state.primary_manual), tostring(state.debug_on)))
+end
+
+-- =======================================================================================
+-- GMCP EVENT HANDLER
+-- =======================================================================================
+
+function AutoTrain_OnGMCP()
+  debug_gmcp_snapshot("gmcp event")
+  local gc = gmcp_class_via_handler()
+  if not gc then
+    local raw = (type(gmcp) == "table" and type(gmcp.char) == "table"
+      and type(gmcp.char.base) == "table") and gmcp.char.base.class or nil
+    if type(raw) == "string" and raw ~= "" then
+      warn("GMCP class not recognized: " .. raw .. ". Set with 'autotrain primary <class>'.")
+    else
+      dbg("GMCP class not available yet.")
+    end
+    return
+  end
+
+  -- If user manually set a primary, GMCP does NOT override
+  if state.primary_manual then
+    dbg("GMCP class confirmed: " .. gc .. " (manual override active: " .. state.primary .. ")")
+    return
+  end
+
+  if gc ~= state.primary then
+    state.primary = gc
+    save_all_settings()
+    okm("Primary class updated from GMCP: " .. gc)
+  else
+    dbg("GMCP class confirmed: " .. gc)
+  end
+end
+
+-- =======================================================================================
+-- STAT / WEIGHT HELPERS
+-- =======================================================================================
+
+local function get_weights_for_class(class_name)
+  if state.custom_weights and state.custom_weights[class_name] then
+    return state.custom_weights[class_name]
+  end
+  return CLASS_WEIGHTS[class_name] or CLASS_WEIGHTS["warrior"]
+end
+
+local function is_customized(class_name)
+  return (state.custom_weights and state.custom_weights[class_name] ~= nil)
+end
+
+local function weights()
+  return get_weights_for_class(state.primary)
+end
+
+local function get_primaries_for_class(class_name)
+  if class_name == "warrior" then return { "Strength" }
+  elseif class_name == "thief" then return { "Dexterity" }
+  elseif class_name == "mage" then return { "Intelligence", "Wisdom" }
+  elseif class_name == "cleric" then return { "Wisdom" }
+  elseif class_name == "psi" then return { "Intelligence", "Wisdom" }
+  elseif class_name == "ranger" then return { "Constitution" }
+  elseif class_name == "paladin" then return { "Constitution", "Intelligence" } end
+  return { "Strength" }
+end
+
+local function is_primary_for_class(stat, class_name)
+  for _, s in ipairs(get_primaries_for_class(class_name)) do
+    if s == stat then return true end
+  end
+  return false
+end
+
+local function bracket_for(val)
+  for _, b in ipairs(COST_BRACKETS) do
+    if val >= b.min and val <= b.max then return b end
+  end
+  return COST_BRACKETS[#COST_BRACKETS]
+end
+
+local function eff_cost(_, val, adj)
+  local b = bracket_for(val)
+  local v = b.cost + (adj or 0)
+  if v < 1 then v = 1 end
+  return v, b.max
+end
+
+-- =======================================================================================
+-- TRAIN SNAPSHOT
+-- =======================================================================================
+
+local function empty_stats()
+  local t = {}
+  for _, s in ipairs(STATS) do
+    t[s] = { current = 0, max = 0, adj = 0, your = 0 }
+  end
+  return t
+end
+
+snapshot = empty_stats()
+local pending = false
+local snapshot_rows = 0
+local saw_end = false
+
+function StartTrainSnapshot(mode)
+  state.loop_trains = 0
+  state.exec_mode = mode or "run"
+
+  pending = true
+  snapshot = empty_stats()
+  snapshot_rows = 0
+  saw_end = false
+
+  set_trigger("TR_TRAIN_FULL", true)
+  set_trigger("TR_TRAIN_MIN", true)
+  set_trigger("TR_TRAIN_TRN1", true)
+  set_trigger("TR_TRAIN_TRN2", true)
+  set_trigger("TR_TRAIN_END", true)
+  set_trigger("TR_TRAIN_END2", true)
+  set_trigger("TR_TRAIN_END3", true)
+
+  dbg("sending: train (Mode: " .. state.exec_mode .. ")")
+  send_no_echo("train")
+
+  state._timer_id = state._timer_id + 1
+  state._fb_tries = 0
+  local id = state._timer_id
+  tempTimer(0.50, function() SafeEndTrainSnapshot(id) end)
+end
+
+function SafeEndTrainSnapshot(id)
+  if not pending or id ~= state._timer_id then return end
+  if saw_end and snapshot_rows > 0 then EndTrainSnapshot() return end
+  state._fb_tries = state._fb_tries + 1
+  if state._fb_tries >= 8 then EndTrainSnapshot() return end
+  tempTimer(0.25, function() SafeEndTrainSnapshot(id) end)
+end
+
+function CaptureTrainFull(matches)
+  if not pending then return end
+  local stat = matches[2]
+  local race = tonumber(matches[4] or "0") or 0
+  local tier = tonumber(matches[5] or "0") or 0
+  local wish = tonumber(matches[6] or "0") or 0
+  local trained = tonumber(matches[8] or "0") or 0
+  local maxv = tonumber(matches[9] or "0") or 0
+  snapshot[stat] = { current = trained, adj = race + tier + wish, max = maxv }
+  snapshot_rows = snapshot_rows + 1
+end
+
+function CaptureTrainMinimal(matches)
+  if not pending then return end
+  local stat = matches[2]
+  local current = tonumber(matches[3] or "0") or 0
+  local maxv = tonumber(matches[6] or "0") or 0
+  snapshot[stat] = { current = current, adj = 0, max = maxv }
+  snapshot_rows = snapshot_rows + 1
+end
+
+function CaptureTrainCount(matches)
+  local n = tonumber(matches and matches[2] or "0") or 0
+  if n < 0 then n = 0 end
+  state.loop_trains = n
+  dbg("Captured trains available: " .. n)
+end
+
+function MarkEnd()
+  saw_end = true
+end
+
+local function EndTrainSnapshot_internal()
+  pending = false
+  set_trigger("TR_TRAIN_FULL", false)
+  set_trigger("TR_TRAIN_MIN", false)
+  set_trigger("TR_TRAIN_TRN1", false)
+  set_trigger("TR_TRAIN_TRN2", false)
+  set_trigger("TR_TRAIN_END", false)
+  set_trigger("TR_TRAIN_END2", false)
+  set_trigger("TR_TRAIN_END3", false)
+end
+
+function EndTrainSnapshot()
+  if not pending then return end
+  EndTrainSnapshot_internal()
+  PlanAndExecuteBatch()
+end
+
+-- =======================================================================================
+-- PLANNER
+-- =======================================================================================
+
+local function choose_best(sim, caps, adjmap, w)
+  local best_stat, best_score = nil, -1
+  for _, stat in ipairs(STATS) do
+    local cur, cap = sim[stat], caps[stat]
+    if cur < cap then
+      local c = eff_cost(stat, cur, adjmap[stat])
+      local score = (w[stat] or 10) / math.max(c, 1)
+      if score > best_score then best_score, best_stat = score, stat end
+    end
+  end
+  return best_stat
+end
+
+function PlanAndExecuteBatch()
+  local is_check = (state.exec_mode == "check")
+  local sessions = tonumber(state.loop_trains or 0) or 0
+
+  if is_check then
+    safe_cecho("<cyan>------------------------------------------------------\n")
+    sim_msg("ANALYSIS START")
+    sim_msg("Trains Available: " .. sessions)
+    sim_msg("Strategy: " .. state.primary)
+  end
+
+  if sessions <= 0 then
+    if is_check then
+      sim_msg("Result: No trains to spend.")
+    else
+      msg("You have no training sessions available.")
+    end
+    return
+  end
+
+  local w = weights()
+  local sim, caps, adj = {}, {}, {}
+
+  for _, s in ipairs(STATS) do
+    local row = snapshot[s] or {}
+    sim[s] = row.current or 0
+    adj[s] = row.adj or 0
+    local mx = row.max or 0
+    if mx <= 0 then mx = 400 end
+    caps[s] = mx
+  end
+
+  local primary_stats = get_primaries_for_class(state.primary)
+  local benchmark_cost = 999
+  for _, ps in ipairs(primary_stats) do
+    local p_cost = eff_cost(ps, sim[ps], adj[ps])
+    if p_cost < benchmark_cost then benchmark_cost = p_cost end
+  end
+
+  if is_check then sim_msg("Benchmark Cost (Primary): " .. benchmark_cost) end
+
+  local plan = {}
+  local temp_caps = table.deepcopy(caps)
+  local safety = 20000
+  local total_spent = 0
+
+  while sessions > 0 and safety > 0 do
+    safety = safety - 1
+    local stat = choose_best(sim, temp_caps, adj, w)
+    if not stat then break end
+
+    local cur = sim[stat]
+    local cost_now, bracket_end = eff_cost(stat, cur, adj[stat])
+
+    if not is_primary_for_class(stat, state.primary) and cost_now > benchmark_cost then
+      temp_caps[stat] = cur
+    else
+      if sessions < cost_now then
+        if is_check then
+          sim_msg(string.format("Stopping: Best stat '%s' costs %d, but only %d sessions left.", stat, cost_now, sessions))
+        end
+        break
+      end
+
+      local affordable_qty = math.floor(sessions / cost_now)
+      local can_train_to_cap = caps[stat] - cur
+      local can_train_in_bracket = bracket_end - cur + 1
+      local qty = math.min(affordable_qty, can_train_to_cap, can_train_in_bracket)
+
+      if qty <= 0 then
+        temp_caps[stat] = cur
+      else
+        local last = plan[#plan]
+        if last and last.stat == stat then
+          last.qty = last.qty + qty
+          last.cost = last.cost + (qty * cost_now)
+          last.min_unit_cost = math.min(last.min_unit_cost or cost_now, cost_now)
+          last.max_unit_cost = math.max(last.max_unit_cost or cost_now, cost_now)
+        else
+          plan[#plan + 1] = {
+            stat = stat,
+            qty = qty,
+            cost = (qty * cost_now),
+            unit_cost = cost_now,
+            min_unit_cost = cost_now,
+            max_unit_cost = cost_now
+          }
+        end
+
+        sim[stat] = cur + qty
+        sessions = sessions - (qty * cost_now)
+        total_spent = total_spent + (qty * cost_now)
+      end
+    end
+  end
+
+  if #plan == 0 then
+    if is_check then
+      sim_msg("Result: No stats trained (Caps reached or too expensive).")
+    else
+      if state.loop_trains > 0 then
+        safe_cecho("\n")
+        msg("All eligible stats are at their caps or too expensive. Saving " .. state.loop_trains .. " trains.")
+      else
+        msg("Nothing to train.")
+      end
+    end
+    return
+  end
+
+  if is_check then
+    sim_msg("Proposed Plan:")
+    for _, c in ipairs(plan) do
+      local cost_label = (c.min_unit_cost ~= c.max_unit_cost)
+        and string.format("%d-%d/train", c.min_unit_cost, c.max_unit_cost)
+        or string.format("%d/train", c.unit_cost)
+      safe_cecho(string.format("<cyan>    Train %-2d %-13s (Cost: %-3d @ %s)\n", c.qty, c.stat, c.cost, cost_label))
+    end
+    safe_cecho("<cyan>------------------------------------------------------\n")
+    sim_msg("Total Cost: " .. total_spent)
+    sim_msg("Remaining : " .. sessions)
+  else
+    dbg("executing " .. #plan .. " batched commands...")
+    for _, c in ipairs(plan) do
+      send_no_echo(string.format("train %d %s", c.qty, c.stat))
+    end
+    safe_cecho("\n")
+    okm("Batch sent: " .. #plan .. " command(s).")
+  end
+end
+
+-- =======================================================================================
+-- WEIGHTS MANAGEMENT
+-- =======================================================================================
+
+function DisplayWeights(class_name)
+  local class = normalize_class(class_name)
+  if not class then warn("Unknown class: " .. class_name) return end
+
+  local w = get_weights_for_class(class)
+  local custom_str = is_customized(class) and "Customized" or "Default"
+
+  note(string.format("-- Weights for %s (%s) --", class, custom_str))
+  note(string.format("  %-13s %-8s %s", "Stat", "Weight", "Primary"))
+  note(string.rep("-", 33))
+  for _, stat in ipairs(STATS) do
+    local primary_marker = is_primary_for_class(stat, class) and "*" or ""
+    note(string.format("  %-13s %-8d %s", stat, w[stat], primary_marker))
+  end
+end
+
+function HandleWeights(args)
+  local sub, rest = string.match(args, "^(%S+)%s*(.*)$")
+  sub = (sub or ""):lower()
+
+  if sub == "show" then
+    local target = string.trim(rest)
+    if target == "" then
+      DisplayWeights(state.primary)
+    elseif target == "all" then
+      for _, class in ipairs(CLASSES) do
+        DisplayWeights(class)
+        note("")
+      end
+    else
+      DisplayWeights(target)
+    end
+
+  elseif sub == "set" then
+    local class_str, stat_str, val_str = string.match(rest, "^(%S+)%s+(%S+)%s+(%S+)$")
+    local class = normalize_class(class_str)
+
+    local stat_map = { str = "Strength", int = "Intelligence", wis = "Wisdom", dex = "Dexterity", con = "Constitution", lck = "Luck", luck = "Luck" }
+    local stat = stat_map[(stat_str or ""):lower()] or (CLASS_WEIGHTS.warrior[stat_str] and stat_str)
+
+    local val = tonumber(val_str)
+    if not (class and stat and val) then
+      warn("Usage: autotrain weights set <class> <stat> <value>")
+      return
+    end
+
+    if not state.custom_weights[class] then
+      state.custom_weights[class] = table.deepcopy(CLASS_WEIGHTS[class])
+    end
+    state.custom_weights[class][stat] = val
+    save_all_settings()
+    okm(string.format("Weight for %s -> %s set to %d.", class, stat, val))
+
+  elseif sub == "reset" then
+    local target = string.trim(rest)
+    if target == "all" then
+      state.custom_weights = {}
+      save_all_settings()
+      okm("All class weights have been reset to default.")
+    else
+      local class = normalize_class(target)
+      if not class then warn("Unknown class: " .. target) return end
+      if state.custom_weights[class] then
+        state.custom_weights[class] = nil
+        save_all_settings()
+        okm(class .. " weights have been reset to default.")
+      else
+        msg(class .. " is already using default weights.")
+      end
+    end
+  else
+    warn("Unknown 'weights' subcommand. Use: show, set, reset.")
+  end
+end
+
+-- =======================================================================================
+-- HELP
+-- =======================================================================================
+
+function ShowHelp()
+  local ok, err = pcall(function()
+    local prims = table.concat(get_primaries_for_class(state.primary), ", ")
+
+    safe_cecho(string.format("\n<gold>-- %s --\n", "AutoTrainer Commands"))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain",                       "Spends available trains based on weights."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain check",                  "Dry run. Shows what WOULD be trained."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain convertpracs on|off",    "Toggle sending 'train convertall' before run/check."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain weights show",           "Shows the weights for your current class."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain weights set <c> <st> <v>", "Sets a stat weight for a class."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain weights reset <c>",      "Resets a class's weights to default."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain primary <class>",        "Sets your primary class (overrides GMCP)."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain debug on|off",           "Toggles blue debug logs."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain help",                   "Shows this help message."))
+
+    safe_cecho(string.format("\n<gold>-- %s --\n", "Status"))
+    local manual_tag = state.primary_manual and " [manual]" or " [gmcp]"
+    safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Primary Class :", state.primary .. " (Primaries: " .. prims .. ")" .. manual_tag))
+    safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Debug Mode :",   state.debug_on and "ON" or "OFF"))
+    safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Convert Pracs :", state.convert_pracs and "ON" or "OFF"))
+  end)
+  if not ok then
+    warn("Error displaying help: " .. tostring(err))
+  end
+end
+
+-- =======================================================================================
+-- COMMAND ROUTER
+-- =======================================================================================
+
+function Cmd_AutoTrain(matches)
+  local params = string.trim((matches and matches[2]) or "")
+
+  if params == "" then
+    if state.convert_pracs then
+      send_no_echo("train convertall")
+    end
+    StartTrainSnapshot("run")
+    return
+  end
+
+  local a, b = string.match(params, "^(%S+)%s*(.*)$")
+  a = string.trim((a or ""):lower())
+  b = string.trim((b or ""):lower())
+
+  if a == "check" then
+    if state.convert_pracs then
+      send_no_echo("train convertall")
+    end
+    StartTrainSnapshot("check")
+    return
+  end
+
+  if a == "convertpracs" then
+    if b == "on" or b == "off" then
+      state.convert_pracs = (b == "on")
+      save_all_settings()
+      okm("Convert-practices mode is now " .. (state.convert_pracs and "ON" or "OFF") .. ".")
+    else
+      warn("Usage: autotrain convertpracs on|off")
+    end
+    return
+  end
+
+  if a == "weights" then
+    HandleWeights(b)
+    return
+  end
+
+  if a == "primary" then
+    local class = normalize_class(b)
+    if class then
+      local previous = state.primary
+      state.primary = class
+      state.primary_manual = true   -- mark as manually overridden
+      save_all_settings()
+      if previous == class then
+        okm("Primary class confirmed: " .. class .. " (manual override).")
+      else
+        okm("Primary class set to " .. class .. " (manual override). GMCP will not change it.")
+      end
+    else
+      if b == "auto" or b == "gmcp" or b == "reset" then
+        state.primary_manual = false
+        local gc = gmcp_class_via_handler()
+        if gc then state.primary = gc end
+        save_all_settings()
+        okm("Primary class reset to GMCP auto-detect: " .. state.primary)
+      else
+        warn("Unknown class. Valid: warrior, thief, mage, cleric, psi, ranger, paladin")
+        warn("Use 'autotrain primary auto' to restore GMCP auto-detect.")
+      end
+    end
+    return
+  end
+
+  if a == "debug" then
+    if b == "on" or b == "off" then
+      state.debug_on = (b == "on")
+      save_all_settings()
+      okm("Debug mode is now " .. (state.debug_on and "ON" or "OFF") .. ".")
+    else
+      warn("Usage: autotrain debug on|off")
+    end
+    return
+  end
+
+  if a == "help" then
+    -- pcall so errors in GMCP handler don't prevent help from showing
+    pcall(AutoTrain_OnGMCP)
+    ShowHelp()
+    return
+  end
+
+  warn("Unknown subcommand '" .. a .. "'. Try 'autotrain help'.")
+end
+
+-- =======================================================================================
+-- INITIALIZATION
+-- =======================================================================================
+
+function AutoTrainer_Initialize()
+  -- Ensure table.deepcopy exists
+  if not table.deepcopy then
+    function table.deepcopy(t)
+      if type(t) ~= "table" then return t end
+      local mt = getmetatable(t)
+      local res = {}
+      for k, v in pairs(t) do res[k] = table.deepcopy(v) end
+      setmetatable(res, mt)
+      return res
+    end
+  end
+
+  -- Load saved settings (respects primary_manual flag)
+  load_all_settings()
+
+  -- Seed defaults on first ever run (if no saved file exists yet)
+  local existing_state = persist_load()
+  if next(existing_state) == nil then
+    save_all_settings()  -- persist current defaults
+  end
+
+  -- Deferred init message so Mudlet UI is ready
+  if type(tempTimer) == "function" then
+    tempTimer(0.1, function()
+      msg("Loaded (v6.6). JSON: " .. json_module_name)
+      debug_gmcp_snapshot("init")
+
+      -- Auto-detect from GMCP only if not manually overridden
+      if not state.primary_manual then
+        local gc = gmcp_class_via_handler()
+        if gc then
+          if gc ~= state.primary then
+            state.primary = gc
+            save_all_settings()
+            okm("Detected class from GMCP: " .. gc)
+          else
+            dbg("GMCP class matches saved primary: " .. gc)
+          end
+        else
+          warn("GMCP class not detected. Use 'autotrain primary <class>' or check GMCP.")
+        end
+      else
+        dbg("Manual primary override active: " .. state.primary .. " (GMCP skipped)")
+      end
+    end)
+  else
+    -- Fallback if tempTimer not available
+    msg("Loaded (v6.6). JSON: " .. json_module_name)
+  end
+
+  -- Register GMCP event handler
+  if type(registerAnonymousEventHandler) == "function" then
+    registerAnonymousEventHandler("gmcp.char.base", "AutoTrain_OnGMCP")
+    dbg("Registered GMCP handler for gmcp.char.base.")
+  end
+end
+
+AutoTrainer_Initialize()
+]]></script>
+        <eventHandlerList>
+          <string>sysLoadEvent</string>
+        </eventHandlerList>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+
+  <TimerPackage />
+  <KeyPackage />
+  <ActionPackage />
+</MudletPackage>

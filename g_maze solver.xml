@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>g_maze solver</name>
+      <script></script>
+      <command></command>
+      <packageName>g_maze solver</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>maze_help</name>
+        <script>MazeShowHelp()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^#maze_help$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>maze_start</name>
+        <script>StartSolver()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^#maze$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>maze_dump</name>
+        <script>MazeDump()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^#maze_dump$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>maze_next</name>
+        <script>MazeNextRoom()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^#maze_next$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>maze_next_dir</name>
+        <script>MazeNextRoom_dir(matches[2])</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^#maze_next_dir\s*([neswdu]?)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>maze_goto</name>
+        <script>MazeGotoRoom(matches[2])</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^#maze_goto\s*(\d+)$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>g_maze solver</name>
+      <script></script>
+      <packageName>g_maze solver</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>maze_solver_main</name>
+        <script><![CDATA[
+G_MazeSolver = type(G_MazeSolver) == "table" and G_MazeSolver or {}
+local M = G_MazeSolver
+
+M.ms_basearea = M.ms_basearea or ""
+M.ms_room_table = M.ms_room_table or {}
+M.lastroom = M.lastroom or ""
+M.lastmove = M.lastmove or ""
+M.enablemap = M.enablemap or false
+M.visited = ""
+M.handlers = M.handlers or {}
+
+local function maze_note(msg)
+  if type(cecho) == "function" then
+    cecho(string.format("<black:beige>[MazeSolver] %s\n", tostring(msg)))
+  elseif type(echo) == "function" then
+    echo("[MazeSolver] " .. tostring(msg) .. "\n")
+  end
+end
+
+local function gmcp_get(path)
+  if type(gmcp) ~= "table" then return nil end
+  local node = gmcp
+  for part in string.gmatch(path, "[^.]+") do
+    if type(node) ~= "table" then return nil end
+    node = node[part]
+    if node == nil then return nil end
+  end
+  return node
+end
+
+local function room_info()
+  local info = gmcp_get("room.info") or gmcp_get("Room.Info")
+  if type(info) ~= "table" then return nil end
+  local zone = info.zone or info.Zone
+  local num = info.num or info.vnum or info.VNum
+  local exits = info.exits or info.Exits
+  if zone == nil or num == nil or type(exits) ~= "table" then
+    return nil
+  end
+
+  local normalized = {}
+  for dir, val in pairs(exits) do
+    normalized[tostring(dir)] = tostring(val)
+  end
+
+  return {
+    zone = tostring(zone),
+    num = tostring(num),
+    name = tostring(info.name or ""),
+    details = tostring(info.details or ""),
+    exits = normalized,
+  }
+end
+
+local function is_unmapped_exit(v)
+  return tostring(v) == "-1"
+end
+
+function AddRoom(tt)
+  M.ms_basearea = tt.zone
+  M.lastroom = tt.num
+
+  local troom = {
+    num = tt.num,
+    exits = tt.exits,
+    area = tt.zone,
+    name = tt.name,
+  }
+
+  table.insert(M.ms_room_table, troom)
+  maze_note("New room in area " .. M.ms_basearea .. ": " .. troom.num .. " " .. troom.name)
+end
+
+function MazeDump()
+  maze_note("Rooms in maze solver tables:")
+  for _, room in ipairs(M.ms_room_table) do
+    local x = string.format("Room: %s  %s, %s", room.num, room.area, room.name)
+    for k, v in pairs(room.exits) do
+      x = x .. string.format("   %s->%s", k, v)
+    end
+    maze_note(x)
+  end
+end
+
+function MazeShowHelp()
+  maze_note("----------------------------------------------------------------------------")
+  maze_note("Maze solver")
+  maze_note("#maze_help       - this info")
+  maze_note("#maze            - clear Maze Solver tables")
+  maze_note("#maze_dump       - display rooms visited so far and exits")
+  maze_note("#maze_next       - try to go to next unmapped room")
+  maze_note("#maze_goto <num> - go to room number <num>")
+  maze_note("#maze_next_dir <e|s|w|u|d|n> - force specific direction")
+  maze_note("----------------------------------------------------------------------------")
+end
+
+function StartSolver()
+  local tt = room_info()
+  if not tt then
+    maze_note("No gmcp room.info available yet.")
+    return
+  end
+  M.ms_room_table = {}
+  AddRoom(tt)
+end
+
+function MazeNextRoom_dir(dir)
+  dir = tostring(dir or "")
+  if dir == "" then
+    maze_note("Usage: #maze_next_dir <n|e|s|w|u|d>")
+    return
+  end
+
+  local tt = room_info()
+  if not tt then
+    maze_note("No gmcp room.info available yet.")
+    return
+  end
+
+  maze_note("Try to go " .. dir)
+  M.lastroom = tt.num
+  M.lastmove = dir
+  M.enablemap = true
+  send(dir)
+end
+
+function FindPathFromTo(from, dest)
+  M.visited = M.visited .. "," .. tostring(from)
+
+  for _, room in ipairs(M.ms_room_table) do
+    if room.num == tostring(from) then
+      for k, v in pairs(room.exits) do
+        if tostring(v) == tostring(dest) then
+          return k
+        end
+      end
+
+      for k, v in pairs(room.exits) do
+        local vs = tostring(v)
+        if not string.find(M.visited, "," .. vs, 1, true) and not is_unmapped_exit(vs) then
+          local path = FindPathFromTo(vs, tostring(dest))
+          if path ~= "" then
+            return k .. path
+          end
+        end
+      end
+      break
+    end
+  end
+
+  return ""
+end
+
+function MazeGotoRoom(roomid)
+  roomid = tostring(roomid or "")
+  if roomid == "" then
+    maze_note("Usage: #maze_goto <roomid>")
+    return
+  end
+
+  M.visited = "-1"
+  local tt = room_info()
+  if not tt then
+    maze_note("No gmcp room.info available yet.")
+    return
+  end
+
+  local thisroom = tt.num
+  if thisroom == roomid then
+    maze_note("Already in room id: " .. thisroom)
+    return
+  end
+
+  local path = FindPathFromTo(thisroom, roomid)
+  maze_note("Executing path: " .. path)
+  if path ~= "" then
+    send("run " .. path)
+  end
+end
+
+function MazeNextRoom()
+  local tt = room_info()
+  if not tt then
+    maze_note("No gmcp room.info available yet.")
+    return
+  end
+
+  local thisroom = tt.num
+  local done = false
+  local roomInTable = false
+
+  for _, room in ipairs(M.ms_room_table) do
+    if room.num == thisroom and room.area == tt.zone then
+      for k, v in pairs(room.exits) do
+        if is_unmapped_exit(v) then
+          M.lastroom = thisroom
+          M.lastmove = k
+          M.enablemap = true
+          send(k)
+          done = true
+          break
+        end
+      end
+      roomInTable = true
+      break
+    end
+  end
+
+  if not roomInTable then
+    AddRoom(tt)
+    return
+  end
+
+  if done then return end
+
+  maze_note("Room " .. thisroom .. " is fully mapped, trying first unmapped room")
+
+  for _, room in ipairs(M.ms_room_table) do
+    if room.area == tt.zone then
+      for _, v in pairs(room.exits) do
+        if is_unmapped_exit(v) then
+          M.visited = "-1"
+          local path = FindPathFromTo(thisroom, room.num)
+          maze_note("Trying " .. room.num .. " path " .. path)
+          if path ~= "" then
+            send("run " .. path)
+            return
+          end
+          break
+        end
+      end
+    end
+  end
+end
+
+function MazeSolver_OnRepop()
+  local tt = room_info()
+  if not tt then return end
+
+  local removed = false
+  for i = #M.ms_room_table, 1, -1 do
+    if M.ms_room_table[i].area == tt.zone then
+      table.remove(M.ms_room_table, i)
+      removed = true
+    end
+  end
+
+  if removed then
+    maze_note("Some rooms were removed due to repop in area " .. tt.zone)
+  end
+end
+
+function MazeSolver_OnRoomInfo()
+  if not M.enablemap then return end
+
+  local tt = room_info()
+  if not tt then return end
+
+  local thisroom = tt.num
+  M.enablemap = false
+
+  local roomIsMapped = false
+  for _, room in ipairs(M.ms_room_table) do
+    if room.num == M.lastroom then
+      room.exits[M.lastmove] = thisroom
+    end
+
+    if room.num == thisroom then
+      roomIsMapped = true
+    end
+  end
+
+  if not roomIsMapped then
+    AddRoom(tt)
+  end
+end
+
+function MazeSolverInstall()
+  if type(killAnonymousEventHandler) == "function" then
+    for _, id in ipairs(M.handlers) do
+      pcall(killAnonymousEventHandler, id)
+    end
+  end
+  M.handlers = {}
+
+  if type(registerAnonymousEventHandler) == "function" then
+    table.insert(M.handlers, registerAnonymousEventHandler("gmcp.room.info", "MazeSolver_OnRoomInfo"))
+    table.insert(M.handlers, registerAnonymousEventHandler("gmcp.Room.Info", "MazeSolver_OnRoomInfo"))
+    table.insert(M.handlers, registerAnonymousEventHandler("gmcp.comm.repop", "MazeSolver_OnRepop"))
+    table.insert(M.handlers, registerAnonymousEventHandler("gmcp.Comm.Repop", "MazeSolver_OnRepop"))
+  end
+
+  MazeShowHelp()
+end
+
+MazeSolverInstall()
+        ]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <!-- ============================================================
+       G_RemindMe v1.0 – Mudlet Port (initial)
+       Original Author: Gizmmo (MUSHclient plugin)
+       Purpose: GMCP-based reminder system with threshold triggers
+       ============================================================ -->
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>G_RemindMe</name>
+      <script></script>
+      <command></command>
+      <packageName>G_RemindMe</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_Help</name>
+        <script>RemindMe_Cmd_Help()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme(?:\s+help)?$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_Events</name>
+        <script>RemindMe_Cmd_Events()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme\s+events$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_List</name>
+        <script>RemindMe_Cmd_List()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme\s+list$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_Delete</name>
+        <script>RemindMe_Cmd_Delete(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme\s+delete\s+(\d+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_Clear_Confirm</name>
+        <script>RemindMe_Cmd_ClearConfirmed()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme\s+clear\s+I\s+AM\s+SURE$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_Clear</name>
+        <script>RemindMe_Cmd_ClearWarning()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme\s+clear$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_Debug</name>
+        <script>RemindMe_Cmd_Debug(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme\s+debug\s+(on|off)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RemindMe_Add</name>
+        <script>RemindMe_Cmd_Add(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^remindme\s+(\w+)(?:\s*(=|&gt;=|&lt;=|&gt;|&lt;)\s*(\d+)\s+(.+)|\s+(\d+)\s+(.+))$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>G_RemindMe</name>
+      <script></script>
+      <packageName>G_RemindMe</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>G_RemindMe_Script</name>
+        <script><![CDATA[
+---------------------------------------------------------------------------
+-- G_RemindMe v1.0 - Mudlet Port (initial)
+---------------------------------------------------------------------------
+
+G_RemindMe = G_RemindMe or {}
+
+local EVENT_DEFS = {
+  level  = { path = "char.status.level",  broadcast = "gmcp.char.status" },
+  remort = { path = "char.base.remorts",  broadcast = "gmcp.char.base" },
+  tier   = { path = "char.base.tier",     broadcast = "gmcp.char.base" },
+  qp     = { path = "char.worth.qp",      broadcast = "gmcp.char.worth" },
+  tp     = { path = "char.worth.tp",      broadcast = "gmcp.char.worth" },
+  trains = { path = "char.worth.trains",  broadcast = "gmcp.char.worth" },
+  pracs  = { path = "char.worth.pracs",   broadcast = "gmcp.char.worth" },
+  gold   = { path = "char.worth.gold",    broadcast = "gmcp.char.worth" },
+}
+
+local VALID_OPS = { ["="] = true, [">="] = true, ["<="] = true, [">"] = true, ["<"] = true }
+local COOLDOWN_SECONDS = 60
+
+local function msg(s)  cecho("<gold>[RemindMe] <white>" .. s .. "\n") end
+local function warn(s) cecho("<tomato>[RemindMe] <white>" .. s .. "\n") end
+local function okm(s)  cecho("<lime_green>[RemindMe] <white>" .. s .. "\n") end
+local function dbg(s)
+  if G_RemindMe.debug_on then
+    cecho("<dodger_blue>[RM:debug] <white>" .. s .. "\n")
+  end
+end
+
+local function split_path(path)
+  local t = {}
+  for part in path:gmatch("[^%.]+") do
+    t[#t + 1] = part
+  end
+  return t
+end
+
+local function gmcp_get(path)
+  if type(gmcp) ~= "table" then return nil end
+  local current = gmcp
+  for _, key in ipairs(split_path(path)) do
+    if type(current) ~= "table" then return nil end
+    current = current[key]
+  end
+  return tonumber(current)
+end
+
+local function evaluate_condition(current, op, target)
+  if current == nil then return false end
+  if op == "="  then return current == target end
+  if op == ">=" then return current >= target end
+  if op == "<=" then return current <= target end
+  if op == ">"  then return current > target end
+  if op == "<"  then return current < target end
+  return false
+end
+
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local STATE_FILE = persistence_dir() .. "/g_remindme_state.lua"
+
+local function lua_serialize(value)
+  local t = type(value)
+  if t == "number" or t == "boolean" then return tostring(value) end
+  if t == "string" then return string.format("%q", value) end
+  if t == "table" then
+    local out = {"{"}
+    for k, v in pairs(value) do
+      local key = (type(k) == "string" and k:match("^[%a_][%w_]*$")) and k or ("[" .. lua_serialize(k) .. "]")
+      out[#out + 1] = key .. " = " .. lua_serialize(v) .. ","
+    end
+    out[#out + 1] = "}"
+    return table.concat(out, " ")
+  end
+  return "nil"
+end
+
+local function save_state()
+  local payload = {
+    reminders = G_RemindMe.reminders,
+    next_id = G_RemindMe.next_id,
+    debug_on = G_RemindMe.debug_on,
+  }
+
+  local f = io.open(STATE_FILE, "w")
+  if f then
+    f:write("return " .. lua_serialize(payload))
+    f:close()
+  end
+end
+
+local function load_state()
+  local function resolve_table_save_refs(node, root, seen)
+    if type(node) ~= "table" then return node end
+    if rawget(node, 1) ~= nil and rawget(node, 2) == nil and next(node, 1) == nil
+      and type(node[1]) == "number" and type(root[node[1]]) == "table"
+    then
+      return resolve_table_save_refs(root[node[1]], root, seen)
+    end
+    seen = seen or {}
+    if seen[node] then return seen[node] end
+    local out = {}
+    seen[node] = out
+    for k, v in pairs(node) do
+      out[resolve_table_save_refs(k, root, seen)] = resolve_table_save_refs(v, root, seen)
+    end
+    return out
+  end
+
+  local loaded = nil
+  local ok, data = pcall(dofile, STATE_FILE)
+  if ok and type(data) == "table" then
+    loaded = data
+    if type(loaded[1]) == "table"
+      and type(loaded.reminders) ~= "table"
+      and tonumber(loaded.next_id) == nil
+      and type(loaded.debug_on) ~= "boolean"
+    then
+      loaded = resolve_table_save_refs(loaded[1], loaded, {})
+    end
+  end
+  if not loaded and type(table) == "table" and type(table.load) == "function" then
+    local f = io.open(STATE_FILE, "r")
+    if f then
+      f:close()
+      local ok2, data2 = pcall(table.load, STATE_FILE)
+      if ok2 and type(data2) == "table" then loaded = data2 end
+    end
+  end
+
+  loaded = loaded or {}
+  G_RemindMe.reminders = type(loaded.reminders) == "table" and loaded.reminders or {}
+  G_RemindMe.next_id = tonumber(loaded.next_id) or 1
+  G_RemindMe.debug_on = (loaded.debug_on == true)
+  G_RemindMe.cooldowns = {}
+end
+
+local function display_box(lines, title)
+  local width = #title
+  for _, line in ipairs(lines) do
+    if #line > width then width = #line end
+  end
+  local border = "+" .. string.rep("-", width + 2) .. "+"
+  cecho("<yellow>" .. border .. "\n")
+  cecho(string.format("<yellow>| <red>%-" .. width .. "s<yellow> |\n", title))
+  cecho("<yellow>" .. border .. "\n")
+  for _, line in ipairs(lines) do
+    cecho(string.format("<yellow>| <white>%-" .. width .. "s<yellow> |\n", line))
+  end
+  cecho("<yellow>" .. border .. "\n")
+end
+
+local function check_reminder(reminder)
+  local def = EVENT_DEFS[reminder.event]
+  if not def then return end
+
+  local current = gmcp_get(def.path)
+  if current == nil then
+    dbg("No GMCP value for " .. def.path)
+    return
+  end
+
+  if evaluate_condition(current, reminder.op, reminder.value) then
+    local now = os.time()
+    local last = G_RemindMe.cooldowns[reminder.id] or 0
+    if (now - last) >= COOLDOWN_SECONDS then
+      G_RemindMe.cooldowns[reminder.id] = now
+      display_box({
+        string.format("Event:   %s %s %d (current: %d)", reminder.event, reminder.op, reminder.value, current),
+        "Message: " .. reminder.message,
+      }, "REMINDER TRIGGERED")
+    end
+  end
+end
+
+local function check_reminders_for_event(event_name)
+  for _, reminder in ipairs(G_RemindMe.reminders) do
+    local def = EVENT_DEFS[reminder.event]
+    if def and def.broadcast == event_name then
+      check_reminder(reminder)
+    end
+  end
+end
+
+function RemindMe_OnGMCP(_, event_name)
+  check_reminders_for_event(event_name)
+end
+
+function RemindMe_Cmd_Help()
+  msg("Usage: remindme <event> <op> <value> <message>")
+  msg("       remindme <event> <value> <message> (defaults op to >=)")
+  msg("Operators: =, >=, <=, >, <")
+  msg("Examples:")
+  msg("  remindme level >= 90 buy level 90 weapon")
+  msg("  remindme level 90 buy level 90 weapon")
+  msg("Commands: remindme list | events | delete <id> | clear")
+  msg("          remindme clear I AM SURE | debug on|off")
+  msg("Events: level, remort, tier, qp, tp, trains, pracs, gold")
+end
+
+function RemindMe_Cmd_Events()
+  msg("Available events:")
+  for _, ev in ipairs({ "level", "remort", "tier", "qp", "tp", "trains", "pracs", "gold" }) do
+    cecho(string.format("<cyan>  %-10s <gray>%s\n", ev, EVENT_DEFS[ev].path))
+  end
+end
+
+function RemindMe_Cmd_List()
+  if #G_RemindMe.reminders == 0 then
+    msg("No reminders set.")
+    return
+  end
+  for _, r in ipairs(G_RemindMe.reminders) do
+    cecho(string.format("<cyan>#%-3d <white>[%s %s %d] <gray>%s\n", r.id, r.event, r.op, r.value, r.message))
+  end
+end
+
+function RemindMe_Cmd_Delete(matches)
+  local id = tonumber(matches[2])
+  if not id then
+    warn("Invalid ID. Usage: remindme delete <id>")
+    return
+  end
+
+  for i, r in ipairs(G_RemindMe.reminders) do
+    if r.id == id then
+      table.remove(G_RemindMe.reminders, i)
+      G_RemindMe.cooldowns[id] = nil
+      save_state()
+      okm(string.format("Reminder #%d deleted.", id))
+      return
+    end
+  end
+
+  warn(string.format("Reminder #%d not found.", id))
+end
+
+function RemindMe_Cmd_ClearWarning()
+  if #G_RemindMe.reminders == 0 then
+    msg("No reminders to clear.")
+    return
+  end
+  warn("This will delete all reminders. Type: remindme clear I AM SURE")
+end
+
+function RemindMe_Cmd_ClearConfirmed()
+  local count = #G_RemindMe.reminders
+  if count == 0 then
+    msg("No reminders to clear.")
+    return
+  end
+  G_RemindMe.reminders = {}
+  G_RemindMe.cooldowns = {}
+  save_state()
+  okm(string.format("All reminders deleted. (%d removed)", count))
+end
+
+function RemindMe_Cmd_Debug(matches)
+  local onoff = (matches[2] or ""):lower()
+  G_RemindMe.debug_on = (onoff == "on")
+  save_state()
+  okm("Debug mode is now " .. (G_RemindMe.debug_on and "ON" or "OFF") .. ".")
+end
+
+function RemindMe_Cmd_Add(matches)
+  local event = (matches[2] or ""):lower()
+  local op = matches[3]
+  local value = tonumber(matches[4])
+  local message = matches[5]
+
+  if not op then
+    op = ">="
+    value = tonumber(matches[6])
+    message = matches[7]
+    msg("No operator provided; defaulting to >=")
+  end
+
+  message = (message or ""):gsub("^%s+", ""):gsub("%s+$", "")
+
+  if not EVENT_DEFS[event] then
+    warn("Unknown event: " .. event)
+    return
+  end
+  if not VALID_OPS[op] then
+    warn("Invalid operator: " .. tostring(op))
+    return
+  end
+  if not value then
+    warn("Invalid value. Must be numeric.")
+    return
+  end
+  if message == "" then
+    warn("Please provide a reminder message.")
+    return
+  end
+
+  local reminder = {
+    id = G_RemindMe.next_id,
+    event = event,
+    op = op,
+    value = value,
+    message = message,
+  }
+
+  table.insert(G_RemindMe.reminders, reminder)
+  G_RemindMe.next_id = G_RemindMe.next_id + 1
+  save_state()
+
+  okm(string.format("Reminder #%d created: %s %s %d -> %s", reminder.id, event, op, value, message))
+  check_reminder(reminder)
+end
+
+function RemindMe_Init()
+  load_state()
+
+  if type(registerAnonymousEventHandler) == "function" and not G_RemindMe.handlers_registered then
+    G_RemindMe.handlers_registered = true
+    G_RemindMe.event_handlers = {
+      registerAnonymousEventHandler("gmcp.char.status", "RemindMe_OnGMCP"),
+      registerAnonymousEventHandler("gmcp.char.base", "RemindMe_OnGMCP"),
+      registerAnonymousEventHandler("gmcp.char.worth", "RemindMe_OnGMCP"),
+    }
+  end
+
+  msg(string.format("Loaded. %d reminder(s) active.", #G_RemindMe.reminders))
+  msg("Type 'remindme help' for usage.")
+end
+
+RemindMe_Init()
+        ]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

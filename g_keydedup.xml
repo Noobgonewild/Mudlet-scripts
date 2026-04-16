@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage>
+  <Trigger isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+    <name>keydedup</name>
+    <script></script>
+    <conditionLineDelta>0</conditionLineDelta>
+    <mStayOpen>0</mStayOpen>
+    <mCommand></mCommand>
+    <packageName></packageName>
+    <mFgColor></mFgColor>
+    <mBgColor></mBgColor>
+    <mSoundFile></mSoundFile>
+    <colorTriggerFgColor></colorTriggerFgColor>
+    <colorTriggerBgColor></colorTriggerBgColor>
+    <regexCodeList></regexCodeList>
+    <regexCodePropertyList></regexCodePropertyList>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Start</name>
+        <script>keydedup_start()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^\{keyring\}$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Line</name>
+        <script>keydedup_line(matches[1])</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^\d+,.+$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Stop</name>
+        <script>keydedup_stop()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^\{/keyring\}$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Gag_Remove</name>
+        <script>deleteLine()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You remove .+ from your keyring\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Gag_Unkeep1</name>
+        <script>deleteLine()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^Keep status removed from .+\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Gag_Unkeep2</name>
+        <script>deleteLine()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^Your .+ is not kept\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Gag_Junk</name>
+        <script>deleteLine()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You destroy .+\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Gag_Prompt_Standard</name>
+        <script>deleteLine()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^&lt;.+&gt;$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Gag_Prompt_Tag</name>
+        <script>deleteLine()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^1$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Gag_Empty</name>
+        <script>deleteLine()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>KD_Batch_Finished</name>
+        <script>keydedup_finalize_batch()</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^KD_BATCH_DONE$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+  </Trigger>
+  </TriggerPackage>
+  <AliasPackage>
+    <Alias isActive="yes" isFolder="yes">
+      <name>keydedup</name>
+      <script></script>
+      <command></command>
+      <packageName></packageName>
+      <regex></regex>
+      <Alias isActive="yes" isFolder="no">
+        <name>kdedup_help</name>
+        <script>keydedup_help()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^kdedup help$</regex>
+      </Alias>
+      <Alias isActive="yes" isFolder="no">
+        <name>kdedup_run</name>
+        <script>keydedup_run()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^kdedup$</regex>
+      </Alias>
+    </Alias>
+  </AliasPackage>
+  <ScriptPackage>
+    <Script isActive="yes" isFolder="no">
+      <name>keydedup_main</name>
+      <packageName></packageName>
+      <script>-- ===========================================================================
+-- KeyDedup 3.4 - Mudlet Port
+-- Original author: Gizmmo (MUSHclient)
+-- Ported to Mudlet with cecho colors, deleteLine() gagging, enable/disableTrigger
+-- ===========================================================================
+
+keydedup = keydedup or {}
+keydedup.scan_requested = false  -- guard: only process keyring data when we asked for it
+keydedup.cap_active     = false
+keydedup.items_byname   = {}
+keydedup.batch_list     = {}
+
+-- ========= Helpers =========
+local function trim(s)
+  return (s:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+local function strip_colors(s)
+  return (s:gsub("@.", ""))
+end
+local function strip_ctrl(s)
+  return (s:gsub("[%z\1-\31\127]", ""))
+end
+local function squeeze_spaces(s)
+  return (s:gsub("%s+", " "))
+end
+local function norm_name(s)
+  s = s or ""
+  s = strip_ctrl(s)
+  s = strip_colors(s)
+  s = squeeze_spaces(s)
+  s = trim(s)
+  return s:lower()
+end
+local function toint(s)
+  local n = tonumber(s)
+  return n and math.floor(n) or nil
+end
+
+-- Store large IDs as strings to avoid Lua 5.1's %d overflow (max 2^31-1)
+-- Keyring IDs like 3669611946 exceed this and wrap to negative numbers with %d
+local function safe_id(s)
+  local trimmed = (s or ""):match("^%s*(.-)%s*$")
+  if trimmed and trimmed ~= "" and tonumber(trimmed) then
+    return trimmed  -- keep as string
+  end
+  return nil
+end
+
+-- Pretty print timer
+local function fmt_timer(sec)
+  if sec == -1 then return "never" end
+  local s = math.max(0, sec)
+  local d = math.floor(s / 86400); s = s % 86400
+  local h = math.floor(s / 3600);  s = s % 3600
+  local m = math.floor(s / 60);    s = s % 60
+  return string.format("%dd %02d:%02d:%02d", d, h, m, s)
+end
+
+-- Aardwolf @-color code to Mudlet cecho color name mapping
+local AARD_CECHO = {
+  R = "ansiLightRed",       r = "ansiRed",
+  G = "ansiLightGreen",     g = "ansiGreen",
+  Y = "ansiLightYellow",    y = "ansiYellow",
+  B = "ansiLightBlue",      b = "ansiBlue",
+  M = "ansiLightMagenta",   m = "ansiMagenta",
+  C = "ansiLightCyan",      c = "ansiCyan",
+  W = "white",              w = "ansi_white",
+  x = "ansi_white",         X = "ansi_white",
+  D = "ansi_light_black",
+}
+
+-- ========= Color Output Helpers =========
+
+local function print_row_colored(aard_name, name_w, timer_str)
+  local output = ""
+  local fg = "ansi_white"
+  local i, n, vis = 1, #aard_name, 0
+
+  while i &lt;= n do
+    local ch = aard_name:sub(i, i)
+    if ch == "@" and i &lt; n then
+      local code = aard_name:sub(i + 1, i + 1)
+      fg = AARD_CECHO[code] or fg
+      i = i + 2
+    else
+      local j = i
+      while j &lt;= n and aard_name:sub(j, j) ~= "@" do j = j + 1 end
+      local seg = aard_name:sub(i, j - 1)
+      if #seg &gt; 0 then
+        output = output .. "&lt;" .. fg .. "&gt;" .. seg
+        vis = vis + #seg
+      end
+      i = j
+    end
+  end
+
+  local pad = name_w - vis
+  if pad &lt; 0 then pad = 0 end
+  output = output .. "&lt;ansi_white&gt;" .. string.rep(" ", pad) .. "  " .. string.format("%12s", timer_str)
+  cecho(output .. "\n")
+end
+
+-- ========= Dedup Logic =========
+
+local function parse_line(line)
+  local f1, f2, f3, f4, f5, f6, f7, f8 =
+    line:match("^([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)$")
+  if not f1 or not f3 or not f8 then return nil end
+  local id    = safe_id(f1)   -- stored as STRING to avoid overflow
+  local name  = f3
+  local timer = toint(f8)
+  local id_num = tonumber(f1) -- numeric version for sorting only
+  if not id or timer == nil then return nil end
+  return { id = id, id_num = id_num, name = name, nname = norm_name(name), timer = timer }
+end
+
+local function choose_keep_and_deletes(items)
+  if #items &lt;= 1 then return items[1], {} end
+  if items[1].timer == -1 then
+    table.sort(items, function(a, b) return a.id_num &gt; b.id_num end)
+  else
+    table.sort(items, function(a, b)
+      if a.timer == b.timer then return a.id_num &gt; b.id_num end
+      return a.timer &gt; b.timer
+    end)
+  end
+  local keep = items[1]
+  local dels = {}
+  for i = 2, #items do dels[#dels + 1] = items[i] end
+  return keep, dels
+end
+
+local function show_deletion_report(rows)
+  if #rows == 0 then
+    cecho("\n&lt;steel_blue&gt;[keydedup] No duplicates found.\n")
+    return
+  end
+
+  table.sort(rows, function(a, b)
+    if a.nname == b.nname then
+      if a.timer == b.timer then return a.id_num &lt; b.id_num end
+      return a.timer &lt; b.timer
+    end
+    return a.nname &lt; b.nname
+  end)
+
+  local name_w = 9
+  for _, r in ipairs(rows) do
+    local plain = trim(squeeze_spaces(strip_colors(strip_ctrl(r.name or ""))))
+    if #plain &gt; name_w then name_w = #plain end
+  end
+  name_w = math.min(name_w, 70)
+
+  local hdr = string.format("%-" .. name_w .. "s  %12s", "Key name", "Timer left")
+  local sep = string.rep("-", #hdr)
+
+  cecho("\n")
+  cecho("&lt;black:gold&gt;[ KeyDedup - destroyed duplicates ]\n")
+  cecho("&lt;yellow&gt;" .. hdr .. "\n")
+  cecho("&lt;yellow&gt;" .. sep .. "\n")
+
+  for _, r in ipairs(rows) do
+    local t = (r.timer == -1) and "never" or fmt_timer(r.timer)
+    print_row_colored(r.name or "", name_w, t)
+  end
+
+  cecho("&lt;yellow&gt;" .. sep .. "\n")
+  cecho("&lt;ansi_white&gt;" .. string.format("[keydedup] Removed %d duplicate key(s).", #rows) .. "\n")
+end
+
+-- ========= Global Functions (called by triggers/aliases) =========
+
+function keydedup_run()
+  keydedup.scan_requested = true
+	send("keyring put all", false)
+	send("keyring data", false)
+  -- send("keyring put all")
+  -- send("keyring data")
+end
+
+function keydedup_start()
+  if not keydedup.scan_requested then return end  -- ignore if we didn't ask for it
+  deleteLine()
+  keydedup.cap_active   = true
+  keydedup.items_byname = {}
+end
+
+function keydedup_line(line)
+  if not keydedup.cap_active then return end
+  deleteLine()
+  local rec = parse_line(line)
+  if not rec then return end
+  local bucket = keydedup.items_byname[rec.nname]
+  if not bucket then bucket = {}; keydedup.items_byname[rec.nname] = bucket end
+  bucket[#bucket + 1] = rec
+end
+
+function keydedup_stop()
+  if not keydedup.cap_active then return end
+  deleteLine()
+  keydedup.cap_active = false
+  keydedup.scan_requested = false  -- clear guard flag
+
+  local deletions = {}
+  for _, bucket in pairs(keydedup.items_byname) do
+    if #bucket &gt; 1 then
+      local keep, dels = choose_keep_and_deletes(bucket)
+      for _, it in ipairs(dels) do deletions[#deletions + 1] = it end
+    end
+  end
+
+  if #deletions == 0 then
+    show_deletion_report(deletions)
+    return
+  end
+
+  -- Sort deletions
+  table.sort(deletions, function(a, b)
+    if a.timer == b.timer then return a.id_num &lt; b.id_num end
+    return a.timer &lt; b.timer
+  end)
+
+  -- Save list for the report function
+  keydedup.batch_list = deletions
+
+  -- 1. Turn on the Gags (Prompts and Empty Lines)
+  enableTrigger("KD_Gag_Prompt_Standard")
+  enableTrigger("KD_Gag_Prompt_Tag")
+  enableTrigger("KD_Gag_Empty")
+
+  -- 2. Send all commands (use string id, not %d which overflows on large IDs)
+  for _, it in ipairs(deletions) do
+	send("keyring get " .. it.id, false)
+    -- send("keyring get " .. it.id)
+	send("unkeep " .. it.id, false)
+    -- send("unkeep " .. it.id)
+	send("destroy " .. it.id .. " inv confirm", false)
+    -- send("destroy " .. it.id .. " inv confirm")
+  end
+
+  -- 3. Send a marker to tell us when the server is done processing
+  send("echo KD_BATCH_DONE")
+end
+
+function keydedup_finalize_batch()
+  deleteLine()
+  -- Turn off the Gags
+  disableTrigger("KD_Gag_Prompt_Standard")
+  disableTrigger("KD_Gag_Prompt_Tag")
+  disableTrigger("KD_Gag_Empty")
+
+  -- Show the table
+  show_deletion_report(keydedup.batch_list)
+  keydedup.batch_list = {}
+end
+
+function keydedup_help()
+  local w = 72
+  cecho("\n")
+  cecho("&lt;gold&gt;" .. string.rep("=", w) .. "\n")
+  cecho("&lt;ansiLightCyan&gt;                     KeyDedup v3.4 (Mudlet Port)\n")
+  cecho("&lt;gold&gt;" .. string.rep("=", w) .. "\n")
+  cecho("\n")
+  cecho("&lt;ansi_white&gt;  Deduplicates keys on your keyring, keeping the best copy\n")
+  cecho("&lt;ansi_white&gt;  (highest timer or newest ID) and destroying the rest.\n")
+  cecho("\n")
+  cecho("&lt;gold&gt;  Usage:\n")
+  cecho("&lt;ansiLightCyan&gt;    kdedup          &lt;ansi_white&gt;- Puts all keys on ring, scans, and removes duplicates\n")
+  cecho("&lt;ansiLightCyan&gt;    kdedup help     &lt;ansi_white&gt;- Shows this help message\n")
+  cecho("\n")
+  cecho("&lt;gold&gt;  How it works:\n")
+  cecho("&lt;ansi_white&gt;    1. Sends 'keyring put all' to consolidate keys\n")
+  cecho("&lt;ansi_white&gt;    2. Reads keyring data to find duplicates\n")
+  cecho("&lt;ansi_white&gt;    3. Keeps the key with the longest timer (or newest ID)\n")
+  cecho("&lt;ansi_white&gt;    4. Destroys all duplicate copies\n")
+  cecho("&lt;ansi_white&gt;    5. Displays a report of removed keys\n")
+  cecho("\n")
+  cecho("&lt;gold&gt;" .. string.rep("=", w) .. "\n")
+end
+
+-- ========= Install Message =========
+cecho("&lt;ansiLightCyan&gt;[&lt;gold&gt;KeyDedup&lt;ansiLightCyan&gt;] &lt;ansi_white&gt;v3.4 loaded. Type '&lt;ansiLightYellow&gt;kdedup&lt;ansi_white&gt;' to deduplicate or '&lt;ansiLightYellow&gt;kdedup help&lt;ansi_white&gt;' for info.\n")
+</script>
+      <eventHandlerList />
+    </Script>
+  </ScriptPackage>
+  <TimerPackage />
+  <KeyPackage />
+  <ActionPackage />
+</MudletPackage>

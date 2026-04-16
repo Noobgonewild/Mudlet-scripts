@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>MobSearcher</name>
+      <script></script>
+      <command></command>
+      <packageName>MobSearcher</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>MobSearch_Search</name>
+        <script>MobSearcher.onSearch(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^m(?:ob)?s(?:earch)?\s+(?!channel\b)(?!debug\b)(.+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>MobSearch_Channel</name>
+        <script>MobSearcher.setChannelAlias(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^m(?:ob)?s(?:earch)? channel(?:\s+(.+))?$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>MobSearch_Debug</name>
+        <script>MobSearcher.setDebugAlias(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^m(?:ob)?s(?:earch)? debug(?:\s+(.+))?$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>MobSearch_Show</name>
+        <script>MobSearcher.mobShow(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^mshow (\d+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>MobSearch_Report</name>
+        <script>MobSearcher.mobShow(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^m(?:ob)?r(?:eport)? (\d+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>MobSearch_Go</name>
+        <script>MobSearcher.mobGo(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^mgo(?:to)? (\d+)$</regex>
+      </Alias>
+
+      <!-- mddel intentionally omitted/commented out: this addon is for search/display/report only. -->
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>MobSearcher</name>
+      <script></script>
+      <packageName>MobSearcher</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>MobSearcherScript</name>
+        <script><![CDATA[
+MobSearcher = MobSearcher or {}
+MobSearcher.results = MobSearcher.results or {}
+MobSearcher.config = MobSearcher.config or { channel = "", debug = false }
+
+local function gmcp_value(path)
+  local node = gmcp
+  for key in path:gmatch("[^%.]+") do
+    if type(node) ~= "table" then return nil end
+    node = node[key]
+  end
+  return node
+end
+
+local function msg(color, text)
+  cecho(string.format("<%s>[MobSearcher] %s\n", color, text))
+end
+
+local function dbg(text)
+  if MobSearcher.config.debug then
+    msg("slate_blue", "[debug] " .. tostring(text))
+  end
+end
+
+local function db_path()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  return home .. "/snd.db"
+end
+
+local function resolve_sqlite()
+  if type(sqlite3) == "table" and type(sqlite3.open) == "function" then
+    return sqlite3, "global sqlite3"
+  end
+
+  local ok_lsqlite3, lib_lsqlite3 = pcall(require, "lsqlite3")
+  if ok_lsqlite3 and type(lib_lsqlite3) == "table" and type(lib_lsqlite3.open) == "function" then
+    return lib_lsqlite3, "require('lsqlite3')"
+  end
+
+  local ok_sqlite3, lib_sqlite3 = pcall(require, "sqlite3")
+  if ok_sqlite3 and type(lib_sqlite3) == "table" and type(lib_sqlite3.open) == "function" then
+    return lib_sqlite3, "require('sqlite3')"
+  end
+
+  return nil, nil
+end
+
+local function open_db()
+  local sqlite = resolve_sqlite()
+  if not sqlite then
+    msg("red", "No Lua sqlite3 binding found (expected global sqlite3, lsqlite3, or sqlite3 module).")
+    return nil
+  end
+
+  local db = sqlite.open(db_path())
+  if not db then
+    msg("red", "Failed to open mobs DB: " .. db_path())
+    return nil
+  end
+
+  dbg("Opened database: " .. db_path())
+  return db
+end
+
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local STATE_FILE = persistence_dir() .. "/mobsearch_state.lua"
+
+local function persist_load()
+  local function resolve_table_save_refs(node, root, seen)
+    if type(node) ~= "table" then return node end
+    if rawget(node, 1) ~= nil and rawget(node, 2) == nil and next(node, 1) == nil
+      and type(node[1]) == "number" and type(root[node[1]]) == "table"
+    then
+      return resolve_table_save_refs(root[node[1]], root, seen)
+    end
+    seen = seen or {}
+    if seen[node] then return seen[node] end
+    local out = {}
+    seen[node] = out
+    for k, v in pairs(node) do
+      out[resolve_table_save_refs(k, root, seen)] = resolve_table_save_refs(v, root, seen)
+    end
+    return out
+  end
+
+  local loaded = nil
+  local ok, data = pcall(dofile, STATE_FILE)
+  if ok and type(data) == "table" then
+    loaded = data
+    if type(loaded[1]) == "table"
+      and type(loaded.channel) ~= "string"
+      and type(loaded.debug) ~= "boolean"
+    then
+      loaded = resolve_table_save_refs(loaded[1], loaded, {})
+    end
+  end
+  if not loaded and type(table) == "table" and type(table.load) == "function" then
+    local f = io.open(STATE_FILE, "r")
+    if f then
+      f:close()
+      local ok2, data2 = pcall(table.load, STATE_FILE)
+      if ok2 and type(data2) == "table" then loaded = data2 end
+    end
+  end
+  loaded = loaded or {}
+
+  if type(loaded.channel) == "string" then
+    MobSearcher.config.channel = loaded.channel
+  end
+  if type(loaded.debug) == "boolean" then
+    MobSearcher.config.debug = loaded.debug
+  end
+  dbg("Loaded config: channel='" .. tostring(MobSearcher.config.channel or "") .. "', debug=" .. tostring(MobSearcher.config.debug))
+end
+
+local function persist_save()
+  local payload = {
+    channel = MobSearcher.config.channel or "",
+    debug = (MobSearcher.config.debug == true),
+  }
+
+  local f = io.open(STATE_FILE, "w")
+  if f then
+    f:write("return " .. string.format("{ channel = %q, debug = %s }", payload.channel, tostring(payload.debug)))
+    f:close()
+  end
+end
+
+local function report_message_plain(row)
+  return string.format("%s is found in %s in %s (mapper goto %s)", row[1], row[4], row[2], row[3])
+end
+
+local function report_message_colored(row)
+  return string.format("<gray>%s<white> is found in <green>%s<white> in <yellow>%s<white> (<cyan>mapper goto %s<white>)", row[1], row[4], row[2], row[3])
+end
+
+local function report_message_channel(row)
+  return string.format("@W%s @wis found in @g%s @win @y%s @w(@cmapper goto %s@w)", row[1], row[4], row[2], row[3])
+end
+
+local function area_level_label(minLvl, maxLvl)
+  local minN = tonumber(minLvl)
+  local maxN = tonumber(maxLvl)
+  if minN and maxN then
+    return string.format("%d-%d", minN, maxN)
+  end
+  return "?"
+end
+
+local function parse_search_input(rawInput)
+  local input = tostring(rawInput or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  local zone = "all"
+
+  local maybeZone, rest = input:match("^(%S+)%s+(.+)$")
+  if maybeZone and (maybeZone:lower() == "here" or maybeZone:lower() == "all") then
+    zone = maybeZone
+    input = rest
+  end
+
+  local levelToken = input:match("%s+(%d+%s*%-%s*%d+)%s*$") or input:match("%s+(%d+)%s*$")
+  local lvlFilter = nil
+  if levelToken then
+    input = input:sub(1, #input - #levelToken):gsub("%s+$", "")
+    local minLevel, maxLevel = levelToken:match("^(%d+)%s*%-%s*(%d+)$")
+    if minLevel and maxLevel then
+      lvlFilter = { min = tonumber(minLevel), max = tonumber(maxLevel) }
+    else
+      local exact = tonumber(levelToken)
+      if exact then
+        lvlFilter = exact
+      end
+    end
+  end
+
+  local mobName = input
+  local quotedName = mobName:match('^"(.-)"$') or mobName:match("^'(.-)'$")
+  if quotedName then
+    mobName = quotedName
+  end
+
+  return zone, mobName, lvlFilter
+end
+
+function MobSearcher.reportRow(idx)
+  local row = MobSearcher.results[idx]
+  if not row then
+    msg("orange", "No result row " .. tostring(idx) .. " loaded.")
+    return
+  end
+
+  local line = report_message_channel(row)
+  local channel = MobSearcher.config.channel or ""
+
+  if channel ~= "" then
+    send(channel .. " " .. line)
+  else
+    cecho(string.format("<cyan>[MobSearcher] %s\n", report_message_colored(row)))
+  end
+end
+
+function MobSearcher.setChannelAlias(matches)
+  local value = (matches[2] or ""):gsub("^%s+", ""):gsub("%s+$", "")
+
+  if value == "" or value:lower() == "default" then
+    MobSearcher.config.channel = ""
+    persist_save()
+    msg("orange", "Reporting channel reset to default (colored note output).")
+    return
+  end
+
+  MobSearcher.config.channel = value
+  persist_save()
+  msg("ansi_light_green", "Reporting channel set to: " .. value)
+end
+
+function MobSearcher.setDebugAlias(matches)
+  local value = ((matches and matches[2]) or (matches and matches[1]) or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+
+  if value == "on" then
+    MobSearcher.config.debug = true
+    persist_save()
+    msg("ansi_light_green", "Debug output enabled.")
+    return
+  end
+
+  if value == "off" then
+    MobSearcher.config.debug = false
+    persist_save()
+    msg("orange", "Debug output disabled.")
+    return
+  end
+
+  msg("cyan", "Debug is currently " .. (MobSearcher.config.debug and "ON" or "OFF") .. ". Use: msearch debug on|off")
+end
+
+function MobSearcher.searchMobs(mobn, areaz, lvl)
+  local db = open_db()
+  if not db then return end
+
+  MobSearcher.results = {}
+  areaz = tostring(areaz or "all")
+  mobn = tostring(mobn or "")
+
+  if areaz:upper() == "HERE" then
+    areaz = tostring(gmcp_value("room.info.zone") or "")
+  end
+
+  local function esc(v)
+    return tostring(v or ""):gsub("'", "''")
+  end
+
+  local minLvl, maxLvl
+  if type(lvl) == "table" then
+    minLvl = tonumber(lvl.min)
+    maxLvl = tonumber(lvl.max)
+  elseif tonumber(lvl) then
+    minLvl = tonumber(lvl)
+    maxLvl = tonumber(lvl)
+  end
+
+  local query = [[
+SELECT mobs.mob, mobs.room, mobs.roomid, mobs.zone, mobs.seen_count, mobs.kill_count,
+       area.minlvl AS area_minlvl, area.maxlvl AS area_maxlvl
+FROM mobs
+LEFT JOIN area ON (area.key = mobs.zone OR area.name = mobs.zone)
+WHERE mobs.mob LIKE '%]] .. esc(mobn) .. [[%'
+]]
+  local searchmsg = "Searching for " .. mobn
+
+  if areaz:upper() ~= "ALL" and areaz ~= "" then
+    query = query .. " AND (mobs.zone = '" .. esc(areaz) .. "' OR mobs.zone IN (SELECT key FROM area WHERE name = '" .. esc(areaz) .. "'))"
+    searchmsg = searchmsg .. " in " .. areaz
+  end
+
+  if minLvl and maxLvl then
+    query = query .. " AND mobs.zone IN (SELECT key FROM area WHERE minlvl <= " .. maxLvl .. " AND maxlvl >= " .. minLvl .. ")"
+    if minLvl == maxLvl then
+      searchmsg = searchmsg .. " at level " .. tostring(minLvl)
+    else
+      searchmsg = searchmsg .. string.format(" for level range %d-%d", minLvl, maxLvl)
+    end
+  end
+
+  query = query .. " ORDER BY COALESCE(mobs.seen_count, 0) DESC, mobs.mob ASC, mobs.room ASC"
+  dbg("Query: " .. query)
+
+  msg("orange", searchmsg .. "...")
+  cecho("<magenta>+-----+------------------------------+-------------------------+-------------+------------+---------+--------+-------+\n")
+  cecho("<magenta>| <white>#  <magenta>| <white>Mob name                     <magenta>| <green>Room name               <magenta>| <cyan>ID          <magenta>| <yellow>Zone       <magenta>| <cyan>Level  <magenta>| <white>Seen  <magenta>| <white>Prob  <magenta>|\n")
+  cecho("<magenta>+-----+------------------------------+-------------------------+-------------+------------+---------+--------+-------+\n")
+
+  local seenTotalsByMob = {}
+  local okTotals, totalsErr = pcall(function()
+    for row in db:nrows(query) do
+      local mob = tostring(row.mob or "")
+      local seen = tonumber(row.seen_count or 0) or 0
+      seenTotalsByMob[mob] = (seenTotalsByMob[mob] or 0) + seen
+    end
+  end)
+  if not okTotals then
+    msg("red", "Failed while reading summary rows: " .. tostring(totalsErr))
+    dbg("Summary read error: " .. tostring(totalsErr))
+    db:close()
+    return
+  end
+
+  local count = 0
+  local okRows, rowsErr = pcall(function()
+    for row in db:nrows(query) do
+      count = count + 1
+      local mob = tostring(row.mob or "")
+      local room = tostring(row.room or "")
+      local rid = tostring(row.roomid or "")
+      local zone = tostring(row.zone or "")
+      local seen = tonumber(row.seen_count or 0) or 0
+      local levelLabel = area_level_label(row.area_minlvl, row.area_maxlvl)
+      local totalSeen = tonumber(seenTotalsByMob[mob] or 0) or 0
+      local probability = 0
+      if totalSeen > 0 then
+        probability = (seen / totalSeen) * 100
+      end
+
+      table.insert(MobSearcher.results, { mob, zone, rid, room })
+
+      local mobLabel = mob:sub(1, 28)
+      local roomLabel = room:sub(1, 23)
+      local rowIdx = count
+
+      cecho("<magenta>| <cyan>")
+      echoLink(string.format("%-2d", rowIdx), function() MobSearcher.reportRow(rowIdx) end, "Report row " .. rowIdx, true)
+      cecho(string.format(" <magenta>| <white>%-28s <magenta>| <green>%-23s <magenta>| <cyan>", mobLabel, roomLabel))
+      echoLink(rid, function() expandAlias("mapper goto " .. rid) end, "mapper goto " .. rid, true)
+      cecho(string.format("<magenta>%s| <yellow>%-10s <magenta>| <cyan>%-7s <magenta>| <white>%5d   <magenta>| <white>%5.1f%% <magenta>|\n", string.rep(" ", math.max(0, 12 - #rid)), zone, levelLabel, seen, probability))
+    end
+  end)
+  if not okRows then
+    msg("red", "Search failed while reading rows: " .. tostring(rowsErr))
+    dbg("Row read error: " .. tostring(rowsErr))
+  end
+
+  if count == 0 then
+    cecho("<magenta>| <tomato>No matches found                                                                                                   <magenta>|\n")
+  end
+
+  cecho("<magenta>+-----+------------------------------+-------------------------+-------------+------------+---------+--------+-------+\n")
+  if count == 1 then
+    msg("orange", "1 match found. Click the row number to report it.")
+  elseif count > 1 then
+    msg("orange", count .. " matches found. Click any row number to report it.")
+  end
+
+  db:close()
+end
+
+function MobSearcher.onSearch(matches)
+  local rawInput = (matches and matches[2]) or ""
+  local p1 = rawInput:match("^(%S+)") or ""
+
+  if p1:upper() == "CHANNEL" then
+    local rest = rawInput:gsub("^%S+%s*", "")
+    MobSearcher.setChannelAlias({ "", rest })
+    return
+  end
+
+  if p1:upper() == "DEBUG" then
+    local rest = rawInput:gsub("^%S+%s*", "")
+    MobSearcher.setDebugAlias({ "", rest })
+    return
+  end
+
+  if p1:upper() == "HELP" then
+    cecho("<sky_blue>[MobSearcher] Commands:\n")
+    cecho("<white>  msearch <mob>\n")
+    cecho("<white>  msearch <mob> <level>\n")
+    cecho("<white>  msearch <mob> <min-max>\n")
+    cecho("<white>  msearch <here|all> <mob>\n")
+    cecho("<white>  msearch <here|all> <mob> <level|min-max>\n")
+    cecho("<white>  msearch channel <chat command>\n")
+    cecho("<white>  msearch channel default\n")
+    cecho("<white>  msearch debug on|off\n")
+    cecho("<white>  mreport <row#>  (report row to channel/default output)\n")
+    cecho("<white>  mgo <row#>      (mapper goto that row's room)\n")
+    cecho("<light_grey>Examples: msearch \"demonic soldier\" | msearch demonic soldier 45 | msearch here soldier 40-55\n")
+    return
+  end
+
+  local zone, name, lvlFilter = parse_search_input(rawInput)
+
+  if #name < 2 then
+    msg("orange", "You need at least 2 characters of the mob name.")
+    return
+  end
+
+  MobSearcher.searchMobs(name, zone, lvlFilter)
+end
+
+function MobSearcher.mobShow(matches)
+  local idx = tonumber(matches[2] or "0")
+  if idx < 1 or not MobSearcher.results[idx] then
+    msg("orange", "No results loaded. Try searching first.")
+    return
+  end
+  MobSearcher.reportRow(idx)
+end
+
+function MobSearcher.mobGo(matches)
+  local idx = tonumber(matches[2] or "0")
+  if idx < 1 or not MobSearcher.results[idx] then
+    msg("orange", "No results loaded. Try searching first.")
+    return
+  end
+  expandAlias("mapper goto " .. MobSearcher.results[idx][3])
+end
+
+persist_load()
+msg("orange", "Loaded. Use 'msearch help' for usage.")
+        ]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

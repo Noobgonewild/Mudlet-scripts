@@ -1,0 +1,764 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>Fantasy_Cards</name><script></script><conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName>Fantasy_Cards</packageName><mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor><regexCodeList><string></string></regexCodeList><regexCodePropertyList><integer>0</integer></regexCodePropertyList>
+      <Trigger isActive="yes" isFolder="no"><name>fate_start</name><script>FantasyCards_TR_Start(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You have the following cards stored\:$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>fate_ind_store</name><script>FantasyCards_TR_Capture(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You carefully place a (.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card within the (.*)?Case\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>fate_ind_ret</name><script>FantasyCards_TR_Retrieve(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You carefully retrieve a (.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card from the (.*)?Case\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>fate_capture</name><script>FantasyCards_TR_Capture(matches)</script><command></command><packageName></packageName><regexCodeList><string>^(.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>fate_stop</name><script>FantasyCards_TR_Stop(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Total\: (.*)$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>market_card</name><script>FantasyCards_TR_Market(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Market: (.+ has (?:proxy )?bid [\d,]+ gold on|Bid of [\d,]+ gold on|.+ is selling) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card \(Level \d+, Num \d+\).?( Auction is for Gold\.)?$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>auction_card</name><script>FantasyCards_TR_Auction(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Auction: (.+ has placed a bid for [\d,]+ gold on|.+ is auctioning) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card \(Level \d+, Num \d+\).( Current bid is [\d,]+.)?$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>bid_card</name><script>FantasyCards_TR_Bid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^([\d ]+) - .+(.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card\s+\d+\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>lbid_card</name><script>FantasyCards_TR_LBid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ (\d+) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card\s+\d+ (\*| )?G.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>market_list_card</name><script>FantasyCards_TR_MarketList(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ +(\d+) (\w+) (Fantasy|Expansion|Memorial|Original).* Series Col.* +(\d+) +\*?(Gold|Qp).+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="no" isFolder="no"><name>scan_done</name><script>FantasyCards_TR_ScanDone(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Scanned all Fantasy Card cases!$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+    </TriggerGroup>
+  </TriggerPackage>
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes"><name>Fantasy_Cards</name><script></script><command></command><packageName>Fantasy_Cards</packageName><regex></regex>
+      <Alias isActive="yes" isFolder="no"><name>lft_help</name><script>FantasyCards_Alias_Help(matches)</script><command></command><packageName></packageName><regex>^lft help$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>lft_summary</name><script>Summary(nil,nil,{case=matches[2]})</script><command></command><packageName></packageName><regex>^lft summary ([0-4])$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>lft_find</name><script>FindCard(nil,nil,{[2]=matches[3]})</script><command></command><packageName></packageName><regex>^lft (search|find) (.*)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>lft_report</name><script>ReportCards(nil,nil,{case=matches[2],channel=matches[3]})</script><command></command><packageName></packageName><regex>^lft report ([0-4]) (.*)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>lft_owned</name><script>ReportOwnedCards(nil,nil,{case=matches[2],channel=matches[3]})</script><command></command><packageName></packageName><regex>^lft owned ([0-4]) (.*)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>lft_scan</name><script>FantasyCards_Alias_Scan(matches)</script><command></command><packageName></packageName><regex>^lft scan$</regex></Alias>
+    </AliasGroup>
+  </AliasPackage>
+  <ScriptPackage><ScriptGroup isActive="yes" isFolder="yes"><name>Fantasy_Cards</name><script></script><packageName>Fantasy_Cards</packageName>
+    <Script isActive="yes" isFolder="no"><name>FantasyCardsCompatAliases</name><script><![CDATA[-- Compatibility aliases for older Mudlet installs that still call legacy wrapper names.
+local function _fc_safe_call(name, ...)
+  local fn = _G[name]
+  if type(fn) == "function" then
+    return fn(...)
+  end
+  cecho(string.format("<orange>[FantasyCards] Missing function '%s'. Reload the package if this persists.\n", name))
+end
+
+function FantasyCards_Alias_Help(matches)
+  return _fc_safe_call("Help")
+end
+
+function FantasyCards_Alias_Scan(matches)
+  return _fc_safe_call("ScanCases")
+end
+]]></script><eventHandlerList/><packageName></packageName></Script>
+    <Script isActive="yes" isFolder="no"><name>FantasyCardsScript</name><script><![CDATA[-- Fantasy Cards Mudlet script (initial)
+local fateTable = {}
+local scanInProgress = false
+
+local function plain_from_colours(...)
+  local args={...}
+  if #args==1 then return tostring(args[1]) end
+  local out={}
+  local i=1
+  while i<=#args do
+    if i+2<=#args then table.insert(out,tostring(args[i+2] or "")); i=i+3 else table.insert(out,tostring(args[i] or "")); i=i+1 end
+  end
+  return table.concat(out)
+end
+
+local function ColourNote(...)
+  cecho("<orange>[FantasyCards] "..plain_from_colours(...).."\n")
+end
+
+local function ColourTell(...)
+  echo(plain_from_colours(...))
+end
+
+local function Note(s)
+  echo((s or "").."\n")
+end
+
+local function Send(cmd) send(cmd) end
+local function SendNoEcho(cmd) send(cmd, false) end
+local function EnableTrigger(name, v) enableTrigger(name, v and 1 or 0) end
+local persist_save
+local function EnableTriggerGroup(name, v)
+  if type(enableTriggerGroup)=="function" then
+    enableTriggerGroup(name, v and 1 or 0)
+  else
+    EnableTrigger(name, v)
+  end
+end
+local function GetVariable(name)
+  if name == "fateTable" then return fateTable end
+  return _G[name]
+end
+
+local function SetVariable(name, value)
+  if name == "fateTable" then
+    fateTable = value
+    persist_save()
+    return
+  end
+  _G[name] = value
+end
+
+
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local STATE_FILE = persistence_dir() .. "/fantasy_cards_state.lua"
+
+local function persist_load()
+  local function resolve_table_save_refs(node, root, seen)
+    if type(node) ~= "table" then return node end
+    if rawget(node, 1) ~= nil and rawget(node, 2) == nil and next(node, 1) == nil
+      and type(node[1]) == "number" and type(root[node[1]]) == "table"
+    then
+      return resolve_table_save_refs(root[node[1]], root, seen)
+    end
+    seen = seen or {}
+    if seen[node] then return seen[node] end
+    local out = {}
+    seen[node] = out
+    for k, v in pairs(node) do
+      out[resolve_table_save_refs(k, root, seen)] = resolve_table_save_refs(v, root, seen)
+    end
+    return out
+  end
+
+  local loaded = nil
+  local ok, data = pcall(dofile, STATE_FILE)
+  if ok and type(data) == "table" then
+    loaded = data
+    if type(loaded.fateTable) ~= "table"
+      and type(loaded[1]) == "table"
+    then
+      loaded = resolve_table_save_refs(loaded[1], loaded, {})
+    end
+  end
+  if not loaded and type(table) == "table" and type(table.load) == "function" then
+    local f = io.open(STATE_FILE, "r")
+    if f then
+      f:close()
+      local ok2, data2 = pcall(table.load, STATE_FILE)
+      if ok2 and type(data2) == "table" then loaded = data2 end
+    end
+  end
+
+  if type(loaded) == "table" and type(loaded.fateTable) == "table" then
+    fateTable = loaded.fateTable
+  elseif type(loaded) == "table" and next(loaded) ~= nil then
+    fateTable = loaded
+  end
+
+  if next(fateTable)==nil then ResetTable() end
+end
+
+persist_save = function()
+  local payload = { fateTable = fateTable }
+
+  local function lua_serialize(value)
+    local t = type(value)
+    if t == "number" or t == "boolean" then return tostring(value) end
+    if t == "string" then return string.format("%q", value) end
+    if t == "table" then
+      local out = {"{"}
+      for k, v in pairs(value) do
+        local key = (type(k) == "string" and k:match("^[%a_][%w_]*$")) and k or ("[" .. lua_serialize(k) .. "]")
+        out[#out + 1] = key .. " = " .. lua_serialize(v) .. ","
+      end
+      out[#out + 1] = "}"
+      return table.concat(out, " ")
+    end
+    return "nil"
+  end
+
+  local f = io.open(STATE_FILE, "w")
+  if f then
+    f:write("return " .. lua_serialize(payload))
+    f:close()
+  end
+end
+
+function ResetTable()
+        fateTable = {
+            ["alessandrew"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["alhena"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["androg"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["ani"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["bejito"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["blurp"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["bonjour"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["cadaver"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["cartman"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["chuft"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["cordelia"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["craven"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["curi"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["dagonet"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["dave"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["demonspawn"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["dereliction"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["dexter"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["djvoltron"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["domain"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["evie"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["fatesdagger"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["galinthas"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["gren"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["hank"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["hiroki"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["jennie"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["leaf"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["linoge"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["lumina"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["madcatz"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["madrox"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["majic"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["marauder"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["marc"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["moolb"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["ninja"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["oladon"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["original"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["quadrapus"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["rafaele"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["rau"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["rezit"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["rocky"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["ruiner"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["saartje"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["speedster"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["stormlord"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["tirica"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["trez"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["trollemite"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["vanion"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["whisper"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["wojmil"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["yowza"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["zolstead"] = { count = 0, caseID = 1, caseName = "Fantasy Series" },
+            ["abelinc"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["adam"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["arist"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["baktosh"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["blug"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["blunt"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["chich"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["corliss"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["dachande"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["danj"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["deadman"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["delgar"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["dexx"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["edit"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["erikson"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["fetard"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["fiendish"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["freddie"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["gastro"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["icecool"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["iceman"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["ixultar"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["koala"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["kya"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["level"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["liber"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["mars"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["mendaloth"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["milquetoast"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["mique"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["mirrim"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["moradin"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["morn"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["nasus"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["nocilis"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["paipals"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["pleiades"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["portia"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["pumpkin"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["razor"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["redryn"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["robbo"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["rojaz"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["slith"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["sonrokito"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["tinada"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["trachx"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["trurien"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["turie"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["tzitzimime"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["unforgiven"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["wars"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["whitdjinn"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["wire"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["zengo"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["zoot"] = { count = 0, caseID = 2, caseName = "Expansion Series" },
+            ["aisis"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["andersen"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["arius"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["arthon"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["barchetta"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["barid"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["belmont"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["breeze"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["candace"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["cerridwen"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["confusion"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["dagaswolf"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["delight"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["dhamon"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["dirtworm"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["eclaboussure"]= { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["euphonix"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["fieryflame"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["filt"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["gangar"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["ghaan"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["glimmer"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["halo"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["ikyu"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["jaenelle"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["jernau"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["juli"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["kaitlyn"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["khelda"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["kinson"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["kt"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["lamoxes"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["llarian"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["martin"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["metallica"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["mordist"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["natallia"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["neeper"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["orsiphantes"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["pane"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["psychopath"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["roell"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["sarlock"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["senja"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["shadowfax"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["songbird"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["synthesizer"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["tallie"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["terrill"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["thirstan"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["tripitaka"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["tyanon"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["tymme"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["uncival"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["wolfe"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["xantcha"] = { count = 0, caseID = 3, caseName = "Memorial and Immortal's Series" },
+            ["althalus"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["anaristos"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["baejita"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["banichi"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["broud"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["cassin"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["citron"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["claire"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["cynic"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["dadrake"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["darkmoore"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["dreamfyre"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["elisa"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["entreri"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["fufa"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["geneve"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["guinness"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["harvester"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["justme"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["kalince"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["kharpern"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["korridel"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["laren"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["lasher"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["lao"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["maerchyng"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["marcon"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["mashai"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["methdemon"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["moons"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["obyron"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["orcwarrior"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["paramore"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["penthesilea"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["pointless"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["pudge"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["rhuli"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["rumour"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["sagen"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["sirene"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["skarren"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["styliann"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["sunset"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["sylvain"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["tela"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["tenchi"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["teoyaomqui"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["testasterone"]= { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["timeghost"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["valkur"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["velvet"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["vesuvius"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["vilgan"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["vitae"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["xeno"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" },
+            ["yandros"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" } }
+    end
+
+function Help()
+  ColourNote("orange", "", "Fantasy Cards commands: lft help | lft search/find <card> | lft summary <1-4> | lft report <1-4> <channel> | lft owned <1-4> <channel> | lft scan")
+end
+
+function OnPluginInstall()
+  persist_load()
+  Help()
+end
+
+    function FindCardStatus(cardName)
+        local card = string.lower(trim(cardName))
+        if fateTable[card] ~= nil then
+            if fateTable[card].count == 0 then
+                return "NEED"
+            else
+                return "HAVE"
+            end
+        end
+        return "UNK"
+    end
+
+    -- Trim whitespace from string
+    function trim(str)
+        return (str:gsub("^%s*(.-)%s*$", "%1"))
+    end
+
+    -- Market trigger handler
+    function MarketCard(name, line, wildcards, styles)
+        local cardName = wildcards.card
+        local status = FindCardStatus(cardName)
+        local w = 0
+        for i, s in ipairs(styles) do
+            ColourTell(RGBColourToName(s.textcolour), "", s.text)
+            -- Find position after "Series Collector's Card" to insert status
+            if string.find(s.text, "Series Collector's Card") then
+                w = i
+            end
+            if i == w and status == "NEED" then
+                ColourTell("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
+                w = 0
+            end
+        end
+        Note("")
+    end
+
+    -- Auction trigger handler
+    function AuctionCard(name, line, wildcards, styles)
+        local cardName = wildcards.card
+        local status = FindCardStatus(cardName)
+        local w = 0
+        for i, s in ipairs(styles) do
+            ColourTell(RGBColourToName(s.textcolour), "", s.text)
+            if string.find(s.text, "Series Collector's Card") then
+                w = i
+            end
+            if i == w and status == "NEED" then
+                ColourTell("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
+                w = 0
+            end
+        end
+        Note("")
+    end
+
+    -- Bid list trigger handler
+    function BidCard(name, line, wildcards, styles)
+        local cardName = trim(wildcards.card)
+        local status = FindCardStatus(cardName)
+        for i, s in ipairs(styles) do
+            ColourTell(RGBColourToName(s.textcolour), "", s.text)
+        end
+        if status == "NEED" then
+            ColourNote("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
+        else
+            Note("")
+        end
+    end
+
+    -- LBid list trigger handler
+    function LBidCard(name, line, wildcards, styles)
+        local cardName = trim(wildcards.card)
+        local status = FindCardStatus(cardName)
+        for i, s in ipairs(styles) do
+            ColourTell(RGBColourToName(s.textcolour), "", s.text)
+        end
+        if status == "NEED" then
+            ColourNote("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
+        else
+            Note("")
+        end
+    end
+
+    -- Market list trigger handler (for truncated names in market list)
+    function MarketListCard(name, line, wildcards, styles)
+        local cardName = trim(wildcards.card)
+        local status = FindCardStatus(cardName)
+        for i, s in ipairs(styles) do
+            ColourTell(RGBColourToName(s.textcolour), "", s.text)
+        end
+        if status == "NEED" then
+            ColourNote("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
+        else
+            Note("")
+        end
+    end
+
+    -- Scan all 4 collector cases
+    function ScanCases()
+        ColourNote("yellow", "", "Scanning all 4 collector cases...")
+        ResetTable()
+        scanInProgress = true
+        casesScanned = 0
+        EnableTrigger("scan_done", true)
+        Send("identify collector1")
+        Send("identify collector2")
+        Send("identify collector3")
+        Send("identify collector4")
+        SendNoEcho("echo @YScanned all Fantasy Card cases!")
+    end
+
+    -- Scan completion handler
+    function ScanComplete()
+        EnableTrigger("scan_done", false)
+        persist_save()
+        scanInProgress = false
+        
+        -- Count owned cards per case
+        local owned = {0, 0, 0, 0}
+        local total = {0, 0, 0, 0}
+        for key, value in pairs(fateTable) do
+            total[value.caseID] = total[value.caseID] + 1
+            if value.count == 1 then
+                owned[value.caseID] = owned[value.caseID] + 1
+            end
+        end
+        
+        ColourNote("green", "", "Scan complete!")
+        ColourNote("cyan", "", "Case 1 (Fantasy): " .. owned[1] .. "/" .. total[1] .. " cards")
+        ColourNote("cyan", "", "Case 2 (Expansion): " .. owned[2] .. "/" .. total[2] .. " cards")
+        ColourNote("cyan", "", "Case 3 (Memorial/Immortal): " .. owned[3] .. "/" .. total[3] .. " cards")
+        ColourNote("cyan", "", "Case 4 (Original/Immortal): " .. owned[4] .. "/" .. total[4] .. " cards")
+    end
+
+    function ReportCards(name, line, wildcards)
+        local caseID = tonumber(wildcards.case)
+        local caseName = ""
+        local iCount = 0
+        local sText = ""
+        if caseID < 1 or caseID > 4 then
+            ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
+            return
+        end
+
+        for key, value in pairsByKeys(fateTable) do
+            if value.caseID == caseID then --Proper case
+                if caseName == "" then
+                    caseName = value.caseName
+                end
+
+                if tonumber(value.count) == 0 then --Don't have this card.
+                    iCount = iCount + 1
+                    if iCount == 1 then --First card, no need to add
+                        sText = sText .. CapFirst(key)
+                    else
+                        sText = sText .. "@c,@W " .. CapFirst(key)
+                    end
+                end
+            end
+        end
+
+        if tonumber(iCount) == 0 then
+            sText = sText .. "No cards remaining."
+        end
+
+        Send(wildcards.channel .. " @C[@M" .. caseName .. "@C] @cCards left: @W" .. iCount .. "@c. Cards: @W" .. sText)
+    end
+
+    function ReportOwnedCards(name, line, wildcards)
+        local caseID = tonumber(wildcards.case)
+        local caseName = ""
+        local iCount = 0
+        local sText = ""
+        if caseID < 1 or caseID > 4 then
+            ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
+            return
+        end
+
+        for key, value in pairsByKeys(fateTable) do
+            if value.caseID == caseID then --Proper case
+                if caseName == "" then
+                    caseName = value.caseName
+                end
+
+                if tonumber(value.count) == 1 then --Have this card.
+                    iCount = iCount + 1
+                    if iCount == 1 then --First card, no need to add
+                        sText = sText .. CapFirst(key)
+                    else
+                        sText = sText .. "@c,@W " .. CapFirst(key)
+                    end
+                end
+            end
+        end
+
+        if tonumber(iCount) == 0 then
+            sText = sText .. "No cards owned."
+        end
+
+        Send(wildcards.channel .. " @C[@M" .. caseName .. "@C] @cCards owned: @W" .. tonumber(iCount) .. "@c. Cards: @W" .. sText)
+    end
+
+    function Summary(name, line, wildcards)
+        local caseID = tonumber(wildcards.case)
+        local caseName = ""
+        local iCount = 0
+        local iCount2 = 0
+        local sText = ""
+
+        if caseID < 1 or caseID > 4 then
+            ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
+            return
+        end
+
+        for key, value in pairs(fateTable) do
+            if value.caseID == caseID then
+                if caseName == "" then
+                    caseName = value.caseName
+                end
+
+                if value.count == 1 then
+                    iCount = iCount + 1
+                else
+                    iCount2 = iCount2 + 1
+                end
+            end
+        end
+        ColourNote("orange", "", "Displaying your summary of Fate cards for case: ", "cyan", "", caseName)
+        ColourNote("orange", "", "\n\rCards owned: ", "cyan", "", iCount, "orange", "", " Cards needed: ", "cyan", "", iCount2)
+
+        iCount = 0
+        local tCount = 0
+        ColourNote("orange", "", "\n\rYou need the following cards:")
+        for key, value in pairsByKeys(fateTable) do
+            if value.caseID == caseID then --Proper case
+                if tonumber(value.count) == 0 then --Don't have this card.
+                    iCount = iCount + 1
+                    tCount = tCount + 1
+                    if iCount == 1 then --No tab in front
+                        sText = sText .. string.format("%2i) %-15s", tCount, CapFirst(key))
+                    elseif iCount >= 4 then --Done, send and start fresh
+                        sText = sText .. "\t" .. string.format("%2i) %-15s", tCount, CapFirst(key))
+                        ColourNote("cyan", "", sText)
+                        iCount = 0
+                        sText = ""
+                    else --Add tab in front
+                        sText = sText .. "\t" .. string.format("%2i) %-15s", tCount, CapFirst(key))
+                    end
+                end
+            end
+        end
+        if iCount > 0 then --Leftover text, send it
+            ColourNote("cyan", "", sText)
+        end
+    end
+
+    function FindCard(name, line, wildcards)
+        local sText = string.lower(wildcards[2])
+
+        if fateTable[sText] == nil then
+            ColourNote("orange", "", "The card \'" .. sText .. "\' does not exist in any sets.")
+        else
+            if fateTable[sText].count == 0 then
+                ColourNote("orange", "", "You do ", "red", "", "NOT", "orange", "", " have the ", "cyan", "", CapFirst(sText), "orange", "", "[", "magenta", "", fateTable[sText].caseName, "orange", "", "] card.")
+            else
+                ColourNote("orange", "", "You ", "lime", "", "DO", "orange", "", " have the ", "cyan", "", CapFirst(sText), "orange", "", "[", "magenta", "", fateTable[sText].caseName, "orange", "", "] card.")
+            end
+        end
+    end
+
+    function StartCapture(name, line, wildcards)
+        -- Only reset table if not in a scan (scan already reset it)
+        if not scanInProgress then
+            ResetTable()
+        end
+        EnableTriggerGroup("fate_capture", true)
+    end
+
+    function Capture(name, line, wildcards)
+        local cardName = string.lower(wildcards.card)
+        if fateTable[cardName] ~= nil then
+            fateTable[cardName].count = 1
+        end
+    end
+
+    function RetrieveCard(name, line, wildcards)
+        local cardName = string.lower(wildcards.card)
+        if fateTable[cardName] ~= nil then
+            fateTable[cardName].count = 0
+        end
+    end
+
+    function StopCapture(name, line, wildcards)
+        persist_save()
+        EnableTriggerGroup("fate_capture", false)
+    end
+
+    function CapFirst(str)
+        return (str:gsub("^%l", string.upper))
+    end
+
+    function pairsByKeys(t, f)
+        local a = {}
+        for n in pairs(t) do
+            table.insert(a, n)
+        end
+        table.sort(a, f)
+        local i = 0      -- iterator variable
+        local iter = function ()   -- iterator function
+            i = i + 1
+            if a[i] == nil then
+                return nil
+            else
+                return a[i], t[a[i]]
+            end
+        end
+        return iter
+    end
+
+
+function FantasyCards_Init()
+  OnPluginInstall()
+end
+
+function FantasyCards_Alias_Help(matches) Help() end
+function FantasyCards_Alias_Summary(matches) Summary(nil,nil,{case=matches[2]}) end
+function FantasyCards_Alias_Find(matches) FindCard(nil,nil,{[2]=matches[3]}) end
+function FantasyCards_Alias_Report(matches) ReportCards(nil,nil,{case=matches[2],channel=matches[3]}) end
+function FantasyCards_Alias_Owned(matches) ReportOwnedCards(nil,nil,{case=matches[2],channel=matches[3]}) end
+function FantasyCards_Alias_Scan(matches) ScanCases() end
+
+function FantasyCards_TR_Start(matches) StartCapture(nil,nil,{}) end
+function FantasyCards_TR_Capture(matches) Capture(nil,nil,{card=matches[2]}) end
+function FantasyCards_TR_Retrieve(matches) RetrieveCard(nil,nil,{card=matches[2]}) end
+function FantasyCards_TR_Stop(matches) StopCapture(nil,nil,{total=matches[2]}) end
+function FantasyCards_TR_Market(matches) MarketCard(nil,nil,{card=matches[3]},{}) end
+function FantasyCards_TR_Auction(matches) AuctionCard(nil,nil,{card=matches[3]},{}) end
+function FantasyCards_TR_Bid(matches) BidCard(nil,nil,{card=matches[3]},{}) end
+function FantasyCards_TR_LBid(matches) LBidCard(nil,nil,{card=matches[3]},{}) end
+function FantasyCards_TR_MarketList(matches) MarketListCard(nil,nil,{card=matches[2]},{}) end
+function FantasyCards_TR_ScanDone(matches) ScanComplete() end
+
+FantasyCards_Init()
+]]></script><eventHandlerList/><packageName></packageName></Script>
+  </ScriptGroup></ScriptPackage>
+</MudletPackage>

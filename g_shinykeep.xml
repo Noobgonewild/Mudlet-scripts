@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>shinykeep</name>
+      <script></script>
+      <conditionLineDelta>0</conditionLineDelta>
+      <mStayOpen>0</mStayOpen>
+      <mCommand></mCommand>
+      <packageName>shinykeep</packageName>
+      <mFgColor></mFgColor>
+      <mBgColor></mBgColor>
+      <mSoundFile></mSoundFile>
+      <colorTriggerFgColor></colorTriggerFgColor>
+      <colorTriggerBgColor></colorTriggerBgColor>
+      <regexCodeList>
+        <string></string>
+      </regexCodeList>
+      <regexCodePropertyList>
+        <integer>0</integer>
+      </regexCodePropertyList>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>SK_LootAny</name>
+        <script>SK_OnLootAny(matches[1])</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^You\s+(?:get|take|loot|pick\s+up)\s+((?:\(\(Godly\)\)|\((?:Fabled|Divine|Mythical|Epic|Legendary|Eternal|Exalted|Majestic|Wondrous|Radiant|Brilliant|Dazzling|Shimmering|Gleaming|Sparkling|Vibrant|Shiny|Burnished|Enhanced|Polished)\)))</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+    </TriggerGroup>
+  </TriggerPackage>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>shinykeep</name>
+      <script></script>
+      <command></command>
+      <packageName>shinykeep</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>SK_Include</name>
+        <script>SK_Include(matches[2])</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^shinykeep\s+include\s+([1-5])$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>SK_Exclude</name>
+        <script>SK_Exclude(matches[2])</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^shinykeep\s+exclude\s+([1-5])$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>SK_Status</name>
+        <script>SK_Status()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^shinykeep\s+status$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>SK_Help</name>
+        <script>SK_Help()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^shinykeep\s+help$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>shinykeep</name>
+      <script></script>
+      <packageName>shinykeep</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>shinykeep_script</name>
+        <script><![CDATA[
+-- shinykeep (Mudlet script start)
+-- Ported from mush scripts/g_shinykeep.xml
+
+if not shinykeep then
+  shinykeep = {}
+end
+
+shinykeep.TIERS = {
+  [1] = {"((Godly))"},
+  [2] = {"(Fabled)","(Divine)","(Mythical)","(Epic)","(Legendary)"},
+  [3] = {"(Eternal)","(Exalted)","(Majestic)","(Wondrous)","(Radiant)"},
+  [4] = {"(Brilliant)","(Dazzling)","(Shimmering)","(Gleaming)","(Sparkling)"},
+  [5] = {"(Vibrant)","(Shiny)","(Burnished)","(Enhanced)","(Polished)"},
+}
+
+local function vname(tier)
+  return "shinykeep_include" .. tostring(tier)
+end
+
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local STATE_FILE = persistence_dir() .. "/shinykeep_state.lua"
+local saved_state = {}
+local function lua_serialize(value)
+  local t = type(value)
+  if t == "number" or t == "boolean" then return tostring(value) end
+  if t == "string" then return string.format("%q", value) end
+  if t == "table" then
+    local out = {"{"}
+    for k, v in pairs(value) do
+      local key = (type(k) == "string" and k:match("^[%a_][%w_]*$")) and k or ("[" .. lua_serialize(k) .. "]")
+      out[#out + 1] = key .. " = " .. lua_serialize(v) .. ","
+    end
+    out[#out + 1] = "}"
+    return table.concat(out, " ")
+  end
+  return "nil"
+end
+
+local function load_saved()
+  local function resolve_table_save_refs(node, root, seen)
+    if type(node) ~= "table" then return node end
+    if rawget(node, 1) ~= nil and rawget(node, 2) == nil and next(node, 1) == nil
+      and type(node[1]) == "number" and type(root[node[1]]) == "table"
+    then
+      return resolve_table_save_refs(root[node[1]], root, seen)
+    end
+    seen = seen or {}
+    if seen[node] then return seen[node] end
+    local out = {}
+    seen[node] = out
+    for k, v in pairs(node) do
+      out[resolve_table_save_refs(k, root, seen)] = resolve_table_save_refs(v, root, seen)
+    end
+    return out
+  end
+
+  local loaded = nil
+  local ok, data = pcall(dofile, STATE_FILE)
+  if ok and type(data) == "table" then
+    loaded = data
+    if type(loaded[1]) == "table" and type(loaded["showmain"]) == "nil" then
+      loaded = resolve_table_save_refs(loaded[1], loaded, {})
+    end
+  end
+  if not loaded and type(table) == "table" and type(table.load) == "function" then
+    local f = io.open(STATE_FILE, "r")
+    if f then
+      f:close()
+      local ok2, data2 = pcall(table.load, STATE_FILE)
+      if ok2 and type(data2) == "table" then loaded = data2 end
+    end
+  end
+  saved_state = type(loaded) == "table" and loaded or {}
+end
+
+local function get_saved(name)
+  return saved_state[name]
+end
+
+local function set_saved(name, value)
+  saved_state[name] = value
+end
+
+local function save_saved()
+  local f = io.open(STATE_FILE, "w")
+  if f then
+    f:write("return " .. lua_serialize(saved_state))
+    f:close()
+  end
+end
+
+local function set_default(name, default_value)
+  if get_saved(name) == nil then
+    set_saved(name, tostring(default_value))
+    return true
+  end
+  return false
+end
+
+local function bget(name)
+  local v = get_saved(name)
+  return v == "1" or v == "y" or v == "Y" or v == "true"
+end
+
+local function bset(name, on)
+  set_saved(name, on and "1" or "0")
+  save_saved()
+end
+
+local function detect_tier(tag)
+  if not tag then
+    return nil
+  end
+
+  local needle = tag:lower()
+  for tier = 1, 5 do
+    for _, prefix in ipairs(shinykeep.TIERS[tier]) do
+      if needle == prefix:lower() then
+        return tier, prefix
+      end
+    end
+  end
+
+  return nil
+end
+
+local function print_line(color, text)
+  if color and color ~= "" then
+    fg(color)
+  end
+  echo(text .. "\n")
+  resetFormat()
+end
+
+local function print_tier_status(tier)
+  local prefixes = table.concat(shinykeep.TIERS[tier], ", ")
+  local enabled = bget(vname(tier))
+
+  fg("gray")
+  echo(string.format("  #%d: ", tier))
+  fg("gray")
+  echo(prefixes)
+  fg("gray")
+  echo(" - ")
+  if enabled then
+    fg("LimeGreen")
+    echo("INCLUDED")
+  else
+    fg("red")
+    echo("EXCLUDED")
+  end
+  echo("\n")
+  resetFormat()
+end
+
+function SK_OnLootAny(tag)
+  local tier, prefix = detect_tier(tag)
+  if not tier or not prefix then
+    return
+  end
+
+  if not bget(vname(tier)) then
+    return
+  end
+
+  local keyword = prefix:gsub("[%(%) ]", "")
+  if keyword == "" then
+    return
+  end
+
+  send("keep " .. keyword:lower())
+end
+
+function SK_Include(tier)
+  local n = tonumber(tier)
+  if not n or n < 1 or n > 5 then
+    print_line("red", "[shinykeep] Usage: shinykeep include 1-5")
+    return
+  end
+
+  bset(vname(n), true)
+  fg("gray"); echo(string.format("[shinykeep] Tier %d is now ", n)); fg("LimeGreen"); echo("INCLUDED\n"); resetFormat()
+end
+
+function SK_Exclude(tier)
+  local n = tonumber(tier)
+  if not n or n < 1 or n > 5 then
+    print_line("red", "[shinykeep] Usage: shinykeep exclude 1-5")
+    return
+  end
+
+  bset(vname(n), false)
+  fg("gray"); echo(string.format("[shinykeep] Tier %d is now ", n)); fg("red"); echo("EXCLUDED\n"); resetFormat()
+end
+
+function SK_Status()
+  print_line("CornflowerBlue", "=== [shinykeep] Status Configuration ===")
+  echo("\n")
+  for tier = 1, 5 do
+    print_tier_status(tier)
+  end
+  echo("\n")
+end
+
+function SK_Help()
+  print_line("CornflowerBlue", "=== [shinykeep] Help ===")
+  echo("\n")
+  print_line("gray", "* Auto-keeps items based on tier prefix.")
+  print_line("gray", "* Sends 'keep tag' (e.g., keep shiny, keep godly).")
+  print_line("gray", "* Defaults: include tiers 1-4, exclude tier 5.")
+  echo("\n")
+
+  print_line("gold", "Current Tier Configuration:")
+  for tier = 1, 5 do
+    print_tier_status(tier)
+  end
+
+  echo("\n")
+  print_line("gold", "Commands:")
+  print_line("LimeGreen", "  shinykeep include 1-5")
+  print_line("gray", "   - Include this tier")
+  print_line("red", "  shinykeep exclude 1-5")
+  print_line("gray", "   - Exclude this tier")
+  print_line("cyan", "  shinykeep status")
+  print_line("gray", "          - Show current config")
+  print_line("cyan", "  shinykeep help")
+  print_line("gray", "            - Show this help")
+end
+
+local function SK_Init()
+  load_saved()
+
+  local changed = false
+  changed = set_default(vname(1), 1) or changed
+  changed = set_default(vname(2), 1) or changed
+  changed = set_default(vname(3), 1) or changed
+  changed = set_default(vname(4), 1) or changed
+  changed = set_default(vname(5), 0) or changed
+
+  if changed then
+    save_saved()
+  end
+
+  print_line("gray", "[shinykeep] Mudlet script loaded. Type 'shinykeep help' for commands.")
+end
+
+SK_Init()
+        ]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

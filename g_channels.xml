@@ -341,6 +341,26 @@ function GCH.aard_code_to_decho(code)
   return string.format("<%d,%d,%d>", rgb[1], rgb[2], rgb[3])
 end
 
+function GCH.color_value_to_decho(color_value)
+  local text = tostring(color_value or "")
+  if text == "" then return nil end
+
+  local forced = GCH.aard_code_to_decho(text)
+  if forced then return forced end
+
+  if type(cecho2decho) == "function" then
+    local ok, value = pcall(cecho2decho, string.format("<%s>sample<reset>", text))
+    if ok and type(value) == "string" then
+      local prefix = value:match("^(.-)sample")
+      if prefix and prefix ~= "" then
+        return prefix
+      end
+    end
+  end
+
+  return nil
+end
+
 function GCH.normalize_color_value(value)
   local text = tostring(value or "")
   if text == "" then return nil end
@@ -368,7 +388,7 @@ function GCH.render_history_line(msg, ts, channel_key)
   local color_value = GCH.color_code_for_channel_key(channel_key)
 
   if color_value and color_value ~= "" then
-    local forced = GCH.aard_code_to_decho(color_value)
+    local forced = GCH.color_value_to_decho(color_value)
     if forced then
       decho(prefix_decho .. forced .. text .. "\n")
     else
@@ -864,12 +884,12 @@ function GCH.show_colors()
     if value then
       any = true
       local label = GCH.channel_label(key)
-      local forced = GCH.aard_code_to_decho(value)
+      local forced = GCH.color_value_to_decho(value)
       if forced then
-        echo("  " .. tostring(value) .. " -> " .. tostring(value))
+        echo(string.format("  %s -> ", tostring(value)))
         decho(forced .. label .. "\n")
       else
-        GCH.print_main(string.format("  %s -> %s%s", tostring(value), tostring(value), label))
+        GCH.print_main(string.format("  %s -> %s", tostring(value), label))
       end
       if type(resetFormat) == "function" then
         pcall(resetFormat)

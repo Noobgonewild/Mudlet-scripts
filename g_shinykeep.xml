@@ -23,7 +23,7 @@
 
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>SK_LootAny</name>
-        <script>SK_OnLootAny(matches[1])</script>
+        <script>SK_OnLootAny(matches[2])</script>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>

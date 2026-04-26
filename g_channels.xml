@@ -18,6 +18,14 @@
         <packageName></packageName>
         <regex>^gcom(?:\s+(.*))?$</regex>
       </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>g_channels_send_gchan</name>
+        <script><![CDATA[if GCH and GCH.send_gchan then GCH.send_gchan(matches[2] or "") end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gchan(?:\s+(.*))?$</regex>
+      </Alias>
     </AliasGroup>
   </AliasPackage>
 
@@ -32,7 +40,16 @@
       <packageName>g_channels</packageName>
       <script><![CDATA[GCH = GCH or {}
 
+local BATCH_SIZE = 10
+
 local unpack_fn = table.unpack or unpack
+
+GCH.uuid_prefix = string.format("%x%x%x", os.time(), math.random(0, 2^30), math.random(0, 2^30))
+GCH.uuid_counter = 0
+function GCH.new_uuid()
+  GCH.uuid_counter = GCH.uuid_counter + 1
+  return GCH.uuid_prefix .. "-" .. GCH.uuid_counter
+end
 
 local function gch_persistence_dir()
   local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
@@ -41,7 +58,11 @@ local function gch_persistence_dir()
   if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
   return dir
 end
-GCH.state_file = gch_persistence_dir() .. "/g_channels_state.lua"
+GCH.legacy_state_file = gch_persistence_dir() .. "/g_channels_state.lua"
+GCH.settings_file = gch_persistence_dir() .. "/g_channels_settings.json"
+GCH.db_file = gch_persistence_dir() .. "/g_channels.db"
+GCH.pending_file = gch_persistence_dir() .. "/g_channels_pending.jsonl"
+GCH.gchan_default_color = "36,120,200"
 GCH.defaults = {
   x = "70%",
   y = "0%",
@@ -50,13 +71,15 @@ GCH.defaults = {
   fontsize = 9,
   active_tab = "All",
   visible = true,
-  display_size = 100,
+  display_size = 500,
   show_timestamp = true,
   debug = false,
   gag_channel_tags = true,
+  gchan_color = GCH.gchan_default_color,
+  gchan_echo = false,
 }
-GCH.tab_order = { "All", "Clan", "Question", "Group", "Tell", "Say", "Spouse", "Friend" }
-GCH.tab_to_history = { Question = "question", Group = "group", Tell = "tell", Say = "say", Spouse = "spouse", Clan = "clan", Friend = "friend" }
+GCH.tab_order = { "All", "Clan", "Question", "Group", "Tell", "Say", "Spouse", "Gchan" }
+GCH.tab_to_history = { Question = "question", Group = "group", Tell = "tell", Say = "say", Spouse = "spouse", Clan = "clan", Gchan = "gchan" }
 GCH.tab_to_channel_key = {
   All = "all",
   Question = "question",
@@ -65,9 +88,9 @@ GCH.tab_to_channel_key = {
   Say = "say",
   Spouse = "spouse",
   Clan = "clan",
-  Friend = "friend",
+  Gchan = "gchan",
 }
-GCH.history_channels = { question = true, group = true, tell = true, say = true, spouse = true, clan = true, friend = true }
+GCH.history_channels = { question = true, group = true, tell = true, say = true, spouse = true, clan = true, gchan = true }
 GCH.channel_labels = {
   all = "All",
   question = "Question",
@@ -76,7 +99,7 @@ GCH.channel_labels = {
   say = "Say",
   spouse = "Spouse",
   clan = "Clan",
-  friend = "Friend",
+  gchan = "gchan",
 }
 GCH.aard_colors = {
   b = {0, 0, 170},
@@ -112,6 +135,7 @@ function GCH.merge_defaults()
   end
 
   if GCH.state.active_tab == "Private" or GCH.state.active_tab == "Wangrp" then GCH.state.active_tab = "Question" end
+  if GCH.state.active_tab == "gchan" then GCH.state.active_tab = "Gchan" end
 
   local valid = false
   for _, tab in ipairs(GCH.tab_order) do
@@ -126,60 +150,112 @@ function GCH.merge_defaults()
   if GCH.state.display_size < 1 then GCH.state.display_size = 1 end
   if GCH.state.show_timestamp == nil then GCH.state.show_timestamp = true end
   if GCH.state.gag_channel_tags == nil then GCH.state.gag_channel_tags = true end
+  if type(GCH.state.gchan_color) ~= "string" or GCH.state.gchan_color == "" then
+    GCH.state.gchan_color = GCH.gchan_default_color
+  end
 
   GCH.state.history_enabled = GCH.state.history_enabled or {}
-  GCH.state.history = GCH.state.history or {}
-  GCH.state.channel_colors = GCH.state.channel_colors or {}
-
   if GCH.state.history_enabled.question == nil and GCH.state.history_enabled.wangrp ~= nil then
     GCH.state.history_enabled.question = GCH.state.history_enabled.wangrp
   end
   GCH.state.history_enabled.wangrp = nil
 
-  if type(GCH.state.history.question) ~= "table" and type(GCH.state.history.wangrp) == "table" then
-    GCH.state.history.question = GCH.state.history.wangrp
-  end
-  GCH.state.history.wangrp = nil
-
-  if GCH.state.channel_colors.question == nil and GCH.state.channel_colors.wangrp ~= nil then
-    GCH.state.channel_colors.question = GCH.state.channel_colors.wangrp
-  end
-  GCH.state.channel_colors.wangrp = nil
-
   for chan, _ in pairs(GCH.history_channels) do
     if GCH.state.history_enabled[chan] == nil then GCH.state.history_enabled[chan] = true end
-    if type(GCH.state.history[chan]) ~= "table" then GCH.state.history[chan] = {} end
   end
+
+  GCH.state.history = nil
+  GCH.state.channel_colors = nil
 end
 
-function GCH.load_state()
-  local loaded = {}
+function GCH.json_encode(v)
+  if not (yajl and yajl.to_string) then return nil end
+  local ok, s = pcall(yajl.to_string, v)
+  if ok then return s end
+  return nil
+end
+
+function GCH.json_decode(s)
+  if not (yajl and yajl.to_value) then return nil end
+  local ok, v = pcall(yajl.to_value, s)
+  if ok then return v end
+  return nil
+end
+
+function GCH.read_legacy_state()
+  local f = io.open(GCH.legacy_state_file, "r")
+  if not f then return nil end
+  f:close()
 
   if type(table.load) == "function" then
-    local f = io.open(GCH.state_file, "r")
-    if f then
-      f:close()
-      local ok = pcall(table.load, GCH.state_file, loaded)
-      if ok and type(loaded) == "table" and next(loaded) ~= nil then
-        GCH.state = loaded
+    local loaded = {}
+    local ok = pcall(table.load, GCH.legacy_state_file, loaded)
+    if ok and type(loaded) == "table" and next(loaded) ~= nil then return loaded end
+  end
+
+  local chunk = loadfile(GCH.legacy_state_file)
+  if chunk then
+    local ok, result = pcall(chunk)
+    if ok and type(result) == "table" then
+      if result.fontsize ~= nil or result.display_size ~= nil or result.history_enabled ~= nil or result.channel_colors ~= nil then
+        return result
       end
-    end
-  elseif yajl and yajl.to_value then
-    local f = io.open(GCH.state_file, "r")
-    if f then
-      local raw = f:read("*a")
-      f:close()
-      local ok, decoded = pcall(yajl.to_value, raw)
-      if ok and type(decoded) == "table" then
-        GCH.state = decoded
-      end
+      if type(result[1]) == "table" then return result[1] end
+      return result
     end
   end
 
-  GCH.merge_defaults()
+  local fh = io.open(GCH.legacy_state_file, "r")
+  if fh then
+    local raw = fh:read("*a")
+    fh:close()
+    local decoded = GCH.json_decode(raw)
+    if type(decoded) == "table" then return decoded end
+  end
+
+  return nil
 end
 
-function GCH.save_state()
+function GCH.migrate_legacy_settings()
+  local legacy = GCH.read_legacy_state()
+  if type(legacy) ~= "table" then return {} end
+
+  local migrated = {}
+  for _, k in ipairs({ "x", "y", "width", "height", "fontsize", "font", "active_tab", "visible", "display_size", "show_timestamp", "debug", "gag_channel_tags" }) do
+    if legacy[k] ~= nil then migrated[k] = legacy[k] end
+  end
+
+  if type(legacy.history_enabled) == "table" then
+    migrated.history_enabled = {}
+    for k, v in pairs(legacy.history_enabled) do migrated.history_enabled[k] = v end
+  end
+
+  if type(legacy.channel_colors) == "table" and type(legacy.channel_colors.gchan) == "string" and legacy.channel_colors.gchan ~= "" then
+    migrated.gchan_color = legacy.channel_colors.gchan
+  end
+
+  return migrated
+end
+
+function GCH.load_settings()
+  local f = io.open(GCH.settings_file, "r")
+  if f then
+    local raw = f:read("*a")
+    f:close()
+    local decoded = GCH.json_decode(raw)
+    if type(decoded) == "table" then
+      GCH.state = decoded
+      GCH.merge_defaults()
+      return
+    end
+  end
+
+  GCH.state = GCH.migrate_legacy_settings()
+  GCH.merge_defaults()
+  GCH.save_settings()
+end
+
+function GCH.save_settings()
   if not GCH.state then return false end
 
   if GCH.ui and GCH.ui.container then
@@ -189,24 +265,265 @@ function GCH.save_state()
     if GCH.ui.container.get_height then GCH.state.height = GCH.ui.container:get_height() end
   end
 
-  if type(table.save) == "function" then
-    local ok = pcall(table.save, GCH.state_file, GCH.state)
-    if ok then return true end
+  local payload = GCH.json_encode(GCH.state)
+  if not payload then return false end
+
+  local f = io.open(GCH.settings_file, "w")
+  if not f then return false end
+  f:write(payload)
+  f:close()
+  return true
+end
+
+function GCH.open_db()
+  if GCH.db then return true end
+
+  local ok, mod = pcall(require, "lsqlite3")
+  if not ok or type(mod) ~= "table" then
+    ok, mod = pcall(require, "lsqlite3complete")
+  end
+  if not ok or type(mod) ~= "table" then
+    GCH.print_main("g_channels: sqlite3 unavailable, persistence disabled")
+    return false
   end
 
-  if yajl and yajl.to_string then
-    local ok, payload = pcall(yajl.to_string, GCH.state)
-    if ok and payload then
-      local f = io.open(GCH.state_file, "w")
-      if f then
-        f:write(payload)
-        f:close()
-        return true
+  GCH.sqlite3 = mod
+  local db, _, err = mod.open(GCH.db_file)
+  if not db then
+    GCH.print_main("g_channels: failed to open db: " .. tostring(err))
+    return false
+  end
+
+  db:exec("PRAGMA journal_mode=WAL")
+  db:exec("PRAGMA synchronous=NORMAL")
+  db:exec([[CREATE TABLE IF NOT EXISTS messages (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel TEXT    NOT NULL,
+    ts      INTEGER NOT NULL,
+    msg     TEXT    NOT NULL,
+    decho   TEXT,
+    uuid    TEXT
+  )]])
+  pcall(function() db:exec("ALTER TABLE messages ADD COLUMN uuid TEXT") end)
+  db:exec("CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, ts)")
+  db:exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_uuid ON messages(uuid) WHERE uuid IS NOT NULL")
+
+  GCH.db = db
+  return true
+end
+
+function GCH.close_db()
+  if GCH.db then
+    pcall(function() GCH.db:close() end)
+    GCH.db = nil
+  end
+end
+
+function GCH.append_pending(item)
+  if not item.uuid then item.uuid = GCH.new_uuid() end
+  local payload = GCH.json_encode(item)
+  if not payload then return false end
+
+  local f = io.open(GCH.pending_file, "a")
+  if not f then return false end
+  f:write(payload, "\n")
+  f:flush()
+  f:close()
+
+  GCH.pending_count = (GCH.pending_count or 0) + 1
+  return true
+end
+
+function GCH.drain_pending()
+  if not GCH.db then return false end
+
+  local f = io.open(GCH.pending_file, "r")
+  if not f then
+    GCH.pending_count = 0
+    return true
+  end
+
+  local rows = {}
+  for line in f:lines() do
+    if line and line ~= "" then
+      local item = GCH.json_decode(line)
+      if type(item) == "table" and type(item.channel) == "string" and type(item.msg) == "string" then
+        rows[#rows + 1] = item
       end
     end
   end
+  f:close()
 
-  return false
+  if #rows == 0 then
+    os.remove(GCH.pending_file)
+    GCH.pending_count = 0
+    return true
+  end
+
+  local sqlite3 = GCH.sqlite3
+  local DONE = sqlite3 and sqlite3.DONE or 101
+  local OK = sqlite3 and sqlite3.OK or 0
+
+  if GCH.db:exec("BEGIN") ~= OK then
+    GCH.print_main("g_channels: pending drain BEGIN failed; lines retained")
+    return false
+  end
+
+  local stmt = GCH.db:prepare("INSERT OR IGNORE INTO messages (channel, ts, msg, decho, uuid) VALUES (?, ?, ?, ?, ?)")
+  if not stmt then
+    GCH.db:exec("ROLLBACK")
+    GCH.print_main("g_channels: pending drain prepare failed; lines retained")
+    return false
+  end
+
+  local failed = false
+  for _, item in ipairs(rows) do
+    if stmt:bind_values(item.channel, tonumber(item.ts) or os.time(), item.msg, item.decho, item.uuid) ~= OK then
+      failed = true
+      break
+    end
+    if stmt:step() ~= DONE then
+      failed = true
+      break
+    end
+    stmt:reset()
+  end
+  stmt:finalize()
+
+  if failed then
+    GCH.db:exec("ROLLBACK")
+    GCH.print_main("g_channels: pending drain step failed; lines retained")
+    return false
+  end
+
+  if GCH.db:exec("COMMIT") ~= OK then
+    GCH.db:exec("ROLLBACK")
+    GCH.print_main("g_channels: pending commit failed; lines retained")
+    return false
+  end
+
+  os.remove(GCH.pending_file)
+  GCH.pending_count = 0
+  return true
+end
+
+function GCH.maybe_drain()
+  if (GCH.pending_count or 0) >= BATCH_SIZE then
+    GCH.drain_pending()
+  end
+end
+
+function GCH.read_pending_rows(channel_filter)
+  local f = io.open(GCH.pending_file, "r")
+  if not f then return {} end
+  local rows = {}
+  for line in f:lines() do
+    if line and line ~= "" then
+      local item = GCH.json_decode(line)
+      if type(item) == "table" and type(item.channel) == "string" and type(item.msg) == "string" then
+        if channel_filter == "all" or channel_filter == item.channel then
+          rows[#rows + 1] = { channel = item.channel, ts = tonumber(item.ts), msg = item.msg, decho = item.decho }
+        end
+      end
+    end
+  end
+  f:close()
+  return rows
+end
+
+local function trim_tail(rows, lim)
+  if #rows <= lim then return rows end
+  local trimmed = {}
+  for i = #rows - lim + 1, #rows do trimmed[#trimmed + 1] = rows[i] end
+  return trimmed
+end
+
+function GCH.fetch_history(channel_key, limit)
+  GCH.drain_pending()
+  local lim = math.max(tonumber(limit) or 1, 1)
+  local rows = {}
+
+  if GCH.db then
+    local sql, stmt
+    if channel_key == "all" then
+      sql = "SELECT channel, ts, msg, decho FROM messages ORDER BY id DESC LIMIT ?"
+      stmt = GCH.db:prepare(sql)
+      if stmt then stmt:bind_values(lim) end
+    else
+      sql = "SELECT channel, ts, msg, decho FROM messages WHERE channel = ? ORDER BY id DESC LIMIT ?"
+      stmt = GCH.db:prepare(sql)
+      if stmt then stmt:bind_values(channel_key, lim) end
+    end
+
+    if stmt then
+      local desc = {}
+      for row in stmt:nrows() do
+        desc[#desc + 1] = { channel = row.channel, ts = tonumber(row.ts), msg = row.msg, decho = row.decho }
+      end
+      stmt:finalize()
+      for i = #desc, 1, -1 do rows[#rows + 1] = desc[i] end
+    end
+  end
+
+  for _, r in ipairs(GCH.read_pending_rows(channel_key)) do rows[#rows + 1] = r end
+  return trim_tail(rows, lim)
+end
+
+function GCH.fetch_search(channel_key, needle, limit)
+  GCH.drain_pending()
+  local query = tostring(needle or "")
+  local lower_query = query:lower()
+  local lim = math.max(tonumber(limit) or 1, 1)
+
+  local matches = {}
+  local total = 0
+
+  if GCH.db then
+    local pattern = "%" .. query:gsub("([%%_])", "\\%1") .. "%"
+
+    local count_sql, count_stmt
+    if channel_key == "all" then
+      count_sql = "SELECT COUNT(*) AS c FROM messages WHERE msg LIKE ? ESCAPE '\\' COLLATE NOCASE"
+      count_stmt = GCH.db:prepare(count_sql)
+      if count_stmt then count_stmt:bind_values(pattern) end
+    else
+      count_sql = "SELECT COUNT(*) AS c FROM messages WHERE channel = ? AND msg LIKE ? ESCAPE '\\' COLLATE NOCASE"
+      count_stmt = GCH.db:prepare(count_sql)
+      if count_stmt then count_stmt:bind_values(channel_key, pattern) end
+    end
+    if count_stmt then
+      for row in count_stmt:nrows() do total = row.c end
+      count_stmt:finalize()
+    end
+
+    local sql, stmt
+    if channel_key == "all" then
+      sql = "SELECT channel, ts, msg, decho FROM messages WHERE msg LIKE ? ESCAPE '\\' COLLATE NOCASE ORDER BY id DESC LIMIT ?"
+      stmt = GCH.db:prepare(sql)
+      if stmt then stmt:bind_values(pattern, lim) end
+    else
+      sql = "SELECT channel, ts, msg, decho FROM messages WHERE channel = ? AND msg LIKE ? ESCAPE '\\' COLLATE NOCASE ORDER BY id DESC LIMIT ?"
+      stmt = GCH.db:prepare(sql)
+      if stmt then stmt:bind_values(channel_key, pattern, lim) end
+    end
+    if stmt then
+      local desc = {}
+      for row in stmt:nrows() do
+        desc[#desc + 1] = { channel = row.channel, ts = tonumber(row.ts), msg = row.msg, decho = row.decho }
+      end
+      stmt:finalize()
+      for i = #desc, 1, -1 do matches[#matches + 1] = desc[i] end
+    end
+  end
+
+  for _, r in ipairs(GCH.read_pending_rows(channel_key)) do
+    if r.msg:lower():find(lower_query, 1, true) then
+      matches[#matches + 1] = r
+      total = total + 1
+    end
+  end
+
+  return trim_tail(matches, lim), total
 end
 
 function GCH.ensure_buffer()
@@ -214,7 +531,7 @@ function GCH.ensure_buffer()
 end
 
 function GCH.buffer_limit()
-  return math.max((tonumber(GCH.state.display_size) or 100) * 20, 1000)
+  return math.max(tonumber(GCH.state.display_size) or 500, 500)
 end
 
 function GCH.strip_ansi(text)
@@ -276,8 +593,7 @@ function GCH.normalize_channel(ch)
   if s == "question" then return "Question" end
   if s == "private" then return "Question" end
   if s == "gtell" then return "Group" end
-  if s == "ftalk" then return "Friend" end
-  if s == "friend" then return "Friend" end
+  if s == "gchan" then return "Gchan" end
   if s == "clantalk" then return "Clan" end
   if s == "gclan" then return "Clan" end
   if s == "spouse" then return "Spouse" end
@@ -301,8 +617,7 @@ GCH.history_channel_inputs = {
   { "clan", "clan" },
   { "clantalk", "clan" },
   { "gclan", "clan" },
-  { "friend", "friend" },
-  { "ftalk", "friend" },
+  { "gchan", "gchan" },
 }
 
 function GCH.allowed_history_channel_names()
@@ -373,26 +688,74 @@ function GCH.normalize_color_value(value)
   return text
 end
 
-function GCH.color_code_for_channel_key(channel_key)
-  if not channel_key then return nil end
-  return GCH.state.channel_colors[channel_key]
-end
-
 function GCH.channel_label(channel_key)
   return GCH.channel_labels[channel_key] or tostring(channel_key or "")
 end
 
-function GCH.render_history_line(msg, ts, channel_key)
+function GCH.expand_aard_codes_to_cecho(text)
+  return tostring(text or ""):gsub("@([A-Za-z])", function(code)
+    local rgb = GCH.aard_colors[code]
+    if not rgb then return "@" .. code end
+    return string.format("<%d,%d,%d>", rgb[1], rgb[2], rgb[3])
+  end)
+end
+
+function GCH.has_color_markup(text)
+  local raw = tostring(text or "")
+  return raw:find("<[^>]+>") ~= nil or raw:find("@[A-Za-z]") ~= nil
+end
+
+function GCH.message_markup_to_decho(text, fallback_color)
+  local expanded = GCH.expand_aard_codes_to_cecho(text)
+  if fallback_color and fallback_color ~= "" and not GCH.has_color_markup(text) then
+    expanded = string.format("<%s>%s", tostring(fallback_color), expanded)
+  end
+
+  if type(cecho2decho) == "function" then
+    local ok, value = pcall(cecho2decho, expanded .. "<reset>")
+    if ok and value and value ~= "" then
+      return value
+    end
+  end
+
+  return nil
+end
+
+function GCH.gchan_tag_decho()
+  return "<255,77,77>[<255,255,255>GCHAN<255,77,77>]"
+end
+
+function GCH.gchan_echo_decho(msg)
+  local message_decho = GCH.message_markup_to_decho(msg, GCH.state.gchan_color or GCH.gchan_default_color)
+  if message_decho and message_decho ~= "" then
+    return string.format("%s %s", GCH.gchan_tag_decho(), message_decho)
+  end
+  return string.format("%s %s", GCH.gchan_tag_decho(), tostring(msg or ""))
+end
+
+function GCH.echo_gchan_main(rendered_decho, plain_text)
+  if rendered_decho and rendered_decho ~= "" and type(decho) == "function" then
+    decho(rendered_decho .. "\n")
+  else
+    echo(tostring(plain_text or "") .. "\n")
+  end
+  if type(resetFormat) == "function" then
+    pcall(resetFormat)
+  end
+end
+
+function GCH.render_history_line(msg, ts, channel_key, rendered_decho)
   local prefix_plain, prefix_decho = GCH.timestamp_prefix(ts)
   local text = tostring(msg or "")
-  local color_value = GCH.color_code_for_channel_key(channel_key)
 
-  if color_value and color_value ~= "" then
-    local forced = GCH.color_value_to_decho(color_value)
+  if rendered_decho and rendered_decho ~= "" then
+    decho(prefix_decho .. rendered_decho .. "\n")
+  elseif channel_key == "gchan" and GCH.state.gchan_color and GCH.state.gchan_color ~= "" then
+    local forced = GCH.color_value_to_decho(GCH.state.gchan_color)
     if forced then
       decho(prefix_decho .. forced .. text .. "\n")
     else
-      echo(prefix_plain .. tostring(color_value) .. " " .. text .. "\n")
+      cecho(prefix_plain .. GCH.expand_aard_codes_to_cecho(text) .. "\n")
     end
   else
     echo(prefix_plain .. text .. "\n")
@@ -400,19 +763,6 @@ function GCH.render_history_line(msg, ts, channel_key)
 
   if type(resetFormat) == "function" then
     pcall(resetFormat)
-  end
-end
-
-function GCH.push_history(tab, raw_text, ts)
-  local key = GCH.history_key_for_tab(tab)
-  if not key or not GCH.history_enabled_for_tab(tab) then return end
-
-  local history = GCH.state.history[key]
-  history[#history + 1] = { ts = ts or os.time(), msg = tostring(raw_text or "") }
-
-  local cap = math.max((tonumber(GCH.state.display_size) or 100) * 10, 500)
-  while #history > cap do
-    table.remove(history, 1)
   end
 end
 
@@ -455,10 +805,14 @@ function GCH.add_message(tab, raw_text, ts, source, rendered_decho)
     table.remove(GCH.buffer, 1)
   end
 
-  GCH.push_history(tab, clean, item.ts)
+  local channel_key = item.channel_key
+  if channel_key and channel_key ~= "all" and GCH.state.history_enabled[channel_key] ~= false then
+    GCH.append_pending({ channel = channel_key, ts = item.ts, msg = clean, decho = rendered_decho })
+    GCH.maybe_drain()
+  end
+
   GCH.debug_log(string.format("append source=%s tab=%s msg='%s' colored=%s", tostring(item.source), tostring(tab or "All"), clean, tostring(item.decho ~= nil)))
   GCH.refresh_windows()
-  GCH.save_state()
 end
 function GCH.timestamp_prefix(ts)
   if not GCH.state.show_timestamp then return "", "" end
@@ -607,7 +961,7 @@ function GCH.set_tab(tab)
 
   GCH.state.active_tab = tab
   GCH.apply_tab_styles()
-  GCH.save_state()
+  GCH.save_settings()
 end
 
 function GCH.tab_click(tab, event)
@@ -729,20 +1083,19 @@ function GCH.ensure_ui()
 end
 
 function GCH.print_history_item(channel_key, item)
-  GCH.render_history_line(item.msg, item.ts, channel_key)
+  GCH.render_history_line(item.msg, item.ts, channel_key, item.decho)
 end
 
 function GCH.show_history(chan)
   local key = GCH.require_history_channel(chan)
   if not key then return end
 
-  local history = (key == "all") and (GCH.buffer or {}) or (GCH.state.history[key] or {})
-  local limit = tonumber(GCH.state.display_size) or 100
-  local start_at = math.max(#history - limit + 1, 1)
+  local limit = tonumber(GCH.state.display_size) or 500
+  local rows = GCH.fetch_history(key, limit)
 
-  GCH.print_main(string.format("History %s (%d shown of %d)", key, (#history - start_at + 1), #history))
-  for i = start_at, #history do
-    GCH.print_history_item(key, history[i])
+  GCH.print_main(string.format("History %s (%d shown)", key, #rows))
+  for _, item in ipairs(rows) do
+    GCH.print_history_item(item.channel or key, item)
   end
 end
 
@@ -750,25 +1103,17 @@ function GCH.search_history(chan, needle)
   local key = GCH.require_history_channel(chan)
   if not key then return end
 
-  local query = tostring(needle or ""):lower()
+  local query = tostring(needle or "")
   if query == "" then
     return GCH.print_main("searchhistory requires a search string")
   end
 
-  local history = (key == "all") and (GCH.buffer or {}) or (GCH.state.history[key] or {})
-  local found = {}
-  for _, item in ipairs(history) do
-    if tostring(item.msg or ""):lower():find(query, 1, true) then
-      found[#found + 1] = item
-    end
-  end
+  local limit = tonumber(GCH.state.display_size) or 500
+  local rows, total = GCH.fetch_search(key, query, limit)
 
-  local limit = tonumber(GCH.state.display_size) or 100
-  local start_at = math.max(#found - limit + 1, 1)
-
-  GCH.print_main(string.format("Search %s for '%s' (%d shown of %d)", key, needle, (#found - start_at + 1), #found))
-  for i = start_at, #found do
-    GCH.print_history_item(key, found[i])
+  GCH.print_main(string.format("Search %s for '%s' (%d shown of %d)", key, needle, #rows, total))
+  for _, item in ipairs(rows) do
+    GCH.print_history_item(item.channel or key, item)
   end
 end
 
@@ -876,30 +1221,33 @@ function GCH.on_gmcp_channel()
   GCH.add_message(tab, msg, os.time(), "gmcp", colored)
 end
 
-function GCH.show_colors()
-  GCH.print_main("Saved channel colors:")
-  local any = false
-  for _, key in ipairs({ "all", "question", "group", "tell", "say", "spouse", "clan", "friend" }) do
-    local value = GCH.state.channel_colors[key]
-    if value then
-      any = true
-      local label = GCH.channel_label(key)
-      local forced = GCH.color_value_to_decho(value)
-      if forced then
-        echo(string.format("  %s -> ", tostring(value)))
-        decho(forced .. label .. "\n")
-      else
-        GCH.print_main(string.format("  %s -> %s", tostring(value), label))
-      end
-      if type(resetFormat) == "function" then
-        pcall(resetFormat)
-      end
-    end
+function GCH.send_gchan(text)
+  if GCH._expanding_gchan_alias then return end
+
+  local msg = tostring(text or ""):match("^%s*(.-)%s*$")
+  if msg == "" then
+    return GCH.print_main("Usage: gchan <message>")
   end
-  if not any then
-    GCH.print_main("  (none)")
+
+  local gchan_command = "gchan " .. msg
+
+  if type(expandAlias) == "function" then
+    GCH._expanding_gchan_alias = true
+    pcall(expandAlias, gchan_command, false)
+    GCH._expanding_gchan_alias = nil
+  elseif type(send) == "function" then
+    send(gchan_command, false)
+  end
+
+  local tagged = "[GCHAN] " .. msg
+  local tagged_decho = GCH.gchan_echo_decho(msg)
+  GCH.add_message("Gchan", tagged, os.time(), "gchan-send", tagged_decho)
+
+  if GCH.state.gchan_echo then
+    GCH.echo_gchan_main(tagged_decho, tagged)
   end
 end
+
 function GCH.help()
   cecho("\n<cyan>g_channels commands\n")
   cecho("  <white>gcom help<grey>                            - show this help\n")
@@ -914,9 +1262,9 @@ function GCH.help()
   cecho("  <white>gcom timestamp [on|off|toggle]<grey>       - toggle timestamps in windows/history\n")
   cecho("  <white>gcom debug on|off<grey>                    - echo GMCP detection/debug details\n")
   cecho("  <white>gcom gagtags on|off<grey>                  - hide/show only channel tags on tagged lines\n")
-  cecho("  <white>gcom <channel> color <value|off><grey>      - set persistent history color for any valid captured history channel\n")
-  cecho("  <white>gcom colors<grey>                          - show saved channel colors\n")
-  cecho("  <white>examples:<grey> gcom gtell color @b   |   gcom tell color wrongColor   |   gcom say color off\n")
+  cecho("  <white>gcom gchanecho on|off<grey>                - toggle outgoing gchan echo in main display\n")
+  cecho("  <white>gcom gchancolor <value><grey>              - set color used for outgoing gchan lines\n")
+  cecho("  <white>gchan <text><grey>                        - send text to gchan and capture it in All/Gchan history\n")
 end
 
 function GCH.command(arg)
@@ -933,13 +1281,13 @@ function GCH.command(arg)
     GCH.state.visible = true
     GCH.ensure_ui()
     GCH.ui.container:show()
-    GCH.save_state()
+    GCH.save_settings()
     return GCH.print_main("g_channels: window shown")
   elseif lcmd == "hide" then
     GCH.state.visible = false
     GCH.ensure_ui()
     GCH.ui.container:hide()
-    GCH.save_state()
+    GCH.save_settings()
     return GCH.print_main("g_channels: window hidden")
   elseif lcmd == "reset" then
     GCH.state = {}
@@ -951,11 +1299,9 @@ function GCH.command(arg)
     for _, con in pairs(GCH.ui.consoles or {}) do
       con:setFontSize(tonumber(GCH.state.fontsize) or 9)
     end
-    GCH.save_state()
+    GCH.save_settings()
     GCH.refresh_windows()
     return GCH.print_main("g_channels: settings reset")
-  elseif lcmd == "colors" then
-    return GCH.show_colors()
   end
 
   local hchan, hmode = lcmd:match("^history%s+(%S+)%s+(on|off)$")
@@ -963,7 +1309,7 @@ function GCH.command(arg)
     local key = GCH.require_history_channel(hchan)
     if not key then return end
     GCH.state.history_enabled[key] = (hmode == "on")
-    GCH.save_state()
+    GCH.save_settings()
     return GCH.print_main(string.format("History %s: %s", key, hmode))
   end
 
@@ -972,7 +1318,7 @@ function GCH.command(arg)
     local key = GCH.require_history_channel(hchan2)
     if not key then return end
     GCH.state.history_enabled[key] = (hmode2 == "on")
-    GCH.save_state()
+    GCH.save_settings()
     return GCH.print_main(string.format("History %s: %s", key, hmode2))
   end
 
@@ -980,7 +1326,7 @@ function GCH.command(arg)
   if ds then
     if ds < 1 then ds = 1 end
     GCH.state.display_size = ds
-    GCH.save_state()
+    GCH.save_settings()
     GCH.refresh_windows()
     return GCH.print_main("Display size set to " .. ds)
   end
@@ -1017,7 +1363,7 @@ function GCH.command(arg)
     else
       return GCH.print_main("Usage: gcom timestamp [on|off|toggle]")
     end
-    GCH.save_state()
+    GCH.save_settings()
     GCH.refresh_windows()
     return GCH.print_main("Timestamp: " .. (GCH.state.show_timestamp and "on" or "off"))
   end
@@ -1029,7 +1375,7 @@ function GCH.command(arg)
       return GCH.print_main("Usage: gcom debug on|off")
     end
     GCH.state.debug = (dbg == "on")
-    GCH.save_state()
+    GCH.save_settings()
     GCH.print_main("Debug: " .. dbg)
     if GCH.state.debug then
       GCH.debug_log("debug enabled; waiting for gmcp.comm.channel events")
@@ -1045,8 +1391,18 @@ function GCH.command(arg)
       return GCH.print_main("Usage: gcom gagtags on|off")
     end
     GCH.state.gag_channel_tags = (gag_arg == "on")
-    GCH.save_state()
+    GCH.save_settings()
     return GCH.print_main("Gag tagged lines: " .. gag_arg)
+  end
+
+  local gchan_echo_arg = lcmd:match("^gchanecho%s+(%S+)$")
+  if gchan_echo_arg then
+    if gchan_echo_arg ~= "on" and gchan_echo_arg ~= "off" then
+      return GCH.print_main("Usage: gcom gchanecho on|off")
+    end
+    GCH.state.gchan_echo = (gchan_echo_arg == "on")
+    GCH.save_settings()
+    return GCH.print_main("Gchan main echo: " .. gchan_echo_arg)
   end
 
   local font = tonumber(lcmd:match("^fontsize%s+(%d+)$"))
@@ -1055,38 +1411,36 @@ function GCH.command(arg)
     for _, con in pairs(GCH.ui.consoles or {}) do
       con:setFontSize(font)
     end
-    GCH.save_state()
+    GCH.save_settings()
     GCH.refresh_windows()
     return GCH.print_main("Font size set to " .. font)
   end
 
-  local color_chan, color_value = cmd:match("^(%S+)%s+color%s+(.+)$")
-  if color_chan and color_value then
-    local key = GCH.require_history_channel(color_chan)
-    if not key then return end
-
-    color_value = tostring(color_value or ""):match("^%s*(.-)%s*$")
-    local normalized = GCH.normalize_color_value(color_value)
-    if normalized == nil then
-      return GCH.print_main("Usage: gcom <channel> color <value|off>")
+  local gchan_color = cmd:match("^gchancolor%s+(.+)$")
+  if gchan_color then
+    gchan_color = tostring(gchan_color):match("^%s*(.-)%s*$")
+    local normalized = GCH.normalize_color_value(gchan_color)
+    if normalized == nil or normalized == false then
+      return GCH.print_main("Usage: gcom gchancolor <value>")
     end
-
-    if normalized == false then
-      GCH.state.channel_colors[key] = nil
-      GCH.save_state()
-      return GCH.print_main(string.format("History color cleared for %s", key))
-    end
-
-    GCH.state.channel_colors[key] = normalized
-    GCH.save_state()
-    return GCH.print_main(string.format("History color for %s set to %s", key, normalized))
+    GCH.state.gchan_color = normalized
+    GCH.save_settings()
+    return GCH.print_main("Gchan color set to " .. normalized)
   end
 
   GCH.help()
 end
 
+function GCH.on_exit()
+  GCH.drain_pending()
+  GCH.save_settings()
+  GCH.close_db()
+end
+
 function GCH.init()
-  GCH.load_state()
+  GCH.load_settings()
+  GCH.open_db()
+  GCH.drain_pending()
   GCH.ensure_ui()
 
   for _, con in pairs(GCH.ui.consoles or {}) do
@@ -1100,7 +1454,7 @@ function GCH.init()
     GCH.gmcp_handler_1 = registerAnonymousEventHandler("gmcp.comm.channel", "GCH.on_gmcp_channel")
     GCH.gmcp_handler_2 = registerAnonymousEventHandler("gmcp.Comm.Channel", "GCH.on_gmcp_channel")
     GCH.resize_handler = registerAnonymousEventHandler("sysWindowResizeEvent", "GCH.defer_refresh")
-    GCH.exit_handler = registerAnonymousEventHandler("sysExitEvent", "GCH.save_state")
+    GCH.exit_handler = registerAnonymousEventHandler("sysExitEvent", "GCH.on_exit")
   end
 
   if GCH.tag_trigger_id and type(killTrigger) == "function" then

@@ -206,18 +206,43 @@ local function get_state_file_path()
   return persistence_dir() .. "/" .. STATE_FILE
 end
 
+local function serialize_value(v)
+  if type(v) == "number" then
+    if v ~= v or v == math.huge or v == -math.huge then return "nil" end
+    return tostring(v)
+  end
+  if type(v) == "boolean" then return v and "true" or "false" end
+  if type(v) == "string" then return string.format("%q", v) end
+  if type(v) == "table" then
+    local parts = {"{"}
+    for k, val in pairs(v) do
+      local key
+      if type(k) == "string" then
+        key = string.format("[%q]", k)
+      elseif type(k) == "number" then
+        key = "[" .. tostring(k) .. "]"
+      end
+      if key then
+        local sval = serialize_value(val)
+        if sval ~= "nil" then
+          table.insert(parts, key .. " = " .. sval .. ",")
+        end
+      end
+    end
+    table.insert(parts, "}")
+    return table.concat(parts)
+  end
+  return "nil"
+end
+
 local function normalize_loaded_vars(source)
   source = type(source) == "table" and source or {}
 
-  -- table.save()/table.load() data can be wrapped in an array where index 1
-  -- holds the actual root table and later entries are reference tables.
-  if type(source[1]) == "table"
-    and source.level_offset == nil
-    and source.area_alignments == nil
-    and source.area_keys == nil
-    and source.alignment_filter == nil
-    and source.debug_on == nil then
-    source = source[1]
+  local debug_on
+  if type(source.debug_on) == "boolean" then
+    debug_on = source.debug_on
+  else
+    debug_on = true
   end
 
   return {
@@ -225,28 +250,42 @@ local function normalize_loaded_vars(source)
     area_alignments = type(source.area_alignments) == "table" and source.area_alignments or {},
     area_keys = type(source.area_keys) == "table" and source.area_keys or {},
     alignment_filter = type(source.alignment_filter) == "table" and source.alignment_filter or {},
-    debug_on = type(source.debug_on) == "boolean" and source.debug_on
-      or tostring(source.debug_on or "true"):lower() == "true",
+    debug_on = debug_on,
   }
+end
+
+local function looks_like_our_state(t)
+  if type(t) ~= "table" then return false end
+  return t.level_offset ~= nil
+    or t.area_alignments ~= nil
+    or t.area_keys ~= nil
+    or t.alignment_filter ~= nil
+    or t.debug_on ~= nil
 end
 
 local function load_from_state_file()
   local path = get_state_file_path()
 
-  if type(table) == "table" and type(table.load) == "function" then
-    local file = io.open(path, "r")
-    if file then
-      file:close()
-      local ok, loaded = pcall(table.load, path)
-      if ok and type(loaded) == "table" then
-        return normalize_loaded_vars(loaded)
-      end
+  local file = io.open(path, "r")
+  if not file then return normalize_loaded_vars({}) end
+  file:close()
+
+  local chunk = loadfile(path)
+  if chunk then
+    local ok, loaded = pcall(chunk)
+    if ok and looks_like_our_state(loaded) then
+      return normalize_loaded_vars(loaded)
     end
   end
 
-  local ok, loaded = pcall(dofile, path)
-  if ok and type(loaded) == "table" then
-    return normalize_loaded_vars(loaded)
+  -- Backward compat: state files saved by an earlier build used Mudlet's
+  -- table.save() format, which uses ref markers for nested tables and does
+  -- not round-trip through a plain loadfile.
+  if type(table) == "table" and type(table.load) == "function" then
+    local ok, loaded = pcall(table.load, path)
+    if ok and looks_like_our_state(loaded) then
+      return normalize_loaded_vars(loaded)
+    end
   end
 
   return normalize_loaded_vars({})
@@ -254,40 +293,11 @@ end
 
 local function save_to_state_file(payload)
   local path = get_state_file_path()
-
-  if type(table) == "table" and type(table.save) == "function" then
-    local ok, err = pcall(table.save, path, payload)
-    if ok then return true end
-    warn("Warning: failed writing state file via table.save: " .. tostring(err))
-  end
-
   local ok, err = pcall(function()
     local f = assert(io.open(path, "w"))
-    local function serialize(v)
-      if type(v) == "number" then return tostring(v) end
-      if type(v) == "boolean" then return v and "true" or "false" end
-      if type(v) == "string" then return string.format("%q", v) end
-      if type(v) == "table" then
-        local out = {"{"}
-        for k, val in pairs(v) do
-          local key
-          if type(k) == "string" then
-            key = string.format("[%q]", k)
-          else
-            key = "[" .. tostring(k) .. "]"
-          end
-          table.insert(out, key .. " = " .. serialize(val) .. ",")
-        end
-        table.insert(out, "}")
-        return table.concat(out)
-      end
-      return "nil"
-    end
-
-    f:write("return ", serialize(payload), "\n")
+    f:write("return ", serialize_value(payload), "\n")
     f:close()
   end)
-
   if not ok then
     warn("Warning: failed writing state file: " .. tostring(err))
   end
@@ -386,6 +396,14 @@ local function output_link(text, command, hint, color)
   safe_cecho(string.format("<%s>%s", color, text))
 end
 
+local function run_action(cmd)
+  if type(expandAlias) == "function" then
+    expandAlias(cmd)
+    return
+  end
+  send_no_echo(cmd)
+end
+
 local function print_area_line(item)
   local area = item.area
   local original_name = item.original_name
@@ -410,10 +428,9 @@ local function print_area_line(item)
   local match = area.name:sub(s, e)
   local post = area.name:sub(e + 1)
   local action = "xrt " .. key
-  local lua_action = string.format("send(%q, false, false)", action)
 
   safe_cecho(pre)
-  output_link(match, lua_action, action, "yellow")
+  output_link(match, function() run_action(action) end, action, "yellow")
   safe_cecho(post)
 end
 

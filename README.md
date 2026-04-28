@@ -16,8 +16,9 @@ Autotrainer based on main class and stat weights. Set and forget or use pre-defi
 Communication window. It supports multi tab channels, history, history search, timestamps, channel gags etc
 
 <img width="702" height="758" alt="2026-04-16 23_53_32-NVIDIA GeForce Overlay" src="https://github.com/user-attachments/assets/640afd5d-2120-465f-a69f-62d97b6e9475" />
-GCHAN fake com channel:
+GCHAN fake com channel. It can be used to make other addons report over it (like SnD).
 
+<img width="1025" height="203" alt="2026-04-28 18_25_29-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/a8a42edd-74d5-44e7-ba75-1d46395b403c" />
 <img width="700" height="213" alt="2026-04-26 19_06_00-NVIDIA GeForce Overlay" src="https://github.com/user-attachments/assets/4975ddfb-e27c-4985-9295-7d62c0b533f2" />
 
 

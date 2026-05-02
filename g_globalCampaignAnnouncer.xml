@@ -11,6 +11,7 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>G_GlobalCampaignAnnouncer</name>
       <script></script>
+      <triggerType>0</triggerType>
       <conditionLineDelta>0</conditionLineDelta>
       <mStayOpen>0</mStayOpen>
       <mCommand></mCommand>
@@ -30,6 +31,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>GQ_Join_Alert</name>
         <script>GQWarn_OnTrigger(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -116,9 +118,11 @@
       <name>G_GlobalCampaignAnnouncer</name>
       <script></script>
       <packageName>G_GlobalCampaignAnnouncer</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
         <name>GQWarn_Script</name>
+        <packageName></packageName>
         <script><![CDATA[
 ---------------------------------------------------------------------------
 -- GQuest_Warning v2.1 - Mudlet Port (initial)
@@ -337,6 +341,7 @@ end
 
 init()
 ]]></script>
+        <eventHandlerList/>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

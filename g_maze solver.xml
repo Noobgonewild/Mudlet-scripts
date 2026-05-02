@@ -64,9 +64,11 @@
       <name>g_maze solver</name>
       <script></script>
       <packageName>g_maze solver</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
         <name>maze_solver_main</name>
+        <packageName></packageName>
         <script><![CDATA[
 G_MazeSolver = type(G_MazeSolver) == "table" and G_MazeSolver or {}
 local M = G_MazeSolver
@@ -365,6 +367,7 @@ end
 
 MazeSolverInstall()
         ]]></script>
+        <eventHandlerList/>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

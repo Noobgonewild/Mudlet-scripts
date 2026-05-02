@@ -5,6 +5,7 @@
   <TriggerGroup isActive="yes" isFolder="yes" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
    <name>Hadar_Spellup_Caster</name>
    <script></script>
+   <triggerType>0</triggerType>
    <conditionLineDelta>0</conditionLineDelta>
    <mStayOpen>0</mStayOpen>
    <mCommand></mCommand>
@@ -23,6 +24,7 @@
 <TriggerGroup isActive="yes" isFolder="yes" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>HSPslistCapture</name>
  <script></script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -41,6 +43,7 @@
 <Trigger isActive="no" isFolder="no" isColorizerTrigger="no" isFilterTrigger="yes" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>HSPListStart</name>
  <script>deleteLine()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -60,6 +63,7 @@
  <name>HSPListEnd</name>
  <script>deleteLine()
 HSP_stop_sList()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -79,6 +83,7 @@ HSP_stop_sList()</script>
  <name>HSPListCapture</name>
  <script>deleteLine()
 SlistUpdate()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -100,6 +105,7 @@ SlistUpdate()</script>
 disableTrigger(&quot;HSPRecoveriesStart&quot;)
 enableTrigger(&quot;HSPRecoveriesCapture&quot;)
 enableTrigger(&quot;HSPRecoveriesEnd&quot;)</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -118,6 +124,7 @@ enableTrigger(&quot;HSPRecoveriesEnd&quot;)</script>
 </Trigger><Trigger isActive="no" isFolder="no" isColorizerTrigger="no" isFilterTrigger="yes" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>HSPRecoveriesCapture</name>
  <script>deleteLine()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -139,6 +146,7 @@ enableTrigger(&quot;HSPRecoveriesEnd&quot;)</script>
 disableTrigger(&quot;HSPRecoveriesStart&quot;)
 disableTrigger(&quot;HSPRecoveriesCapture&quot;)
 disableTrigger(&quot;HSPRecoveriesEnd&quot;)</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -157,6 +165,7 @@ disableTrigger(&quot;HSPRecoveriesEnd&quot;)</script>
 </Trigger><TriggerGroup isActive="yes" isFolder="yes" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>SpellupTags</name>
  <script></script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -176,6 +185,7 @@ disableTrigger(&quot;HSPRecoveriesEnd&quot;)</script>
  <name>sfail</name>
  <script>deleteLine()
 sfail()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -195,6 +205,7 @@ sfail()</script>
  <name>affoff</name>
  <script>deleteLine()
 affoff()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -214,6 +225,7 @@ affoff()</script>
  <name>affon</name>
  <script>deleteLine()
 affon()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -233,6 +245,7 @@ affon()</script>
  <name>recon</name>
  <script>deleteLine()
 recon()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -252,6 +265,7 @@ recon()</script>
  <name>recoff</name>
  <script>deleteLine()
 recoff()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -271,6 +285,7 @@ recoff()</script>
  <name>hspskillgain</name>
  <script>deleteLine()
 hspskillgain()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -289,6 +304,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>hspdied</name>
  <script>hspdied()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -307,6 +323,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>hspRemortDisable</name>
  <script>hspRemortDisable()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -325,6 +342,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>hspJustRemorted</name>
  <script>hspJustRemorted()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -343,6 +361,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>hspJustClasschanged</name>
  <script>hspJustClasschanged()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -361,6 +380,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>totemalive</name>
  <script>totemalive()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -379,6 +399,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>totemattack</name>
  <script>totemattack()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -397,6 +418,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>totemkilled</name>
  <script>totemkilled()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -415,6 +437,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>totemdead</name>
  <script>totemdead()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -433,6 +456,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>eyeTrigger</name>
  <script>eyeTrigger()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -451,6 +475,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>eyeGoByeBye</name>
  <script>eyeGoByeBye()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>
@@ -469,6 +494,7 @@ hspskillgain()</script>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
  <name>eyeGoByeByeDismissed</name>
  <script>eyeGoByeByeDismissed()</script>
+ <triggerType>0</triggerType>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
  <mCommand></mCommand>

@@ -13,6 +13,7 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>G_areapicker</name>
       <script></script>
+      <triggerType>0</triggerType>
       <conditionLineDelta>0</conditionLineDelta>
       <mStayOpen>0</mStayOpen>
       <mCommand></mCommand>
@@ -32,6 +33,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_LevelFallback</name>
         <script>AreaPicker_HandleLevelFallback(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -146,9 +148,11 @@
       <name>G_areapicker</name>
       <script></script>
       <packageName>G_areapicker</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
         <name>AreaPickerScript</name>
+        <packageName></packageName>
         <script><![CDATA[
 ---------------------------------------------------------------------------
 -- G_areapicker v4.4 (Mudlet Port)
@@ -1083,6 +1087,7 @@ end
 
 init_areapicker()
 ]]></script>
+        <eventHandlerList/>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

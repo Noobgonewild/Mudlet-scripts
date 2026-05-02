@@ -13,6 +13,7 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>Gizmmo_AutoTrainer</name>
       <script></script>
+      <triggerType>0</triggerType>
       <conditionLineDelta>0</conditionLineDelta>
       <mStayOpen>0</mStayOpen>
       <mCommand></mCommand>
@@ -32,6 +33,7 @@
       <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_TRAIN_FULL</name>
         <script>CaptureTrainFull(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -52,6 +54,7 @@
       <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_TRAIN_MIN</name>
         <script>CaptureTrainMinimal(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -72,6 +75,7 @@
       <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_TRAIN_TRN1</name>
         <script>CaptureTrainCount(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -92,6 +96,7 @@
       <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_TRAIN_TRN2</name>
         <script>CaptureTrainCount(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -112,6 +117,7 @@
       <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_TRAIN_END</name>
         <script>MarkEnd()</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -132,6 +138,7 @@
       <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_TRAIN_END2</name>
         <script>MarkEnd()</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -152,6 +159,7 @@
       <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_TRAIN_END3</name>
         <script>EndTrainSnapshot()</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -194,9 +202,11 @@
       <name>Gizmmo_AutoTrainer</name>
       <script></script>
       <packageName>Gizmmo_AutoTrainer</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
         <name>AutoTrainerScript</name>
+        <packageName>Gizmmo_AutoTrainer</packageName>
         <script><![CDATA[
 ---------------------------------------------------------------------------
 -- AutoTrainer v6.6 (Mudlet Port)

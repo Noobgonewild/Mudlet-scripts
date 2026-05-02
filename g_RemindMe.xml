@@ -86,9 +86,11 @@
       <name>G_RemindMe</name>
       <script></script>
       <packageName>G_RemindMe</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
         <name>G_RemindMe_Script</name>
+        <packageName></packageName>
         <script><![CDATA[
 ---------------------------------------------------------------------------
 -- G_RemindMe v1.0 - Mudlet Port (initial)
@@ -426,6 +428,7 @@ end
 
 RemindMe_Init()
         ]]></script>
+        <eventHandlerList/>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

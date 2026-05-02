@@ -5,6 +5,7 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>g_character</name>
       <script></script>
+      <triggerType>0</triggerType>
       <conditionLineDelta>0</conditionLineDelta>
       <mStayOpen>0</mStayOpen>
       <mCommand></mCommand>
@@ -24,6 +25,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>g_character_tell_report_mastery_costs</name>
         <script><![CDATA[if GSTATS and GSTATS.handle_tell_report then GSTATS.handle_tell_report("", "mastery", matches[2], matches[3]) end]]></script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -43,6 +45,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>g_character_tell_report_instinct_costs</name>
         <script><![CDATA[if GSTATS and GSTATS.handle_tell_report then GSTATS.handle_tell_report("", "instinct", matches[2], matches[3]) end]]></script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -86,6 +89,7 @@
       <name>g_character</name>
       <script></script>
       <packageName>g_character</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
       <name>g_character_main</name>

@@ -11,6 +11,7 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>Bypass</name>
       <script></script>
+      <triggerType>0</triggerType>
       <conditionLineDelta>0</conditionLineDelta>
       <mStayOpen>0</mStayOpen>
       <mCommand></mCommand>
@@ -30,6 +31,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>Bypass_LevelUp</name>
         <script>Bypass_OnLevelUp(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -50,6 +52,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>Bypass_CaptureBypassedArea</name>
         <script>Bypass_OnBypassLine(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -92,9 +95,11 @@
       <name>Bypass</name>
       <script></script>
       <packageName>Bypass</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
         <name>Bypass_Script</name>
+        <packageName></packageName>
         <script><![CDATA[
 Bypass = Bypass or {}
 
@@ -313,6 +318,7 @@ end
 
 bypass_note("Loaded. Use 'bypass apply' to apply bypasses for current level.")
         ]]></script>
+        <eventHandlerList/>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

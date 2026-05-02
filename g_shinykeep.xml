@@ -5,6 +5,7 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>shinykeep</name>
       <script></script>
+      <triggerType>0</triggerType>
       <conditionLineDelta>0</conditionLineDelta>
       <mStayOpen>0</mStayOpen>
       <mCommand></mCommand>
@@ -24,6 +25,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>SK_LootAny</name>
         <script>SK_OnLootAny(matches[2])</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta>
         <mStayOpen>0</mStayOpen>
         <mCommand></mCommand>
@@ -90,9 +92,11 @@
       <name>shinykeep</name>
       <script></script>
       <packageName>shinykeep</packageName>
+      <eventHandlerList/>
 
       <Script isActive="yes" isFolder="no">
         <name>shinykeep_script</name>
+        <packageName></packageName>
         <script><![CDATA[
 -- shinykeep (Mudlet script start)
 -- Ported from mush scripts/g_shinykeep.xml
@@ -349,6 +353,7 @@ end
 
 SK_Init()
         ]]></script>
+        <eventHandlerList/>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

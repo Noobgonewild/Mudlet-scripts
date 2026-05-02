@@ -5,6 +5,7 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>Loqui_Practice</name>
       <script></script>
+      <triggerType>0</triggerType>
       <conditionLineDelta>0</conditionLineDelta>
       <mStayOpen>0</mStayOpen>
       <mCommand></mCommand>
@@ -20,6 +21,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_LPH_GAIN</name>
         <script>lph_setSkill(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName><mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
         <regexCodeList><string>^Your new skill level in (.*?) is ([0-9]+)%\.$</string></regexCodeList>
         <regexCodePropertyList><integer>1</integer></regexCodePropertyList>
@@ -27,6 +29,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_LPH_SPEND</name>
         <script>lph_setSkill(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName><mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
         <regexCodeList><string>^You spend ([0-9]+) practices to increase (.*?) to ([0-9]+)%\.$</string></regexCodeList>
         <regexCodePropertyList><integer>1</integer></regexCodePropertyList>
@@ -34,6 +37,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_LPH_MAX</name>
         <script>lph_setSkillMax(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName><mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
         <regexCodeList><string>^You are now an expert in (.*?)\.$</string></regexCodeList>
         <regexCodePropertyList><integer>1</integer></regexCodePropertyList>
@@ -41,6 +45,7 @@
       <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>TR_LPH_MAX2</name>
         <script>lph_setSkillMax(matches)</script>
+        <triggerType>0</triggerType>
         <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName><mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
         <regexCodeList><string>^You are already an expert in (.*?)\.$</string></regexCodeList>
         <regexCodePropertyList><integer>1</integer></regexCodePropertyList>
@@ -74,6 +79,7 @@
       <name>Loqui_Practice</name>
       <script></script>
       <packageName>Loqui_Practice</packageName>
+      <eventHandlerList/>
       <Script isActive="yes" isFolder="no">
         <name>LoquiPracticeCore</name>
         <script><![CDATA[-- Mudlet edition of Loqui Practice
@@ -1057,6 +1063,7 @@ lph_sync()
 
 ]]></script>
         <eventHandlerList/>
+        <packageName></packageName>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage/>
+
+  <TimerPackage/>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>msleep</name>
+      <script></script>
+      <command></command>
+      <packageName>msleep</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>msleep_toggle</name>
+        <script><![CDATA[if MSLEEP and MSLEEP.toggle then MSLEEP.toggle() end]]></script>
+        <command></command>
+        <packageName>msleep</packageName>
+        <regex>^ts$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>msleep_camp</name>
+        <script><![CDATA[if MSLEEP and MSLEEP.toggleCamp then MSLEEP.toggleCamp() end]]></script>
+        <command></command>
+        <packageName>msleep</packageName>
+        <regex>^ts camp$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>msleep_fire</name>
+        <script><![CDATA[if MSLEEP and MSLEEP.toggleFire then MSLEEP.toggleFire() end]]></script>
+        <command></command>
+        <packageName>msleep</packageName>
+        <regex>^ts fire$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>msleep_pk</name>
+        <script><![CDATA[if MSLEEP and MSLEEP.togglePk then MSLEEP.togglePk() end]]></script>
+        <command></command>
+        <packageName>msleep</packageName>
+        <regex>^ts pk$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>msleep_help</name>
+        <script><![CDATA[if MSLEEP and MSLEEP.help then MSLEEP.help() end]]></script>
+        <command></command>
+        <packageName>msleep</packageName>
+        <regex>^ts help$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>msleep</name>
+      <script></script>
+      <packageName>msleep</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>msleep_main</name>
+        <packageName>msleep</packageName>
+        <script><![CDATA[
+-- Ported by gizmmo
+local MSLEEP_SAVE_FILE = getMudletHomeDir() .. "/persistence/msleep_settings.lua"
+
+local function msleepSaveSettings()
+  table.save(MSLEEP_SAVE_FILE, {
+    enabled  = MSLEEP.enabled,
+    campMode = MSLEEP.campMode,
+    avoidPk  = MSLEEP.avoidPk,
+  })
+end
+
+if not MSLEEP then
+  MSLEEP = {
+    enabled      = true,
+    campMode     = "off",
+    avoidPk      = true,
+    autoSleep    = false,
+    wakeDeferred = false,
+    tickTimerId  = nil,
+    tickHandlerId = nil,
+  }
+  local _saved = {}
+  if pcall(function() table.load(MSLEEP_SAVE_FILE, _saved) end) then
+    if _saved.enabled  ~= nil then MSLEEP.enabled  = _saved.enabled  end
+    if _saved.campMode ~= nil then MSLEEP.campMode = _saved.campMode end
+    if _saved.avoidPk  ~= nil then MSLEEP.avoidPk  = _saved.avoidPk  end
+  end
+end
+
+local function msleepEcho(msg)
+  cecho(string.format("<green>[msleep]<reset> %s\n", msg))
+end
+
+local function gmcpNumber(path)
+  local value = gmcp
+  for key in path:gmatch("[^%.]+") do
+    if type(value) ~= "table" then return nil end
+    value = value[key]
+  end
+  return tonumber(value)
+end
+
+local function underThreshold(currentPath, maxPath, threshold)
+  local c = gmcpNumber(currentPath)
+  local m = gmcpNumber(maxPath)
+  if not c or not m or m <= 0 then return false end
+  return (c / m) < threshold
+end
+
+local function getState()
+  return tonumber(gmcp and gmcp.char and gmcp.char.status and gmcp.char.status.state)
+end
+
+local function canSendSleep()
+  local state = getState()
+  if not state then return false end
+  if state ~= 3 and state ~= 11 then return false end -- active or resting/sitting
+
+  local pos = gmcp and gmcp.char and gmcp.char.status and gmcp.char.status.pos
+  if pos == "Sleeping" then return false end
+
+  return true
+end
+
+local function tryWakeFromAutoSleep()
+  if not MSLEEP.autoSleep then return end
+
+  local state = getState()
+  local pos = gmcp and gmcp.char and gmcp.char.status and gmcp.char.status.pos
+
+  if state == 8 then
+    MSLEEP.wakeDeferred = true
+    return
+  end
+
+  if state == 9 or pos == "Sleeping" then
+    send("wake", false)
+    MSLEEP.autoSleep = false
+    MSLEEP.wakeDeferred = false
+    return
+  end
+
+  -- If we're no longer sleeping (or sleep never landed), clear pending wake.
+  MSLEEP.autoSleep = false
+  MSLEEP.wakeDeferred = false
+end
+
+local function inPkRoom()
+  local details = gmcp and gmcp.room and gmcp.room.info and gmcp.room.info.details
+  if type(details) == "table" then
+    for _, item in ipairs(details) do
+      if type(item) == "string" and item:lower() == "pk" then return true end
+    end
+  elseif type(details) == "string" then
+    return details:lower():find("pk", 1, true) ~= nil
+  end
+  return false
+end
+
+function MSLEEP.toggle()
+  MSLEEP.enabled = not MSLEEP.enabled
+  msleepEcho(MSLEEP.enabled and "tick sleeping is on" or "tick sleeping is off")
+  msleepSaveSettings()
+end
+
+function MSLEEP.toggleCamp()
+  if MSLEEP.campMode == "camp" then
+    MSLEEP.campMode = "off"
+    msleepEcho("auto camp is off")
+  else
+    MSLEEP.campMode = "camp"
+    msleepEcho("auto camp is on")
+  end
+  msleepSaveSettings()
+end
+
+function MSLEEP.toggleFire()
+  if MSLEEP.campMode == "fire" then
+    MSLEEP.campMode = "off"
+    msleepEcho("auto fire is off")
+  else
+    MSLEEP.campMode = "fire"
+    msleepEcho("auto fire is on")
+  end
+  msleepSaveSettings()
+end
+
+function MSLEEP.togglePk()
+  MSLEEP.avoidPk = not MSLEEP.avoidPk
+  if MSLEEP.avoidPk then
+    msleepEcho("tick sleeping will no longer occur in PK rooms")
+  else
+    msleepEcho("tick sleeping will now occur in PK rooms")
+  end
+  msleepSaveSettings()
+end
+
+function MSLEEP.help()
+  cecho("<green>[msleep] commands<reset>\n")
+  cecho("  <white>ts<reset>       - toggle auto tick sleeping on/off\n")
+  cecho("  <white>ts camp<reset>  - toggle sending 'camp' before sleeping\n")
+  cecho("  <white>ts fire<reset>  - toggle sending 'fire' before sleeping\n")
+  cecho("  <white>ts pk<reset>    - toggle whether to sleep in PK rooms\n")
+  cecho("  <white>ts help<reset>  - show this help\n")
+  cecho("<green>sleeps 2s before tick when hp<70%%, mana<60%%, or moves<60%%<reset>\n")
+end
+
+function MSLEEP.processTickWindow()
+  if not MSLEEP.enabled then return end
+  if MSLEEP.autoSleep then return end
+
+  local shouldSleep = underThreshold("char.vitals.hp", "char.maxstats.maxhp", 0.70)
+    or underThreshold("char.vitals.mana", "char.maxstats.maxmana", 0.60)
+    or underThreshold("char.vitals.moves", "char.maxstats.maxmoves", 0.60)
+
+  if not shouldSleep then return end
+  if not canSendSleep() then return end
+
+  if MSLEEP.avoidPk and inPkRoom() then
+    msleepEcho("you have chosen not to automatically sleep in PK rooms")
+    return
+  end
+
+  local roomNum = gmcp and gmcp.room and gmcp.room.info and tostring(gmcp.room.info.num or "")
+  if roomNum ~= "-1" then
+    if MSLEEP.campMode == "camp" then send("camp", false) end
+    if MSLEEP.campMode == "fire" then send("fire", false) end
+  end
+
+  cecho("<green>2 seconds until tick<reset>\n")
+  send("sleep", false)
+  MSLEEP.autoSleep = true
+  MSLEEP.wakeDeferred = false
+end
+
+function MSLEEP.schedulePretickWindow()
+  if MSLEEP.tickTimerId then
+    killTimer(MSLEEP.tickTimerId)
+    MSLEEP.tickTimerId = nil
+  end
+
+  MSLEEP.tickTimerId = tempTimer(28, function()
+    MSLEEP.tickTimerId = nil
+    if MSLEEP and MSLEEP.processTickWindow then MSLEEP.processTickWindow() end
+  end)
+end
+
+function MSLEEP.onServerTick()
+  tryWakeFromAutoSleep()
+  MSLEEP.schedulePretickWindow()
+end
+
+function MSLEEP.bootstrap()
+  if MSLEEP.tickHandlerId then
+    killAnonymousEventHandler(MSLEEP.tickHandlerId)
+    MSLEEP.tickHandlerId = nil
+  end
+
+  MSLEEP.tickHandlerId = registerAnonymousEventHandler("gmcp.comm.tick", function()
+    if MSLEEP and MSLEEP.onServerTick then MSLEEP.onServerTick() end
+  end)
+end
+
+MSLEEP.bootstrap()
+]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

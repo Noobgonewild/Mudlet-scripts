@@ -183,7 +183,7 @@ local function commands_for_level(level, slots)
     return { "graveyard", "gauntlet" }
   elseif level >= 15 and level <= 29 then
     if slots == 4 then
-      return { "gauntlet", "kul tiras", "chessboard", "maelstrom" }
+      return { "gauntlet", "kul tiras", "chessboard", "maelstrom", "verume" }
     end
     return { "gauntlet", "kul tiras" }
   elseif level >= 30 and level <= 39 then
@@ -193,12 +193,12 @@ local function commands_for_level(level, slots)
     return { "kingsholm", "dsr" }
   elseif level >= 40 and level <= 54 then
     if slots == 4 then
-      return { "kingsholm", "zangar", "citadel", "maelstrom" }
+      return { "kingsholm", "zangar", "citadel", "maelstrom", "dsr" }
     end
     return { "kingsholm", "zangar" }
   elseif level >= 55 and level <= 59 then
     if slots == 4 then
-      return { "zangar", "gold rush", "citadel", "uplanes" }
+      return { "zangar", "gold rush", "citadel", "uplanes", "kingsholm" }
     end
     return { "zangar", "gold rush" }
   elseif level >= 60 and level <= 69 then
@@ -206,9 +206,14 @@ local function commands_for_level(level, slots)
       return { "upper planes", "flying citadel", "goldrush", "lplanes" }
     end
     return { "upper planes", "flying citadel" }
-  elseif level >= 70 and level <= 99 then
+  elseif level >= 70 and level <= 85 then
     if slots == 4 then
       return { "lower planes", "upper planes", "goldrush", "citadel" }
+    end
+    return { "lower planes", "upper planes" }
+  elseif level >= 86 and level <= 99 then
+    if slots == 4 then
+      return { "lower planes", "upper planes", "deathtrap", "citadel" }
     end
     return { "lower planes", "upper planes" }
   elseif level >= 100 and level <= 114 then
@@ -243,17 +248,17 @@ local function commands_for_level(level, slots)
     return { "cataclysm", "cougarian" }
   elseif level >= 175 and level <= 179 then
     if slots == 4 then
-      return { "deadlights", "cataclysm", "cougarian", "helegear" }
+      return { "deadlights", "cataclysm", "deadlights", "helegear" }
     end
     return { "deadlights", "cataclysm" }
   elseif level >= 180 and level <= 200 then
     if slots == 4 then
-      return { "partroxis", "nine hells", "deadlights", "helegear", "cougarian" }
+      return { "partroxis", "nine hells", "deadlights", "helegear" }
     end
     return { "partroxis", "nine hells" }
   elseif level == 201 then
     if slots == 4 then
-      return { "partroxis", "nine hells", "deadlights", "wyrm", "cougarian" }
+      return { "partroxis", "nine hells", "deadlights", "wyrm" }
     end
     return { "partroxis", "nine hells" }
   end

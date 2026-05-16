@@ -77,7 +77,9 @@ GCH.defaults = {
   gag_channel_tags = true,
   gchan_color = GCH.gchan_default_color,
   gchan_echo = false,
+  sound_enabled = true,
 }
+GCH.sound_channels = { clan = true, group = true, say = true, spouse = true, tell = true }
 GCH.tab_order = { "All", "Clan", "Question", "Group", "Tell", "Say", "Spouse", "Gchan" }
 GCH.tab_to_history = { Question = "question", Group = "group", Tell = "tell", Say = "say", Spouse = "spouse", Clan = "clan", Gchan = "gchan" }
 GCH.tab_to_channel_key = {
@@ -733,6 +735,16 @@ function GCH.gchan_echo_decho(msg)
   return string.format("%s %s", GCH.gchan_tag_decho(), tostring(msg or ""))
 end
 
+function GCH.play_channel_sound(channel_key)
+  if GCH.state.sound_enabled == false then return end
+  if not GCH.sound_channels[channel_key] then return end
+  if type(playSoundFile) ~= "function" then return end
+
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local path = string.format("%s/sounds/%s.wav", home, channel_key)
+  pcall(playSoundFile, path)
+end
+
 function GCH.echo_gchan_main(rendered_decho, plain_text)
   if rendered_decho and rendered_decho ~= "" and type(decho) == "function" then
     decho(rendered_decho .. "\n")
@@ -764,6 +776,12 @@ function GCH.render_history_line(msg, ts, channel_key, rendered_decho)
   if type(resetFormat) == "function" then
     pcall(resetFormat)
   end
+end
+
+function GCH.emit_channel_message(channel_key, message)
+  local ch = tostring(channel_key or ""):lower():match("^%s*(.-)%s*$")
+  if ch == "" or ch == "all" then return end
+  raiseEvent("gch.channel_message", { channel = ch, message = tostring(message or "") })
 end
 
 function GCH.add_message(tab, raw_text, ts, source, rendered_decho)
@@ -806,6 +824,10 @@ function GCH.add_message(tab, raw_text, ts, source, rendered_decho)
   end
 
   local channel_key = item.channel_key
+  if channel_key and channel_key ~= "all" then
+    GCH.emit_channel_message(channel_key, clean)
+    GCH.play_channel_sound(channel_key)
+  end
   if channel_key and channel_key ~= "all" and GCH.state.history_enabled[channel_key] ~= false then
     GCH.append_pending({ channel = channel_key, ts = item.ts, msg = clean, decho = rendered_decho })
     GCH.maybe_drain()
@@ -1263,6 +1285,7 @@ function GCH.help()
   cecho("  <white>gcom debug on|off<grey>                    - echo GMCP detection/debug details\n")
   cecho("  <white>gcom gagtags on|off<grey>                  - hide/show only channel tags on tagged lines\n")
   cecho("  <white>gcom gchanecho on|off<grey>                - toggle outgoing gchan echo in main display\n")
+  cecho("  <white>gcom sound on|off<grey>                    - toggle channel sounds for clan/group/say/spouse/tell\n")
   cecho("  <white>gcom gchancolor <value><grey>              - set color used for outgoing gchan lines\n")
   cecho("  <white>gchan <text><grey>                        - send text to gchan and capture it in All/Gchan history\n")
 end
@@ -1403,6 +1426,16 @@ function GCH.command(arg)
     GCH.state.gchan_echo = (gchan_echo_arg == "on")
     GCH.save_settings()
     return GCH.print_main("Gchan main echo: " .. gchan_echo_arg)
+  end
+
+  local sound_arg = lcmd:match("^sound%s+(%S+)$")
+  if sound_arg then
+    if sound_arg ~= "on" and sound_arg ~= "off" then
+      return GCH.print_main("Usage: gcom sound on|off")
+    end
+    GCH.state.sound_enabled = (sound_arg == "on")
+    GCH.save_settings()
+    return GCH.print_main("Channel sounds: " .. sound_arg)
   end
 
   local font = tonumber(lcmd:match("^fontsize%s+(%d+)$"))

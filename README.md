@@ -1,3 +1,8 @@
+EQ enchant addon (g_enchant) is DINV ONLY. It works WITH DINV so if you don't use Mudlet DINV, don't bother with this addon. It is work in progress but mostly working.
+<img width="1501" height="372" alt="2026-05-30 21_21_27-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/74170d9e-7fbb-4f66-9584-39034a5bd608" />
+<img width="1125" height="632" alt="2026-05-30 21_23_57-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/cf9a6079-8927-4b23-929f-45f71875fb76" />
+
+
 Mobsearch require the Aardwolf.db that you should already have in your Mudlet profile from using S&D and Mmapper (Mudlet mapper)
 
 <img width="1325" height="210" alt="2026-04-16 22_35_42-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/b5abcab2-6e59-41c4-8604-07f52409fb7e" />

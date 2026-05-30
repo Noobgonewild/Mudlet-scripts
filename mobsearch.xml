@@ -267,12 +267,14 @@ function MobSearcher.reportRow(idx)
   end
 
   local line = report_message_channel(row)
-  local channel = MobSearcher.config.channel or ""
+  local channel = tostring(MobSearcher.config.channel or ""):gsub("^%s+", ""):gsub("%s+$", "")
 
-  if channel ~= "" then
-    send(channel .. " " .. line)
-  else
+  if channel == "" or channel:lower() == "echo" then
     cecho(string.format("<cyan>[MobSearcher] %s\n", report_message_colored(row)))
+  elseif type(expandAlias) == "function" then
+    expandAlias(channel .. " " .. line, false)
+  else
+    send(channel .. " " .. line, false)
   end
 end
 

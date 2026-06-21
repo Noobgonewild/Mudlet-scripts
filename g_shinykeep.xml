@@ -21,7 +21,7 @@
         <integer>0</integer>
       </regexCodePropertyList>
 
-      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <Trigger isActive="no" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
         <name>SK_LootAny</name>
         <script>SK_OnLootAny(matches[2])</script>
         <conditionLineDelta>0</conditionLineDelta>
@@ -35,6 +35,25 @@
         <colorTriggerBgColor></colorTriggerBgColor>
         <regexCodeList>
           <string>^You\s+(?:get|take|loot|pick\s+up)\s+((?:\(\(Godly\)\)|\((?:Fabled|Divine|Mythical|Epic|Legendary|Eternal|Exalted|Majestic|Wondrous|Radiant|Brilliant|Dazzling|Shimmering|Gleaming|Sparkling|Vibrant|Shiny|Burnished|Enhanced|Polished)\)))</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>SK_Invmon</name>
+        <script>SK_OnInvmon(matches[2])</script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^\{invmon\}(.*)$</string>
         </regexCodeList>
         <regexCodePropertyList>
           <integer>1</integer>
@@ -107,6 +126,26 @@ shinykeep.TIERS = {
   [3] = {"(Eternal)","(Exalted)","(Majestic)","(Wondrous)","(Radiant)"},
   [4] = {"(Brilliant)","(Dazzling)","(Shimmering)","(Gleaming)","(Sparkling)"},
   [5] = {"(Vibrant)","(Shiny)","(Burnished)","(Enhanced)","(Polished)"},
+}
+shinykeep.pendingItems = shinykeep.pendingItems or {}
+shinykeep.processedItems = shinykeep.processedItems or {}
+shinykeep.freshAddedItems = shinykeep.freshAddedItems or {}
+shinykeep.lastDinvRevision = tonumber(shinykeep.lastDinvRevision)
+shinykeep.pendingRetryCount = tonumber(shinykeep.pendingRetryCount) or 0
+
+local DINV_ITEM_FIELDS = {
+  "id",
+  "name",
+  "colorName",
+  "normalizedName",
+  "type",
+  "flags",
+  "keepflag",
+  "identifyLevel",
+  "rarity",
+  "rarityPrefix",
+  "rarityMarker",
+  "quality",
 }
 
 local function vname(tier)
@@ -210,21 +249,306 @@ local function bset(name, on)
   save_saved()
 end
 
+local function strip_dinv_colours(value)
+  local text = tostring(value or "")
+  text = text:gsub("@.", "")
+  text = text:gsub("<[^>]+>", "")
+  text = text:gsub("%s+", " ")
+  text = text:gsub("^%s+", ""):gsub("%s+$", "")
+  return text
+end
+
+local function compact_marker(value)
+  return strip_dinv_colours(value):lower():gsub("[%(%)%s]", "")
+end
+
 local function detect_tier(tag)
-  if not tag then
+  local cleaned = strip_dinv_colours(tag)
+  if cleaned == "" then
     return nil
   end
 
-  local needle = tag:lower()
+  local needle = cleaned:lower()
+  local compact = compact_marker(cleaned)
   for tier = 1, 5 do
     for _, prefix in ipairs(shinykeep.TIERS[tier]) do
-      if needle == prefix:lower() then
+      local lowered = prefix:lower()
+      if needle == lowered
+        or needle:sub(1, #lowered + 1) == lowered .. " "
+        or compact == compact_marker(prefix)
+      then
         return tier, prefix
       end
     end
   end
 
   return nil
+end
+
+local function detect_item_tier(item)
+  if type(item) ~= "table" then
+    return nil
+  end
+
+  for _, field in ipairs({"rarityPrefix", "rarityMarker", "rarity", "quality"}) do
+    local tier, prefix = detect_tier(item[field])
+    if tier then
+      return tier, prefix
+    end
+  end
+
+  return detect_tier(item.colorName or item.name or item.normalizedName)
+end
+
+local function dinv_api_available()
+  return type(DINV) == "table"
+    and type(DINV.api) == "table"
+    and type(DINV.api.getItem) == "function"
+end
+
+local function dinv_revision()
+  if type(DINV) == "table"
+    and type(DINV.api) == "table"
+    and type(DINV.api.getRevision) == "function"
+  then
+    local ok, revision = pcall(DINV.api.getRevision)
+    if ok then
+      return tonumber(revision)
+    end
+  end
+  return nil
+end
+
+local function get_dinv_item(objId)
+  if not dinv_api_available() then
+    return nil
+  end
+
+  local ok, result = pcall(DINV.api.getItem, tostring(objId), {
+    source = "live",
+    fields = DINV_ITEM_FIELDS,
+  })
+  if ok and type(result) == "table" and result.ok and type(result.item) == "table" then
+    return result.item
+  end
+
+  if type(DINV.api.search) == "function" then
+    local searchOk, searchResult = pcall(DINV.api.search, tostring(objId), {
+      source = "live",
+      fields = DINV_ITEM_FIELDS,
+      limit = 1,
+    })
+    if searchOk and type(searchResult) == "table" and searchResult.ok
+      and type(searchResult.items) == "table"
+    then
+      return searchResult.items[1]
+    end
+  end
+
+  return nil
+end
+
+local function item_has_dinv_identity(item)
+  if type(item) ~= "table" then
+    return false
+  end
+
+  local name = strip_dinv_colours(item.colorName or item.name or item.normalizedName)
+  local itemType = strip_dinv_colours(item.type)
+  if name == "" or name == "unknown item" then
+    return false
+  end
+  if itemType == "" or itemType:lower() == "unknown" then
+    return false
+  end
+
+  return true
+end
+
+local function item_is_already_kept(item)
+  if type(item) ~= "table" then
+    return false
+  end
+
+  local keepflag = item.keepflag
+  if keepflag == true or tostring(keepflag):lower() == "true" or tostring(keepflag) == "1" then
+    return true
+  end
+
+  local protocolFlags = tostring(item.flags or "")
+  return protocolFlags:find("K", 1, true) ~= nil
+end
+
+local function keep_dinv_item(item)
+  local objId = tostring(item and item.id or "")
+  if objId == "" then
+    return false
+  end
+
+  send("keep " .. objId, false)
+  return true
+end
+
+function SK_EvaluateDINVItem(objId, payloadItem, options)
+  options = options or {}
+  local id = tostring(objId or "")
+  local freshAdded = options.freshAdded == true or shinykeep.freshAddedItems[id] == true
+  if id == "" then
+    return true
+  end
+  if shinykeep.processedItems[id] and not freshAdded then
+    return true
+  end
+
+  local item = type(payloadItem) == "table" and payloadItem or nil
+  if not item_has_dinv_identity(item) then
+    item = get_dinv_item(id)
+  end
+
+  if not item_has_dinv_identity(item) then
+    shinykeep.pendingItems[id] = true
+    return false
+  end
+
+  shinykeep.pendingItems[id] = nil
+  shinykeep.freshAddedItems[id] = nil
+  shinykeep.processedItems[id] = true
+
+  local tier, prefix = detect_item_tier(item)
+  if not tier or not prefix then
+    return true
+  end
+
+  if not bget(vname(tier)) then
+    return true
+  end
+
+  if not freshAdded and item_is_already_kept(item) then
+    return true
+  end
+
+  keep_dinv_item(item)
+  return true
+end
+
+function SK_OnDINVInventoryChanged(payload)
+  payload = payload or {}
+  local item = type(payload.item) == "table" and payload.item or nil
+  local id = tostring(payload.id or (item and item.id) or "")
+  if id == "" then
+    return
+  end
+
+  local action = tostring(payload.action or "")
+  if action == "removed" then
+    shinykeep.pendingItems[id] = nil
+    shinykeep.processedItems[id] = nil
+    shinykeep.freshAddedItems[id] = nil
+    return
+  end
+
+  if action == "added" then
+    shinykeep.pendingItems[id] = true
+    shinykeep.processedItems[id] = nil
+    shinykeep.freshAddedItems[id] = true
+  end
+
+  if shinykeep.pendingItems[id] or action == "added" then
+    SK_EvaluateDINVItem(id, item, { freshAdded = action == "added" })
+  end
+end
+
+function SK_PollDINV()
+  if not (dinv_api_available() and type(DINV.api.getChangesSince) == "function") then
+    return false
+  end
+
+  local revision = dinv_revision()
+  if not revision then
+    return false
+  end
+
+  local fromRevision = shinykeep.lastDinvRevision
+  if not fromRevision then
+    fromRevision = math.max(0, revision - 1)
+  end
+
+  if revision <= fromRevision then
+    shinykeep.lastDinvRevision = revision
+    return true
+  end
+
+  local ok, result = pcall(DINV.api.getChangesSince, fromRevision, {
+    source = "live",
+  })
+  if not ok or type(result) ~= "table" or not result.ok then
+    return false
+  end
+
+  local newest = fromRevision
+  for _, change in ipairs(result.changes or {}) do
+    SK_OnDINVInventoryChanged(change)
+    newest = math.max(newest, tonumber(change.revision) or newest)
+  end
+
+  shinykeep.lastDinvRevision = math.max(newest, tonumber(result.revision) or newest, revision)
+  return true
+end
+
+local function has_pending_items()
+  for _ in pairs(shinykeep.pendingItems or {}) do
+    return true
+  end
+  return false
+end
+
+local function retry_pending_items()
+  for id in pairs(shinykeep.pendingItems or {}) do
+    SK_EvaluateDINVItem(id, nil, { freshAdded = shinykeep.freshAddedItems[id] == true })
+  end
+  return has_pending_items()
+end
+
+function SK_RunDINVRefresh()
+  shinykeep.dinvRefreshTimer = nil
+  SK_PollDINV()
+
+  if retry_pending_items() then
+    shinykeep.pendingRetryCount = (tonumber(shinykeep.pendingRetryCount) or 0) + 1
+    if shinykeep.pendingRetryCount <= 8 then
+      SK_RequestDINVRefresh(1)
+    end
+  else
+    shinykeep.pendingRetryCount = 0
+  end
+end
+
+function SK_RequestDINVRefresh(delay)
+  delay = tonumber(delay) or 0.1
+  if type(tempTimer) ~= "function" then
+    SK_PollDINV()
+    retry_pending_items()
+    return true
+  end
+  if shinykeep.dinvRefreshTimer and type(killTimer) == "function" then
+    pcall(killTimer, shinykeep.dinvRefreshTimer)
+    shinykeep.dinvRefreshTimer = nil
+  end
+  shinykeep.dinvRefreshTimer = tempTimer(delay, [[SK_RunDINVRefresh()]])
+  return true
+end
+
+function SK_OnInvmon(payload)
+  SK_RequestDINVRefresh(0.1)
+end
+
+function SK_OnDINVReady()
+  SK_RunDINVRefresh()
+end
+
+local function register_dinv_ready_handler()
+  shinykeep.lastDinvRevision = dinv_revision() or shinykeep.lastDinvRevision
+  return true
 end
 
 local function print_line(color, text)
@@ -257,21 +581,7 @@ local function print_tier_status(tier)
 end
 
 function SK_OnLootAny(tag)
-  local tier, prefix = detect_tier(tag)
-  if not tier or not prefix then
-    return
-  end
-
-  if not bget(vname(tier)) then
-    return
-  end
-
-  local keyword = prefix:gsub("[%(%) ]", "")
-  if keyword == "" then
-    return
-  end
-
-  send("keep " .. keyword:lower())
+  -- Legacy loot-line hook. The active path watches {invmon} and then reads DINV changes.
 end
 
 function SK_Include(tier)
@@ -308,8 +618,8 @@ end
 function SK_Help()
   print_line("CornflowerBlue", "=== [shinykeep] Help ===")
   echo("\n")
-  print_line("gray", "* Auto-keeps items based on tier prefix.")
-  print_line("gray", "* Sends 'keep tag' (e.g., keep shiny, keep godly).")
+  print_line("gray", "* Watches invmon and reads DINV changes on demand to keep newly tracked items by tier prefix.")
+  print_line("gray", "* Waits until DINV has the item name and type, then sends 'keep <id>'.")
   print_line("gray", "* Defaults: include tiers 1-4, exclude tier 5.")
   echo("\n")
 
@@ -343,6 +653,8 @@ local function SK_Init()
   if changed then
     save_saved()
   end
+
+  register_dinv_ready_handler()
 
   print_line("gray", "[shinykeep] Mudlet script loaded. Type 'shinykeep help' for commands.")
 end

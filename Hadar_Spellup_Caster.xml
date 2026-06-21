@@ -558,6 +558,7 @@ HSP.currentmana = -1
 HSP.slistCommandSent = false
 HSP.pluscount = 0
 HSP.pluscount2 = 0
+HSP.dinvSubscriptionId = HSP.dinvSubscriptionId or nil
 Spellups = Spellups or {}
 
 -- ============================================================================
@@ -855,13 +856,7 @@ function HSP.onGMCPCharStatus()
   end
   
   if HSP.currentState == 3 and Spellups[&quot;GL&quot;][&quot;autoaura&quot;] == &quot;yes&quot; and Spellups[&quot;GL&quot;][&quot;autoaurafired&quot;] == &quot;no&quot; then
-    hadarprint(&quot;Should be wearing equipment &quot; .. tostring(Spellups[&quot;GL&quot;][&quot;float&quot;]), &quot;debug&quot;)
-    Spellups[&quot;GL&quot;][&quot;autoaurafired&quot;] = &quot;yes&quot;
-    send(&quot;wear &quot; .. Spellups[&quot;GL&quot;][&quot;float&quot;], false)
-    Spellups[&quot;GL&quot;][&quot;sancoff&quot;] = &quot;no&quot;
-    if Spellups[&quot;GL&quot;][&quot;aurabag&quot;] ~= 0 then
-      send(&quot;put &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;] .. &quot; &quot; .. Spellups[&quot;GL&quot;][&quot;aurabag&quot;], false)
-    end
+    HSP.restoreFloatAndAura()
   end
   cast_spells()
   SendSlistCommand()
@@ -1270,17 +1265,173 @@ function testshow(arg)
 end
 
 -- ============================================================================
--- invmon (adapted)
+-- DINV inventory integration
 -- ============================================================================
-function invmon()
-  local action = tonumber(matches[2])
-  local id = tonumber(matches[3])
-  local loc = tonumber(matches[4])
-  if action == 1 and loc == 27 then
-    if tonumber(Spellups[&quot;GL&quot;][&quot;auranumber&quot;]) ~= id then
+function HSP.getConfiguredId(value)
+  local id = tostring(value or &quot;&quot;):match(&quot;^%s*(%d+)%s*$&quot;)
+  if not id or id == &quot;0&quot; then return nil end
+  return id
+end
+
+function HSP.getStorageReference(value)
+  local reference = tostring(value or &quot;&quot;):match(&quot;^%s*(.-)%s*$&quot;)
+  if reference == &quot;&quot; or reference == &quot;0&quot; then return nil end
+  if reference == &quot;keyring&quot; or reference:match(&quot;^%d+$&quot;) then
+    return reference
+  end
+  return nil
+end
+
+function HSP.getAuraId()
+  if not Spellups[&quot;GL&quot;] then return nil end
+  return HSP.getConfiguredId(Spellups[&quot;GL&quot;][&quot;auranumber&quot;])
+end
+
+function HSP.getAuraState()
+  local auraId = HSP.getAuraId()
+  if not auraId or not (DINV and DINV.api and type(DINV.api.getItem) == &quot;function&quot;) then
+    return nil
+  end
+  if HSP.auraTrackedId ~= auraId then
+    HSP.auraTrackedId = auraId
+    HSP.auraHomeContainer = nil
+    HSP.auraLocation = nil
+    HSP.auraContainer = nil
+  end
+
+  local ok, result = pcall(DINV.api.getItem, auraId, {
+    source = &quot;live&quot;,
+    fields = {&quot;id&quot;, &quot;name&quot;, &quot;location&quot;, &quot;container&quot;, &quot;lastStored&quot;, &quot;worn&quot;, &quot;isWorn&quot;},
+  })
+  if not ok or type(result) ~= &quot;table&quot; or not result.ok then return nil end
+
+  local item = result.item
+  HSP.auraLocation = item.location
+  HSP.auraContainer = item.container
+
+  local home = HSP.getStorageReference(item.container)
+  if not home and not item.isWorn then
+    home = HSP.getStorageReference(item.location)
+  end
+  home = home or HSP.getStorageReference(item.lastStored)
+  if home then
+    HSP.auraHomeContainer = home
+    Spellups[&quot;GL&quot;][&quot;aurabag&quot;] = home
+  end
+
+  return item
+end
+
+function HSP.captureFloatEquipment()
+  if not (DINV and DINV.api and type(DINV.api.getEquipped) == &quot;function&quot;) then
+    return nil
+  end
+
+  local ok, result = pcall(DINV.api.getEquipped, &quot;float&quot;, {
+    source = &quot;live&quot;,
+    fields = {&quot;id&quot;, &quot;name&quot;, &quot;location&quot;, &quot;worn&quot;},
+  })
+  if not ok or type(result) ~= &quot;table&quot; or not result.ok then return nil end
+
+  local auraId = HSP.getAuraId()
+  for _, item in ipairs(result.items or {}) do
+    local id = HSP.getConfiguredId(item.id)
+    if id and id ~= auraId then
       Spellups[&quot;GL&quot;][&quot;float&quot;] = id
+      return item
     end
   end
+  return nil
+end
+
+function HSP.dinvRevision()
+  if DINV and DINV.api and type(DINV.api.getRevision) == &quot;function&quot; then
+    local ok, revision = pcall(DINV.api.getRevision)
+    if ok then return tonumber(revision) end
+  end
+  return nil
+end
+
+function HSP.syncDINVState()
+  HSP.captureFloatEquipment()
+  HSP.getAuraState()
+  HSP.dinvLastRevision = HSP.dinvRevision()
+  return true
+end
+
+function HSP.syncAutoAuraDINV()
+  if Spellups[&quot;GL&quot;] and Spellups[&quot;GL&quot;][&quot;autoaura&quot;] == &quot;yes&quot; then
+    return HSP.syncDINVState()
+  end
+  return false
+end
+
+function HSP.onDINVInventoryChanged(payload)
+  HSP.syncAutoAuraDINV()
+end
+
+function HSP.subscribeToDINV()
+  return HSP.syncAutoAuraDINV()
+end
+
+function HSP.retrieveAura(item)
+  local auraId = HSP.getAuraId()
+  if not auraId or not item then return false end
+  if item.isWorn then return true end
+
+  local source = HSP.getStorageReference(item.container)
+  if not source then
+    source = HSP.getStorageReference(item.location)
+  end
+
+  if source == &quot;keyring&quot; then
+    send(&quot;keyring get &quot; .. auraId)
+  elseif source then
+    send(&quot;get &quot; .. auraId .. &quot; &quot; .. source)
+  end
+  return true
+end
+
+function HSP.wearConfiguredAura()
+  local auraId = HSP.getAuraId()
+  if not auraId then return false end
+
+  HSP.captureFloatEquipment()
+  local item = HSP.getAuraState()
+  if not item then
+    hadarprint(&quot;DINV could not find configured aura &quot; .. auraId, &quot;error&quot;)
+    return false
+  end
+
+  HSP.retrieveAura(item)
+  send(&quot;wear &quot; .. auraId)
+  return true
+end
+
+function HSP.restoreFloatAndAura()
+  local auraId = HSP.getAuraId()
+  if not auraId then return false end
+
+  local item = HSP.getAuraState()
+  local home = HSP.auraHomeContainer
+    or (item and HSP.getStorageReference(item.lastStored))
+    or HSP.getStorageReference(Spellups[&quot;GL&quot;][&quot;aurabag&quot;])
+  local floatId = HSP.getConfiguredId(Spellups[&quot;GL&quot;][&quot;float&quot;])
+
+  Spellups[&quot;GL&quot;][&quot;autoaurafired&quot;] = &quot;yes&quot;
+  Spellups[&quot;GL&quot;][&quot;sancoff&quot;] = &quot;no&quot;
+
+  if floatId and floatId ~= auraId then
+    hadarprint(&quot;Should be wearing equipment &quot; .. floatId, &quot;debug&quot;)
+    send(&quot;wear &quot; .. floatId, false)
+  end
+
+  if home == &quot;keyring&quot; then
+    send(&quot;keyring put &quot; .. auraId, false)
+  elseif home then
+    send(&quot;put &quot; .. auraId .. &quot; &quot; .. home, false)
+  end
+  return true
 end
 
 -- ============================================================================
@@ -1401,16 +1552,7 @@ end
 -- affoffautoaura (adapted)
 -- ============================================================================
 function affoffautoaura()
-  if Spellups[&quot;GL&quot;][&quot;auranumber&quot;] ~= 0 then
-    hadarprint(&quot;autoaura not 0&quot;, &quot;debug&quot;)
-    if Spellups[&quot;GL&quot;][&quot;aurabag&quot;] ~= 0 then
-      hadarprint(&quot;aurabag not 0&quot;, &quot;debug&quot;)
-      send(&quot;get &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;] .. &quot; &quot; .. Spellups[&quot;GL&quot;][&quot;aurabag&quot;])
-      send(&quot;wear &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;])
-    else
-      hadarprint(&quot;aura bag not set leaving in inventory&quot;, &quot;debug&quot;)
-      send(&quot;wear &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;])
-    end
+  if HSP.getAuraId() and HSP.wearConfiguredAura() then
     Spellups[&quot;GL&quot;][&quot;autoaurafired&quot;] = &quot;no&quot;
   end
 end
@@ -1650,16 +1792,10 @@ function hspsetingame(str)
 end
 
 function hspWearAura()
-  if Spellups[&quot;GL&quot;][&quot;auranumber&quot;] == 0 then
+  if not HSP.getAuraId() then
     hadarprint(&quot;You will need to set an aura number use command @Ghsp autoaura aura &lt;number&gt;@w&quot;, &quot;error&quot;)
-    hadarprint(&quot;also if you have not set the bag you can do so with @Ghsp autoaura bag &lt;number&gt;@w&quot;, &quot;error&quot;)
   else
-    if Spellups[&quot;GL&quot;][&quot;aurabag&quot;] ~= 0 then
-      send(&quot;get &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;] .. &quot; &quot; .. Spellups[&quot;GL&quot;][&quot;aurabag&quot;])
-      send(&quot;wear &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;])
-    else
-      send(&quot;wear &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;])
-    end
+    HSP.wearConfiguredAura()
   end
 end
 
@@ -1675,11 +1811,12 @@ end
 
 function auraseton()
   if Spellups[&quot;GL&quot;][&quot;autoaura&quot;] == &quot;no&quot; then
-    if Spellups[&quot;GL&quot;][&quot;auranumber&quot;] == 0 then
+    if not HSP.getAuraId() then
       hadarprint(&quot;Auto aura @RNOT@c turned on&quot;, &quot;script&quot;)
       hadarprint(&quot;You will need to set an aura number use command @Ghsp autoaura aura &lt;number&gt;@w&quot;, &quot;error&quot;)
     else
       Spellups[&quot;GL&quot;][&quot;autoaura&quot;] = &quot;yes&quot;
+      HSP.syncDINVState()
       hadarprint(&quot;Auto aura set to @GON&quot;, &quot;script&quot;)
     end
   else
@@ -1697,20 +1834,23 @@ function aurasetoff()
 end
 
 function auraset(arg)
-  local thing = tonumber(arg) or string.lower(arg or &quot;&quot;)
-  if type(thing) == &quot;number&quot; then
-    Spellups[&quot;GL&quot;][&quot;auranumber&quot;] = thing
-    hadarprint(&quot;Aura set to: &quot; .. Spellups[&quot;GL&quot;][&quot;auranumber&quot;], &quot;script&quot;)
+  local id = tostring(arg or &quot;&quot;):match(&quot;^%s*(%d+)%s*$&quot;)
+  if id and id ~= &quot;0&quot; then
+    Spellups[&quot;GL&quot;][&quot;auranumber&quot;] = id
+    HSP.auraTrackedId = nil
+    HSP.getAuraState()
+    hadarprint(&quot;Aura set to: &quot; .. id, &quot;script&quot;)
     return
   end
   hadarprint(&quot;Please provide a number: hsp autoaura aura &lt;number&gt;&quot;, &quot;error&quot;)
 end
 
 function aurasetbag(arg)
-  local val = tonumber(arg)
-  if val then
-    Spellups[&quot;GL&quot;][&quot;aurabag&quot;] = val
-    hadarprint(&quot;Aura bag set to: &quot; .. Spellups[&quot;GL&quot;][&quot;aurabag&quot;], &quot;script&quot;)
+  local id = tostring(arg or &quot;&quot;):match(&quot;^%s*(%d+)%s*$&quot;)
+  if id then
+    Spellups[&quot;GL&quot;][&quot;aurabag&quot;] = id
+    HSP.auraHomeContainer = HSP.getStorageReference(id)
+    hadarprint(&quot;Aura bag set to: &quot; .. id, &quot;script&quot;)
   else
     hadarprint(&quot;Please provide a number: hsp autoaura bag &lt;number&gt;&quot;, &quot;error&quot;)
   end
@@ -2983,6 +3123,8 @@ function HSP.OnPluginEnable()
   else
     Spellups[&quot;EX&quot;][&quot;percentageStop&quot;] = (HSP.maxmana * Spellups[&quot;EX&quot;][&quot;percentage&quot;] / 100)
   end
+
+  HSP.subscribeToDINV()
 end
 
 -- ============================================================================

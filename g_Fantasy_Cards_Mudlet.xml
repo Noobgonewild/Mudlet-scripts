@@ -5,15 +5,15 @@
     <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
       <name>Fantasy_Cards</name><script></script><conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName>Fantasy_Cards</packageName><mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor><regexCodeList><string></string></regexCodeList><regexCodePropertyList><integer>0</integer></regexCodePropertyList>
       <Trigger isActive="yes" isFolder="no"><name>fate_start</name><script>FantasyCards_TR_Start(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You have the following cards stored\:$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
-      <Trigger isActive="yes" isFolder="no"><name>fate_ind_store</name><script>FantasyCards_TR_Capture(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You carefully place a (.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card within the (.*)?Case\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>fate_ind_store</name><script>FantasyCards_TR_Store(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You carefully place a (.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card within the (.*)?Case\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>fate_ind_ret</name><script>FantasyCards_TR_Retrieve(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You carefully retrieve a (.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card from the (.*)?Case\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
-      <Trigger isActive="yes" isFolder="no"><name>fate_capture</name><script>FantasyCards_TR_Capture(matches)</script><command></command><packageName></packageName><regexCodeList><string>^(.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="no" isFolder="no"><name>fate_capture</name><script>FantasyCards_TR_Capture(matches)</script><command></command><packageName></packageName><regexCodeList><string>^(.*) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>fate_stop</name><script>FantasyCards_TR_Stop(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Total\: (.*)$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>market_card</name><script>FantasyCards_TR_Market(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Market: (.+ has (?:proxy )?bid [\d,]+ gold on|Bid of [\d,]+ gold on|.+ is selling) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card \(Level \d+, Num \d+\).?( Auction is for Gold\.)?$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>auction_card</name><script>FantasyCards_TR_Auction(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Auction: (.+ has placed a bid for [\d,]+ gold on|.+ is auctioning) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card \(Level \d+, Num \d+\).( Current bid is [\d,]+.)?$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>bid_card</name><script>FantasyCards_TR_Bid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^([\d ]+) - .+(.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card\s+\d+\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>lbid_card</name><script>FantasyCards_TR_LBid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ (\d+) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card\s+\d+ (\*| )?G.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
-      <Trigger isActive="yes" isFolder="no"><name>market_list_card</name><script>FantasyCards_TR_MarketList(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ +(\d+) (\w+) (Fantasy|Expansion|Memorial|Original).* Series Col.* +(\d+) +\*?(Gold|Qp).+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>market_list_card</name><script>FantasyCards_TR_MarketList(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ +(\d+) (\S+) +(Fantasy|Expansion|Memorial|Original).* +(\d+) +\*?(Gold|Qp).+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="no" isFolder="no"><name>scan_done</name><script>FantasyCards_TR_ScanDone(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Scanned all Fantasy Card cases!$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
     </TriggerGroup>
   </TriggerPackage>
@@ -38,7 +38,7 @@ local function _fc_safe_call(name, ...)
 end
 
 function FantasyCards_Alias_Help(matches)
-  return _fc_safe_call("Help")
+  return _fc_safe_call("FantasyCards_Help")
 end
 
 function FantasyCards_Alias_Scan(matches)
@@ -48,6 +48,23 @@ end
     <Script isActive="yes" isFolder="no"><name>FantasyCardsScript</name><script><![CDATA[-- Fantasy Cards Mudlet script (initial)
 local fateTable = {}
 local scanInProgress = false
+local captureInProgress = false
+local scanCapturedCards = 0
+local scanReportedTotal = 0
+local casesScanned = 0
+FantasyCards = FantasyCards or {}
+FantasyCards.dinvOwnership = FantasyCards.dinvOwnership or {}
+local dinvOwnership = FantasyCards.dinvOwnership
+dinvOwnership.loaded = dinvOwnership.loaded or false
+dinvOwnership.cards = dinvOwnership.cards or {}
+dinvOwnership.revision = tonumber(dinvOwnership.revision)
+local DINV_CARD_QUERY = "name collector's card"
+local DINV_CARD_SUFFIXES = {
+  [1] = " fantasy series collector's card",
+  [2] = " expansion series collector's card",
+  [3] = " memorial and immortal's series collector's card",
+  [4] = " original and immortal's series collector's card",
+}
 
 local function plain_from_colours(...)
   local args={...}
@@ -178,6 +195,120 @@ persist_save = function()
     f:write("return " .. lua_serialize(payload))
     f:close()
   end
+end
+
+local function normalize_card_text(value)
+  local text = tostring(value or "")
+  text = text:gsub("@.", "")
+  text = text:gsub("<[^>]+>", "")
+  text = text:gsub("%s+", " ")
+  text = text:gsub("^%s+", ""):gsub("%s+$", "")
+  return string.lower(text)
+end
+
+local function dinv_is_installed()
+  return type(_G.DINV) == "table"
+    and type(_G.DINV.api) == "table"
+    and type(_G.DINV.api.search) == "function"
+end
+
+local function dinv_revision()
+  if type(_G.DINV) == "table"
+    and type(_G.DINV.api) == "table"
+    and type(_G.DINV.api.getRevision) == "function"
+  then
+    local ok, revision = pcall(_G.DINV.api.getRevision)
+    if ok then
+      return tonumber(revision)
+    end
+  end
+  return nil
+end
+
+local function card_from_dinv_name(rawName)
+  local itemName = normalize_card_text(rawName)
+  for caseID, suffix in ipairs(DINV_CARD_SUFFIXES) do
+    if #itemName > #suffix and itemName:sub(-#suffix) == suffix then
+      local cardName = itemName:sub(1, #itemName - #suffix)
+      local card = fateTable[cardName]
+      if card and tonumber(card.caseID) == caseID then
+        return cardName
+      end
+
+      local withoutArticle = cardName:gsub("^an? ", ""):gsub("^the ", "")
+      card = fateTable[withoutArticle]
+      if card and tonumber(card.caseID) == caseID then
+        return withoutArticle
+      end
+    end
+  end
+  return nil
+end
+
+local function refresh_dinv_ownership(revisionHint, force)
+  if not dinv_is_installed() then
+    dinvOwnership.loaded = false
+    dinvOwnership.cards = {}
+    dinvOwnership.revision = nil
+    return false
+  end
+
+  local revision = tonumber(revisionHint) or dinv_revision()
+  if not force and dinvOwnership.loaded and revision ~= nil and dinvOwnership.revision == revision then
+    return dinvOwnership.loaded
+  end
+
+  local ok, result = pcall(_G.DINV.api.search, DINV_CARD_QUERY, {
+    source = "persistence",
+    fields = {"id", "name", "colorName", "normalizedName", "type"},
+    sortBy = {"normalizedName", "id"},
+  })
+  if not ok or type(result) ~= "table" or not result.ok then
+    dinvOwnership.loaded = false
+    dinvOwnership.cards = {}
+    dinvOwnership.revision = revision
+    return false
+  end
+
+  local owned = {}
+  for _, item in ipairs(result.items or {}) do
+    if type(item) == "table" then
+      local cardName = card_from_dinv_name(item.name or item.colorName or item.normalizedName)
+      if cardName then
+        owned[cardName] = true
+      end
+    end
+  end
+
+  dinvOwnership.loaded = true
+  dinvOwnership.cards = owned
+  dinvOwnership.revision = tonumber(result.revision) or revision
+  return true
+end
+
+function FantasyCards_OnDINVInventoryChanged(payload)
+  payload = payload or {}
+  refresh_dinv_ownership(payload.revision)
+end
+
+function FantasyCards_OnDINVReady()
+  refresh_dinv_ownership(nil, true)
+end
+
+function FantasyCards_SubscribeDINV()
+  return refresh_dinv_ownership(nil, true)
+end
+
+local function register_dinv_ready_handler()
+  return refresh_dinv_ownership(nil, true)
+end
+
+local function card_is_owned(cardName)
+  local card = normalize_card_text(cardName)
+  if dinvOwnership.loaded and dinvOwnership.cards[card] then
+    return true
+  end
+  return fateTable[card] ~= nil and tonumber(fateTable[card].count) == 1
 end
 
 function ResetTable()
@@ -408,19 +539,26 @@ function ResetTable()
             ["yandros"] = { count = 0, caseID = 4, caseName = "Original and Immortal's Series" } }
     end
 
-function Help()
+function FantasyCards_Help()
   ColourNote("orange", "", "Fantasy Cards commands: lft help | lft search/find <card> | lft summary <1-4> | lft report <1-4> <channel> | lft owned <1-4> <channel> | lft scan")
+  ColourNote("cyan", "", "Ownership refreshes DINV persistence through DINV.api.search(), then falls back to scanned collector-case data.")
 end
 
-function OnPluginInstall()
+function FantasyCards_OnPluginInstall()
   persist_load()
-  Help()
+  EnableTrigger("fate_capture", false)
+  register_dinv_ready_handler()
+  FantasyCards_Help()
 end
 
     function FindCardStatus(cardName)
-        local card = string.lower(trim(cardName))
+        if cardName == nil or tostring(cardName) == "" then
+            return "UNK"
+        end
+        refresh_dinv_ownership(nil, true)
+        local card = normalize_card_text(cardName)
         if fateTable[card] ~= nil then
-            if fateTable[card].count == 0 then
+            if not card_is_owned(card) then
                 return "NEED"
             else
                 return "HAVE"
@@ -434,83 +572,117 @@ end
         return (str:gsub("^%s*(.-)%s*$", "%1"))
     end
 
+    local function style_colour_name(style)
+        if type(RGBColourToName) == "function" then
+            return RGBColourToName(style.textcolour)
+        end
+        return "white"
+    end
+
+    local function echo_styles(styles)
+        if type(styles) ~= "table" or #styles == 0 then
+            return false
+        end
+        for _, s in ipairs(styles) do
+            ColourTell(style_colour_name(s), "", s.text)
+        end
+        return true
+    end
+
+    local function append_need_tag(rawLine)
+        local current = rawLine
+        if (current == nil or current == "") and type(getCurrentLine) == "function" then
+            local ok, got = pcall(getCurrentLine)
+            if ok then current = got end
+        end
+
+        if type(copy2decho) == "function" and type(decho) == "function" and type(replace) == "function" then
+            local ok, coloured = pcall(copy2decho)
+            if ok and coloured ~= nil and tostring(coloured) ~= "" then
+                coloured = tostring(coloured):gsub("[\r\n]+$", "")
+
+                local cleared = false
+                if type(selectCurrentLine) == "function" then
+                    local ok_select = pcall(selectCurrentLine)
+                    local ok_replace = ok_select and pcall(replace, "")
+                    cleared = ok_replace and true or false
+                elseif current ~= nil and current ~= "" and type(selectString) == "function" then
+                    local ok_select, found = pcall(selectString, tostring(current), 1)
+                    if ok_select and found and found > -1 then
+                        local ok_replace = pcall(replace, "")
+                        cleared = ok_replace and true or false
+                    end
+                end
+
+                if cleared then
+                    decho(coloured .. " <255,0,0>NEED<r>\n")
+                    return
+                end
+            end
+        end
+
+        if type(fg) == "function" and type(echo) == "function" then
+            echo(" ")
+            fg("red")
+            echo("NEED")
+            if type(resetFormat) == "function" then resetFormat() end
+            return
+        end
+
+        if type(cecho) == "function" then
+            cecho(" <red>NEED<reset>\n")
+        else
+            Note(" NEED")
+        end
+    end
+
+    local function show_line_status(styles, status, rawLine)
+        local rendered = echo_styles(styles)
+        if status == "NEED" then
+            if rendered then
+                ColourTell("red", "", " NEED")
+                Note("")
+            else
+                append_need_tag(rawLine)
+            end
+        elseif rendered then
+            Note("")
+        end
+    end
+
     -- Market trigger handler
     function MarketCard(name, line, wildcards, styles)
         local cardName = wildcards.card
         local status = FindCardStatus(cardName)
-        local w = 0
-        for i, s in ipairs(styles) do
-            ColourTell(RGBColourToName(s.textcolour), "", s.text)
-            -- Find position after "Series Collector's Card" to insert status
-            if string.find(s.text, "Series Collector's Card") then
-                w = i
-            end
-            if i == w and status == "NEED" then
-                ColourTell("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
-                w = 0
-            end
-        end
-        Note("")
+        show_line_status(styles, status, line)
     end
 
     -- Auction trigger handler
     function AuctionCard(name, line, wildcards, styles)
         local cardName = wildcards.card
         local status = FindCardStatus(cardName)
-        local w = 0
-        for i, s in ipairs(styles) do
-            ColourTell(RGBColourToName(s.textcolour), "", s.text)
-            if string.find(s.text, "Series Collector's Card") then
-                w = i
-            end
-            if i == w and status == "NEED" then
-                ColourTell("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
-                w = 0
-            end
-        end
-        Note("")
+        show_line_status(styles, status, line)
     end
 
     -- Bid list trigger handler
     function BidCard(name, line, wildcards, styles)
         local cardName = trim(wildcards.card)
         local status = FindCardStatus(cardName)
-        for i, s in ipairs(styles) do
-            ColourTell(RGBColourToName(s.textcolour), "", s.text)
-        end
-        if status == "NEED" then
-            ColourNote("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
-        else
-            Note("")
-        end
+        show_line_status(styles, status, line)
     end
 
     -- LBid list trigger handler
     function LBidCard(name, line, wildcards, styles)
         local cardName = trim(wildcards.card)
         local status = FindCardStatus(cardName)
-        for i, s in ipairs(styles) do
-            ColourTell(RGBColourToName(s.textcolour), "", s.text)
-        end
-        if status == "NEED" then
-            ColourNote("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
-        else
-            Note("")
-        end
+        show_line_status(styles, status, line)
     end
 
     -- Market list trigger handler (for truncated names in market list)
     function MarketListCard(name, line, wildcards, styles)
         local cardName = trim(wildcards.card)
         local status = FindCardStatus(cardName)
-        for i, s in ipairs(styles) do
-            ColourTell(RGBColourToName(s.textcolour), "", s.text)
-        end
-        if status == "NEED" then
-            ColourNote("magenta", "", " [", "cyan", "", status, "magenta", "", "]")
-        else
-            Note("")
-        end
+        show_line_status(styles, status, line)
     end
 
     -- Scan all 4 collector cases
@@ -518,27 +690,36 @@ end
         ColourNote("yellow", "", "Scanning all 4 collector cases...")
         ResetTable()
         scanInProgress = true
+        scanCapturedCards = 0
+        scanReportedTotal = 0
         casesScanned = 0
-        EnableTrigger("scan_done", true)
         Send("identify collector1")
         Send("identify collector2")
         Send("identify collector3")
         Send("identify collector4")
-        SendNoEcho("echo @YScanned all Fantasy Card cases!")
     end
 
     -- Scan completion handler
     function ScanComplete()
         EnableTrigger("scan_done", false)
+        if scanReportedTotal > 0 and scanCapturedCards < scanReportedTotal then
+            scanInProgress = false
+            captureInProgress = false
+            EnableTrigger("fate_capture", false)
+            ColourNote("red", "", "Scan reported " .. scanReportedTotal .. " stored cards but captured " .. scanCapturedCards .. ". Ownership state was NOT saved.")
+            ColourNote("orange", "", "Reload this package and try lft scan again. If this repeats, the stored-card output format changed.")
+            return
+        end
         persist_save()
         scanInProgress = false
+        refresh_dinv_ownership(nil, true)
         
         -- Count owned cards per case
         local owned = {0, 0, 0, 0}
         local total = {0, 0, 0, 0}
         for key, value in pairs(fateTable) do
             total[value.caseID] = total[value.caseID] + 1
-            if value.count == 1 then
+            if card_is_owned(key) then
                 owned[value.caseID] = owned[value.caseID] + 1
             end
         end
@@ -559,6 +740,7 @@ end
             ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
             return
         end
+        refresh_dinv_ownership(nil, true)
 
         for key, value in pairsByKeys(fateTable) do
             if value.caseID == caseID then --Proper case
@@ -566,7 +748,7 @@ end
                     caseName = value.caseName
                 end
 
-                if tonumber(value.count) == 0 then --Don't have this card.
+                if not card_is_owned(key) then --Don't have this card.
                     iCount = iCount + 1
                     if iCount == 1 then --First card, no need to add
                         sText = sText .. CapFirst(key)
@@ -593,6 +775,7 @@ end
             ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
             return
         end
+        refresh_dinv_ownership(nil, true)
 
         for key, value in pairsByKeys(fateTable) do
             if value.caseID == caseID then --Proper case
@@ -600,7 +783,7 @@ end
                     caseName = value.caseName
                 end
 
-                if tonumber(value.count) == 1 then --Have this card.
+                if card_is_owned(key) then --Have this card.
                     iCount = iCount + 1
                     if iCount == 1 then --First card, no need to add
                         sText = sText .. CapFirst(key)
@@ -629,6 +812,7 @@ end
             ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
             return
         end
+        refresh_dinv_ownership(nil, true)
 
         for key, value in pairs(fateTable) do
             if value.caseID == caseID then
@@ -636,7 +820,7 @@ end
                     caseName = value.caseName
                 end
 
-                if value.count == 1 then
+                if card_is_owned(key) then
                     iCount = iCount + 1
                 else
                     iCount2 = iCount2 + 1
@@ -651,7 +835,7 @@ end
         ColourNote("orange", "", "\n\rYou need the following cards:")
         for key, value in pairsByKeys(fateTable) do
             if value.caseID == caseID then --Proper case
-                if tonumber(value.count) == 0 then --Don't have this card.
+                if not card_is_owned(key) then --Don't have this card.
                     iCount = iCount + 1
                     tCount = tCount + 1
                     if iCount == 1 then --No tab in front
@@ -673,12 +857,13 @@ end
     end
 
     function FindCard(name, line, wildcards)
-        local sText = string.lower(wildcards[2])
+        local sText = normalize_card_text(wildcards[2])
+        refresh_dinv_ownership(nil, true)
 
         if fateTable[sText] == nil then
             ColourNote("orange", "", "The card \'" .. sText .. "\' does not exist in any sets.")
         else
-            if fateTable[sText].count == 0 then
+            if not card_is_owned(sText) then
                 ColourNote("orange", "", "You do ", "red", "", "NOT", "orange", "", " have the ", "cyan", "", CapFirst(sText), "orange", "", "[", "magenta", "", fateTable[sText].caseName, "orange", "", "] card.")
             else
                 ColourNote("orange", "", "You ", "lime", "", "DO", "orange", "", " have the ", "cyan", "", CapFirst(sText), "orange", "", "[", "magenta", "", fateTable[sText].caseName, "orange", "", "] card.")
@@ -691,13 +876,23 @@ end
         if not scanInProgress then
             ResetTable()
         end
-        EnableTriggerGroup("fate_capture", true)
+        captureInProgress = true
+        EnableTrigger("fate_capture", true)
     end
 
     function Capture(name, line, wildcards)
+        if not captureInProgress and not wildcards.direct then
+            return
+        end
         local cardName = string.lower(wildcards.card)
         if fateTable[cardName] ~= nil then
             fateTable[cardName].count = 1
+            if scanInProgress and not wildcards.direct then
+                scanCapturedCards = scanCapturedCards + 1
+            end
+            if not scanInProgress then
+                persist_save()
+            end
         end
     end
 
@@ -705,12 +900,25 @@ end
         local cardName = string.lower(wildcards.card)
         if fateTable[cardName] ~= nil then
             fateTable[cardName].count = 0
+            persist_save()
         end
     end
 
     function StopCapture(name, line, wildcards)
-        persist_save()
-        EnableTriggerGroup("fate_capture", false)
+        local scanComplete = false
+        if scanInProgress then
+            local reported = tonumber(tostring(wildcards.total or ""):match("%d+")) or 0
+            scanReportedTotal = scanReportedTotal + reported
+            casesScanned = casesScanned + 1
+            scanComplete = casesScanned >= 4
+        else
+            persist_save()
+        end
+        captureInProgress = false
+        EnableTrigger("fate_capture", false)
+        if scanComplete then
+            ScanComplete()
+        end
     end
 
     function CapFirst(str)
@@ -737,10 +945,10 @@ end
 
 
 function FantasyCards_Init()
-  OnPluginInstall()
+  FantasyCards_OnPluginInstall()
 end
 
-function FantasyCards_Alias_Help(matches) Help() end
+function FantasyCards_Alias_Help(matches) FantasyCards_Help() end
 function FantasyCards_Alias_Summary(matches) Summary(nil,nil,{case=matches[2]}) end
 function FantasyCards_Alias_Find(matches) FindCard(nil,nil,{[2]=matches[3]}) end
 function FantasyCards_Alias_Report(matches) ReportCards(nil,nil,{case=matches[2],channel=matches[3]}) end
@@ -749,13 +957,14 @@ function FantasyCards_Alias_Scan(matches) ScanCases() end
 
 function FantasyCards_TR_Start(matches) StartCapture(nil,nil,{}) end
 function FantasyCards_TR_Capture(matches) Capture(nil,nil,{card=matches[2]}) end
+function FantasyCards_TR_Store(matches) Capture(nil,nil,{card=matches[2],direct=true}) end
 function FantasyCards_TR_Retrieve(matches) RetrieveCard(nil,nil,{card=matches[2]}) end
 function FantasyCards_TR_Stop(matches) StopCapture(nil,nil,{total=matches[2]}) end
-function FantasyCards_TR_Market(matches) MarketCard(nil,nil,{card=matches[3]},{}) end
-function FantasyCards_TR_Auction(matches) AuctionCard(nil,nil,{card=matches[3]},{}) end
-function FantasyCards_TR_Bid(matches) BidCard(nil,nil,{card=matches[3]},{}) end
-function FantasyCards_TR_LBid(matches) LBidCard(nil,nil,{card=matches[3]},{}) end
-function FantasyCards_TR_MarketList(matches) MarketListCard(nil,nil,{card=matches[2]},{}) end
+function FantasyCards_TR_Market(matches) MarketCard(nil,line,{card=matches[3]},{}) end
+function FantasyCards_TR_Auction(matches) AuctionCard(nil,line,{card=matches[3]},{}) end
+function FantasyCards_TR_Bid(matches) BidCard(nil,line,{card=matches[3]},{}) end
+function FantasyCards_TR_LBid(matches) LBidCard(nil,line,{card=matches[3]},{}) end
+function FantasyCards_TR_MarketList(matches) MarketListCard(nil,line,{card=matches[3]},{}) end
 function FantasyCards_TR_ScanDone(matches) ScanComplete() end
 
 FantasyCards_Init()

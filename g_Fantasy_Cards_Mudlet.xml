@@ -53,18 +53,6 @@ local scanCapturedCards = 0
 local scanReportedTotal = 0
 local casesScanned = 0
 FantasyCards = FantasyCards or {}
-FantasyCards.dinvOwnership = FantasyCards.dinvOwnership or {}
-local dinvOwnership = FantasyCards.dinvOwnership
-dinvOwnership.loaded = dinvOwnership.loaded or false
-dinvOwnership.cards = dinvOwnership.cards or {}
-dinvOwnership.revision = tonumber(dinvOwnership.revision)
-local DINV_CARD_QUERY = "name collector's card"
-local DINV_CARD_SUFFIXES = {
-  [1] = " fantasy series collector's card",
-  [2] = " expansion series collector's card",
-  [3] = " memorial and immortal's series collector's card",
-  [4] = " original and immortal's series collector's card",
-}
 
 local function plain_from_colours(...)
   local args={...}
@@ -206,108 +194,8 @@ local function normalize_card_text(value)
   return string.lower(text)
 end
 
-local function dinv_is_installed()
-  return type(_G.DINV) == "table"
-    and type(_G.DINV.api) == "table"
-    and type(_G.DINV.api.search) == "function"
-end
-
-local function dinv_revision()
-  if type(_G.DINV) == "table"
-    and type(_G.DINV.api) == "table"
-    and type(_G.DINV.api.getRevision) == "function"
-  then
-    local ok, revision = pcall(_G.DINV.api.getRevision)
-    if ok then
-      return tonumber(revision)
-    end
-  end
-  return nil
-end
-
-local function card_from_dinv_name(rawName)
-  local itemName = normalize_card_text(rawName)
-  for caseID, suffix in ipairs(DINV_CARD_SUFFIXES) do
-    if #itemName > #suffix and itemName:sub(-#suffix) == suffix then
-      local cardName = itemName:sub(1, #itemName - #suffix)
-      local card = fateTable[cardName]
-      if card and tonumber(card.caseID) == caseID then
-        return cardName
-      end
-
-      local withoutArticle = cardName:gsub("^an? ", ""):gsub("^the ", "")
-      card = fateTable[withoutArticle]
-      if card and tonumber(card.caseID) == caseID then
-        return withoutArticle
-      end
-    end
-  end
-  return nil
-end
-
-local function refresh_dinv_ownership(revisionHint, force)
-  if not dinv_is_installed() then
-    dinvOwnership.loaded = false
-    dinvOwnership.cards = {}
-    dinvOwnership.revision = nil
-    return false
-  end
-
-  local revision = tonumber(revisionHint) or dinv_revision()
-  if not force and dinvOwnership.loaded and revision ~= nil and dinvOwnership.revision == revision then
-    return dinvOwnership.loaded
-  end
-
-  local ok, result = pcall(_G.DINV.api.search, DINV_CARD_QUERY, {
-    source = "persistence",
-    fields = {"id", "name", "colorName", "normalizedName", "type"},
-    sortBy = {"normalizedName", "id"},
-  })
-  if not ok or type(result) ~= "table" or not result.ok then
-    dinvOwnership.loaded = false
-    dinvOwnership.cards = {}
-    dinvOwnership.revision = revision
-    return false
-  end
-
-  local owned = {}
-  for _, item in ipairs(result.items or {}) do
-    if type(item) == "table" then
-      local cardName = card_from_dinv_name(item.name or item.colorName or item.normalizedName)
-      if cardName then
-        owned[cardName] = true
-      end
-    end
-  end
-
-  dinvOwnership.loaded = true
-  dinvOwnership.cards = owned
-  dinvOwnership.revision = tonumber(result.revision) or revision
-  return true
-end
-
-function FantasyCards_OnDINVInventoryChanged(payload)
-  payload = payload or {}
-  refresh_dinv_ownership(payload.revision)
-end
-
-function FantasyCards_OnDINVReady()
-  refresh_dinv_ownership(nil, true)
-end
-
-function FantasyCards_SubscribeDINV()
-  return refresh_dinv_ownership(nil, true)
-end
-
-local function register_dinv_ready_handler()
-  return refresh_dinv_ownership(nil, true)
-end
-
 local function card_is_owned(cardName)
   local card = normalize_card_text(cardName)
-  if dinvOwnership.loaded and dinvOwnership.cards[card] then
-    return true
-  end
   return fateTable[card] ~= nil and tonumber(fateTable[card].count) == 1
 end
 
@@ -541,13 +429,12 @@ function ResetTable()
 
 function FantasyCards_Help()
   ColourNote("orange", "", "Fantasy Cards commands: lft help | lft search/find <card> | lft summary <1-4> | lft report <1-4> <channel> | lft owned <1-4> <channel> | lft scan")
-  ColourNote("cyan", "", "Ownership refreshes DINV persistence through DINV.api.search(), then falls back to scanned collector-case data.")
+  ColourNote("cyan", "", "Ownership comes from scanned collector-case data.")
 end
 
 function FantasyCards_OnPluginInstall()
   persist_load()
   EnableTrigger("fate_capture", false)
-  register_dinv_ready_handler()
   FantasyCards_Help()
 end
 
@@ -555,7 +442,6 @@ end
         if cardName == nil or tostring(cardName) == "" then
             return "UNK"
         end
-        refresh_dinv_ownership(nil, true)
         local card = normalize_card_text(cardName)
         if fateTable[card] ~= nil then
             if not card_is_owned(card) then
@@ -712,7 +598,6 @@ end
         end
         persist_save()
         scanInProgress = false
-        refresh_dinv_ownership(nil, true)
         
         -- Count owned cards per case
         local owned = {0, 0, 0, 0}
@@ -740,8 +625,6 @@ end
             ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
             return
         end
-        refresh_dinv_ownership(nil, true)
-
         for key, value in pairsByKeys(fateTable) do
             if value.caseID == caseID then --Proper case
                 if caseName == "" then
@@ -775,8 +658,6 @@ end
             ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
             return
         end
-        refresh_dinv_ownership(nil, true)
-
         for key, value in pairsByKeys(fateTable) do
             if value.caseID == caseID then --Proper case
                 if caseName == "" then
@@ -812,8 +693,6 @@ end
             ColourNote("orange", "", "Invalid case range. Case must be 1, 2, 3 or 4.")
             return
         end
-        refresh_dinv_ownership(nil, true)
-
         for key, value in pairs(fateTable) do
             if value.caseID == caseID then
                 if caseName == "" then
@@ -858,7 +737,6 @@ end
 
     function FindCard(name, line, wildcards)
         local sText = normalize_card_text(wildcards[2])
-        refresh_dinv_ownership(nil, true)
 
         if fateTable[sText] == nil then
             ColourNote("orange", "", "The card \'" .. sText .. "\' does not exist in any sets.")

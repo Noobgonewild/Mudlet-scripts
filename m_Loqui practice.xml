@@ -656,7 +656,7 @@ end
 		Send_GMCP_Packet("request char")
 	end
 
-	function Help()
+	function LPH_Help()
 		for line in string.gmatch(GetPluginInfo(GetPluginID(), 3), "[^\r\n]+") do
 			ColourNote("orange", "black", line)
 		end
@@ -998,7 +998,7 @@ local function lph_alias_wrap(fn, matches)
   fn("", "", wild)
 end
 
-function lph_help(matches) lph_alias_wrap(Help, matches) end
+function lph_help(matches) lph_alias_wrap(LPH_Help, matches) end
 function lph_addclass(matches) lph_alias_wrap(addClass, matches) end
 function lph_classes(matches) lph_alias_wrap(showClasses, matches) end
 function lph_remclass(matches) lph_alias_wrap(remClass, matches) end

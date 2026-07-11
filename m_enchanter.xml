@@ -1,0 +1,1609 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>m_enchanter</name>
+      <packageName>m_enchanter</packageName>
+      <script></script>
+      <eventHandlerList/>
+      <Script isActive="yes" isFolder="no">
+        <name>m_enchanter_core</name>
+        <packageName>m_enchanter</packageName>
+        <script><![CDATA[
+----------------------------------------------------------------------------------------------------
+-- m_Enchanter - Mudlet enchanting helper backed by DINV persistence
+----------------------------------------------------------------------------------------------------
+
+m_Enchanter = m_Enchanter or {}
+m_Enchanter.version = "1.0.0"
+m_Enchanter.aliases = m_Enchanter.aliases or {}
+m_Enchanter.triggers = m_Enchanter.triggers or {}
+m_Enchanter.timers = m_Enchanter.timers or {}
+m_Enchanter.events = m_Enchanter.events or {}
+m_Enchanter.pending_identifies = m_Enchanter.pending_identifies or {}
+
+m_Enchanter.settings = m_Enchanter.settings or {
+    debug = false,
+    reporting_on = true,
+    report_channel = "echo",
+    quiet = false,
+    focus_ignore = false,
+}
+
+m_Enchanter.focus = m_Enchanter.focus or { status = "unknown" }
+m_Enchanter.pending_command = m_Enchanter.pending_command or ""
+m_Enchanter.pending_item_id = m_Enchanter.pending_item_id or ""
+m_Enchanter.last = m_Enchanter.last or nil
+
+----------------------------------------------------------------------------------------------------
+-- General helpers
+----------------------------------------------------------------------------------------------------
+
+local function trim(value)
+    return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function startsWith(value, prefix)
+    return tostring(value or ""):sub(1, #prefix) == prefix
+end
+
+local function tableCount(t)
+    local n = 0
+    if type(t) == "table" then
+        for _ in pairs(t) do
+            n = n + 1
+        end
+    end
+    return n
+end
+
+local function shallowCopy(t)
+    local out = {}
+    if type(t) == "table" then
+        for k, v in pairs(t) do
+            out[k] = v
+        end
+    end
+    return out
+end
+
+local function stripColors(text)
+    if dbot and dbot.stripColors then
+        return dbot.stripColors(text)
+    end
+    text = tostring(text or "")
+    text = text:gsub("@@", "\001AT\001")
+    text = text:gsub("@x%d+", "")
+    text = text:gsub("@[%a]", "")
+    text = text:gsub("\027%[[%d;]*m", "")
+    text = text:gsub("\001AT\001", "@")
+    return text
+end
+
+function m_Enchanter.convertColors(text)
+    if dbot and dbot.convertColors then
+        return dbot.convertColors(text)
+    end
+
+    local map = {
+        ["@w"] = "<ansi_white>",
+        ["@W"] = "<white>",
+        ["@r"] = "<ansi_red>",
+        ["@R"] = "<ansi_light_red>",
+        ["@g"] = "<ansi_green>",
+        ["@G"] = "<ansi_light_green>",
+        ["@y"] = "<ansi_yellow>",
+        ["@Y"] = "<ansi_light_yellow>",
+        ["@b"] = "<ansi_blue>",
+        ["@B"] = "<ansi_light_blue>",
+        ["@m"] = "<ansi_magenta>",
+        ["@M"] = "<ansi_light_magenta>",
+        ["@c"] = "<ansi_cyan>",
+        ["@C"] = "<ansi_light_cyan>",
+        ["@d"] = "<ansi_black>",
+        ["@D"] = "<ansi_light_black>",
+    }
+
+    text = tostring(text or "")
+    text = text:gsub("@@", "\001AT\001")
+    text = text:gsub("@x%d+", "")
+    for code, color in pairs(map) do
+        text = text:gsub(code:gsub("@", "%%@"), color)
+    end
+    text = text:gsub("\001AT\001", "@")
+    return text
+end
+
+function m_Enchanter.print(text)
+    cecho(m_Enchanter.convertColors(tostring(text or "")) .. "\n")
+end
+
+function m_Enchanter.info(text)
+    m_Enchanter.print("@C[m_enchanter]@w " .. tostring(text or ""))
+end
+
+function m_Enchanter.warn(text)
+    m_Enchanter.print("@Y[m_enchanter]@w " .. tostring(text or ""))
+end
+
+function m_Enchanter.debug(text)
+    if m_Enchanter.settings.debug then
+        m_Enchanter.print("@D[m_enchanter DEBUG] " .. tostring(text or "") .. "@w")
+    end
+end
+
+local function quoteTarget(target)
+    target = trim(target)
+    if target == "" then
+        return target
+    end
+    if target:match("^%d+$") then
+        return target
+    end
+    if target:find("%s") then
+        return "'" .. target:gsub("'", "\\'") .. "'"
+    end
+    return target
+end
+
+local function sendGameCommand(command)
+    if m_Enchanter.settings.quiet then
+        if sendSilent then
+            sendSilent(command)
+        else
+            send(command, false)
+        end
+    else
+        send(command)
+    end
+end
+
+local function sendReportLine(coloredText)
+    local channel = trim(m_Enchanter.settings.report_channel or "echo")
+    if channel == "" then
+        channel = "echo"
+    end
+
+    if channel:lower() == "echo" then
+        m_Enchanter.print(coloredText)
+        return
+    end
+
+    local command = channel .. " " .. tostring(coloredText or "")
+    local mudChannels = {
+        clan = true,
+        say = true,
+        gtell = true,
+        gt = true,
+        spouse = true,
+    }
+
+    if mudChannels[channel:lower()] then
+        send(command, false)
+    elseif expandAlias then
+        expandAlias(command, false)
+    else
+        send(command, false)
+    end
+end
+
+local function runDinvCommand(command)
+    if expandAlias then
+        expandAlias(command, false)
+    else
+        send(command, false)
+    end
+end
+
+local function niceJoin(list)
+    list = shallowCopy(list)
+    if #list == 0 then
+        return ""
+    end
+    if #list == 1 then
+        return list[1]
+    end
+    local last = table.remove(list)
+    return table.concat(list, ", ") .. ", and " .. last
+end
+
+----------------------------------------------------------------------------------------------------
+-- Persistence
+----------------------------------------------------------------------------------------------------
+
+local function getHomeDir()
+    if getMudletHomeDir then
+        return getMudletHomeDir()
+    end
+    return "."
+end
+
+local function ensureDirectory(path)
+    path = tostring(path or ""):gsub("\\", "/")
+    if path == "" then
+        return false
+    end
+
+    local ok, lfsLib = pcall(require, "lfs")
+    local fs = ok and lfsLib or lfs
+    if not fs then
+        return false
+    end
+
+    local current = ""
+    local drive = path:match("^%a:")
+    if drive then
+        current = drive
+        path = path:sub(3)
+    elseif startsWith(path, "/") then
+        current = "/"
+    end
+
+    for segment in path:gmatch("[^/]+") do
+        if current == "" then
+            current = segment
+        elseif current == "/" then
+            current = current .. segment
+        else
+            current = current .. "/" .. segment
+        end
+
+        if fs.attributes(current, "mode") ~= "directory" then
+            fs.mkdir(current)
+        end
+    end
+
+    return true
+end
+
+function m_Enchanter.getPersistenceDir()
+    return getHomeDir() .. "/persistence/"
+end
+
+function m_Enchanter.getSettingsPath()
+    return m_Enchanter.getPersistenceDir() .. "m_enchanter.state"
+end
+
+local function saveLuaTable(path, tableName, value)
+    local dir = path:match("^(.*[/\\])[^/\\]+$")
+    if dir then
+        ensureDirectory(dir)
+    end
+
+    local function serialize(v, indent)
+        indent = indent or 0
+        local tv = type(v)
+        if tv == "string" then
+            return string.format("%q", v)
+        elseif tv == "number" or tv == "boolean" then
+            return tostring(v)
+        elseif tv == "table" then
+            local parts = { "{" }
+            local nextIndent = indent + 4
+            local keys = {}
+            for k in pairs(v) do
+                table.insert(keys, k)
+            end
+            table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+            for _, k in ipairs(keys) do
+                local keyText
+                if type(k) == "string" and k:match("^[%a_][%w_]*$") then
+                    keyText = k
+                else
+                    keyText = "[" .. serialize(k, nextIndent) .. "]"
+                end
+                table.insert(parts, string.rep(" ", nextIndent) .. keyText .. " = " .. serialize(v[k], nextIndent) .. ",")
+            end
+            table.insert(parts, string.rep(" ", indent) .. "}")
+            return table.concat(parts, "\n")
+        end
+        return "nil"
+    end
+
+    local f, err = io.open(path, "w")
+    if not f then
+        m_Enchanter.warn("Could not save settings: " .. tostring(err))
+        return false
+    end
+    f:write(tableName .. " = " .. serialize(value, 0) .. "\n")
+    f:close()
+    return true
+end
+
+local function loadLuaFile(path)
+    local f = io.open(path, "r")
+    if not f then
+        return nil
+    end
+    local content = f:read("*a")
+    f:close()
+    if not content or content == "" then
+        return nil
+    end
+
+    local env = { inv = { items = {} } }
+    setmetatable(env, { __index = _G })
+
+    local chunk, err
+    if loadstring then
+        chunk, err = loadstring(content)
+        if chunk and setfenv then
+            setfenv(chunk, env)
+        end
+    else
+        chunk, err = load(content, "@" .. path, "t", env)
+    end
+
+    if not chunk then
+        m_Enchanter.warn("Could not parse persistence file '" .. tostring(path) .. "': " .. tostring(err))
+        return nil
+    end
+
+    local ok, runErr = pcall(chunk)
+    if not ok then
+        m_Enchanter.warn("Could not load persistence file '" .. tostring(path) .. "': " .. tostring(runErr))
+        return nil
+    end
+
+    return env
+end
+
+function m_Enchanter.saveSettings()
+    local data = {
+        debug = m_Enchanter.settings.debug and true or false,
+        reporting_on = m_Enchanter.settings.reporting_on and true or false,
+        report_channel = m_Enchanter.settings.report_channel or "echo",
+        quiet = m_Enchanter.settings.quiet and true or false,
+        focus_ignore = m_Enchanter.settings.focus_ignore and true or false,
+    }
+    saveLuaTable(m_Enchanter.getSettingsPath(), "m_EnchanterSettings", data)
+end
+
+function m_Enchanter.loadSettings()
+    local env = loadLuaFile(m_Enchanter.getSettingsPath())
+    local data = env and env.m_EnchanterSettings
+    if type(data) ~= "table" then
+        return
+    end
+
+    for k, v in pairs(data) do
+        m_Enchanter.settings[k] = v
+    end
+    m_Enchanter.settings.report_channel = m_Enchanter.settings.report_channel or "echo"
+end
+
+function m_Enchanter.itemStatePaths()
+    local paths = {}
+    local seen = {}
+    local function add(path)
+        if path and path ~= "" and not seen[path] then
+            seen[path] = true
+            table.insert(paths, path)
+        end
+    end
+
+    add(m_Enchanter.getPersistenceDir() .. "inv-items.state")
+    add(m_Enchanter.getPersistenceDir() .. "dinv/inv-items.state")
+
+    if dbot and dbot.backup and dbot.backup.getCurrentDir then
+        local ok, dir = pcall(dbot.backup.getCurrentDir)
+        if ok and dir then
+            add(dir .. "inv-items.state")
+        end
+    end
+
+    return paths
+end
+
+function m_Enchanter.loadItemsFromPersistence()
+    if inv and inv.items and inv.items.loadPersistentItemsTable then
+        local ok, items = pcall(inv.items.loadPersistentItemsTable)
+        if ok and type(items) == "table" and tableCount(items) > 0 then
+            return items, "dinv"
+        end
+    end
+
+    for _, path in ipairs(m_Enchanter.itemStatePaths()) do
+        local env = loadLuaFile(path)
+        local items = env and env.inv and env.inv.items and env.inv.items.table
+        if type(items) == "table" and tableCount(items) > 0 then
+            return items, path
+        end
+    end
+
+    return nil, nil
+end
+
+function m_Enchanter.ensureItemsAvailable()
+    if inv and inv.items and type(inv.items.table) == "table" and tableCount(inv.items.table) > 0 then
+        return inv.items.table, "live"
+    end
+
+    if inv and inv.items and inv.items.load then
+        pcall(inv.items.load)
+        if type(inv.items.table) == "table" and tableCount(inv.items.table) > 0 then
+            return inv.items.table, "dinv-load"
+        end
+    end
+
+    local items, source = m_Enchanter.loadItemsFromPersistence()
+    if items and inv and inv.items and (type(inv.items.table) ~= "table" or tableCount(inv.items.table) == 0) then
+        inv.items.table = items
+    end
+    return items, source
+end
+
+----------------------------------------------------------------------------------------------------
+-- DINV access
+----------------------------------------------------------------------------------------------------
+
+function m_Enchanter.dinvReady()
+    return inv and inv.items and inv.items.search and inv.items.displayResults
+end
+
+function m_Enchanter.ensureDinvReady()
+    if not m_Enchanter.dinvReady() then
+        m_Enchanter.warn("DINV is not loaded. Load DINV first; numeric ids can still be read from persistence if inv-items.state exists.")
+        return false
+    end
+    m_Enchanter.ensureItemsAvailable()
+    return true
+end
+
+function m_Enchanter.runDinvSearch(query)
+    query = trim(query)
+    if not m_Enchanter.ensureDinvReady() then
+        return false
+    end
+
+    if inv.cli and inv.cli.main then
+        inv.cli.main("search " .. query)
+        return true
+    end
+
+    local itemIds, retval = inv.items.search(query)
+    if retval == 0 or retval == nil then
+        if inv.items.sort then
+            inv.items.sort(itemIds)
+        end
+        inv.items.displayResults(itemIds, "basic")
+        return true
+    end
+
+    return false
+end
+
+function m_Enchanter.searchItems(query)
+    if not m_Enchanter.ensureDinvReady() then
+        return nil, -1
+    end
+
+    local itemIds, retval = inv.items.search(query)
+    itemIds = itemIds or {}
+    if retval == 0 or retval == nil then
+        if inv.items.sort then
+            inv.items.sort(itemIds)
+        end
+    end
+    return itemIds, retval
+end
+
+function m_Enchanter.displayItemIds(itemIds)
+    if not itemIds or #itemIds == 0 then
+        return
+    end
+    if inv and inv.items and inv.items.displayResults then
+        inv.items.displayResults(itemIds, "basic")
+    end
+end
+
+function m_Enchanter.findItemById(objId)
+    objId = tostring(objId or "")
+    if objId == "" then
+        return nil
+    end
+
+    if inv and inv.items and inv.items.getItem then
+        local item = inv.items.getItem(objId)
+        if item then
+            return item, "live"
+        end
+    end
+
+    local items, source = m_Enchanter.ensureItemsAvailable()
+    if type(items) == "table" then
+        local item = items[objId] or items[tonumber(objId)]
+        if item then
+            return item, source or "persistence"
+        end
+    end
+
+    return nil, nil
+end
+
+----------------------------------------------------------------------------------------------------
+-- Item/stat helpers
+----------------------------------------------------------------------------------------------------
+
+local fieldCandidates = {
+    id = { "id" },
+    name = { "name" },
+    colorName = { "colorname", "colorName", "coloredName" },
+    flags = { "flags" },
+    enchants = { "enchants", "enchantments", "enchantData", "enchantDetails" },
+    type = { "type" },
+    level = { "level" },
+    wearable = { "wearable" },
+    location = { "location", "loc" },
+    identifyLevel = { "identifyLevel", "idlevel" },
+}
+
+local function getStat(item, key)
+    if not item then
+        return nil
+    end
+    local stats = item.stats or item
+    local candidates = fieldCandidates[key] or { key }
+    for _, field in ipairs(candidates) do
+        if stats[field] ~= nil then
+            return stats[field]
+        end
+        if item[field] ~= nil then
+            return item[field]
+        end
+    end
+    return nil
+end
+
+local function normalizeTokenText(text)
+    text = stripColors(text):lower()
+    text = text:gsub("[,;|/]+", " ")
+    return text
+end
+
+local function hasToken(text, token)
+    token = tostring(token or ""):lower()
+    for word in normalizeTokenText(text):gmatch("%S+") do
+        if word == token then
+            return true
+        end
+    end
+    return false
+end
+
+local function cleanDisplayName(name)
+    name = tostring(name or "")
+    name = name:gsub("%s+[A-Z][a-z]+%s+%+?%-?%d+%s*%(removable[^%)]*%).*", "")
+    name = name:gsub("%s+%(removable[^%)]*%)%s*", "")
+    return trim(name)
+end
+
+local function itemIsInInventory(item)
+    return tostring(getStat(item, "location") or ""):lower() == "inventory"
+end
+
+local function normalizeEnchantKind(value)
+    value = tostring(value or ""):lower()
+    if value:find("solid") then
+        return "solidify"
+    elseif value:find("reson") then
+        return "resonate"
+    elseif value:find("illum") then
+        return "illuminate"
+    end
+    return nil
+end
+
+local function addEnchant(details, kind, value, removable)
+    kind = normalizeEnchantKind(kind)
+    if not kind then
+        return
+    end
+    details[kind] = details[kind] or {}
+    table.insert(details[kind], {
+        value = trim(value or ""),
+        removable = trim(removable or ""),
+    })
+end
+
+local function parseEnchantString(details, text)
+    text = tostring(text or "")
+    if text == "" then
+        return
+    end
+
+    for line in text:gmatch("[^\r\n]+") do
+        local chunks = {}
+        if line:find(":", 1, true) then
+            table.insert(chunks, line)
+        else
+            for part in line:gmatch("[^,]+") do
+                table.insert(chunks, part)
+            end
+        end
+        if #chunks == 0 then
+            table.insert(chunks, line)
+        end
+
+        for _, chunk in ipairs(chunks) do
+            local kind = normalizeEnchantKind(chunk)
+            if kind then
+                local removable = chunk:match("%((.-)%)") or ""
+                local value = chunk:match(":%s*(.-)%s*%(") or chunk:match(":%s*(.-)%s*$") or ""
+                if value:lower():find("removable", 1, true) then
+                    value = ""
+                end
+                addEnchant(details, kind, value, removable)
+            end
+        end
+    end
+end
+
+local function parseEnchantTable(details, value, impliedKind)
+    if type(value) ~= "table" then
+        if type(value) == "string" then
+            local kind = impliedKind or normalizeEnchantKind(value)
+            local removable = value:match("%((.-)%)") or value
+            if kind then
+                addEnchant(details, kind, "", removable)
+            else
+                parseEnchantString(details, value)
+            end
+        end
+        return
+    end
+
+    local hasNumeric = false
+    for k in pairs(value) do
+        if type(k) == "number" then
+            hasNumeric = true
+            break
+        end
+    end
+
+    if hasNumeric then
+        for _, entry in ipairs(value) do
+            parseEnchantTable(details, entry, impliedKind)
+        end
+        return
+    end
+
+    local kind = impliedKind or normalizeEnchantKind(value.kind or value.name or value.type or "")
+    local removable = value.removable or value.remove or value.removal or value.source or value[2] or ""
+    local statValue = value.value or value.stat or value.mod or value.amount or value[1] or ""
+    if kind then
+        addEnchant(details, kind, statValue, removable)
+    else
+        for k, v in pairs(value) do
+            parseEnchantTable(details, v, normalizeEnchantKind(k))
+        end
+    end
+end
+
+local function getEnchantDetails(item)
+    local details = {
+        solidify = {},
+        resonate = {},
+        illuminate = {},
+    }
+    local raw = getStat(item, "enchants")
+    if type(raw) == "table" then
+        parseEnchantTable(details, raw, nil)
+    elseif type(raw) == "string" then
+        parseEnchantString(details, raw)
+    end
+    return details
+end
+
+local function hasEnchant(details, kind)
+    local list = details and details[kind]
+    return type(list) == "table" and #list > 0
+end
+
+local function removableText(raw)
+    raw = tostring(raw or ""):lower()
+    if raw == "" then
+        return ""
+    end
+    if raw:find("tp", 1, true) then
+        return "@r(removable with TP only)@w"
+    end
+    if raw:find("enchanter", 1, true) then
+        return "@y(removable by enchanter)@w"
+    end
+    if raw:find("removable", 1, true) then
+        return "@y(" .. raw .. ")@w"
+    end
+    return ""
+end
+
+local function formatEnchantDetails(details, kind)
+    local list = details and details[kind]
+    if type(list) ~= "table" or #list == 0 then
+        return nil
+    end
+
+    local values = {}
+    local removable = ""
+    for _, entry in ipairs(list) do
+        if entry.value and entry.value ~= "" then
+            table.insert(values, entry.value)
+        end
+        local rt = removableText(entry.removable)
+        if rt ~= "" then
+            removable = rt
+        end
+    end
+
+    if #values > 0 then
+        return "@C" .. table.concat(values, ", ") .. (removable ~= "" and (" " .. removable) or "") .. "@w"
+    end
+    if removable ~= "" then
+        return "@CEnchanted@w " .. removable
+    end
+    return "@CAlready enchanted.@w"
+end
+
+----------------------------------------------------------------------------------------------------
+-- Analysis
+----------------------------------------------------------------------------------------------------
+
+function m_Enchanter.buildAnalysis(objId, item)
+    local flags = tostring(getStat(item, "flags") or "")
+    local details = getEnchantDetails(item)
+
+    local hasInvis = hasToken(flags, "invis")
+    local hasHum = hasToken(flags, "hum")
+    local hasGlow = hasToken(flags, "glow")
+    local hasSolidified = hasToken(flags, "solidified") or hasEnchant(details, "solidify")
+    local hasResonated = hasToken(flags, "resonated") or hasEnchant(details, "resonate")
+    local hasIlluminated = hasToken(flags, "illuminated") or hasEnchant(details, "illuminate")
+
+    local colorName = getStat(item, "colorName") or getStat(item, "name") or ("item " .. tostring(objId))
+    colorName = cleanDisplayName(colorName)
+    local plainName = cleanDisplayName(stripColors(colorName))
+    if plainName == "" then
+        plainName = "item " .. tostring(objId)
+    end
+
+    local lines = {}
+    local flagsToToggle = {}
+
+    local solidifyStatus
+    if hasSolidified then
+        solidifyStatus = formatEnchantDetails(details, "solidify") or "@CAlready solidified.@w"
+    elseif hasInvis then
+        solidifyStatus = "@gReady to enchant@w"
+    else
+        solidifyStatus = "@RNeeds 'invis' flag ON@w"
+        table.insert(flagsToToggle, "invis")
+    end
+    table.insert(lines, "@D- @wSolidify:   " .. solidifyStatus)
+
+    local resonateStatus
+    if hasResonated then
+        resonateStatus = formatEnchantDetails(details, "resonate") or "@CAlready resonated.@w"
+    elseif hasHum then
+        resonateStatus = "@y(Normal) No stats@w"
+        table.insert(flagsToToggle, "hum")
+    else
+        resonateStatus = "@gReady to enchant@w"
+    end
+    table.insert(lines, "@D- @wResonate:   " .. resonateStatus)
+
+    local illuminateStatus
+    if hasIlluminated then
+        illuminateStatus = formatEnchantDetails(details, "illuminate") or "@CAlready illuminated.@w"
+    elseif hasGlow then
+        illuminateStatus = "@y(Normal) No stats@w"
+        table.insert(flagsToToggle, "glow")
+    else
+        illuminateStatus = "@gReady to enchant@w"
+    end
+    table.insert(lines, "@D- @wIlluminate: " .. illuminateStatus)
+
+    local target = tostring(objId or plainName)
+    local pending = ""
+    if #flagsToToggle > 0 then
+        pending = "setflag " .. quoteTarget(target) .. " " .. table.concat(flagsToToggle, " ")
+    end
+
+    return {
+        id = tostring(objId or ""),
+        item = item,
+        colorName = colorName,
+        plainName = plainName,
+        flags = flags,
+        lines = lines,
+        pending = pending,
+        hasInvis = hasInvis,
+        hasHum = hasHum,
+        hasGlow = hasGlow,
+        hasSolidified = hasSolidified,
+        hasResonated = hasResonated,
+        hasIlluminated = hasIlluminated,
+    }
+end
+
+function m_Enchanter.displayAnalysis(analysis)
+    local title = "@DEnchantment Analysis for @w" .. analysis.colorName .. "@D (@Y" .. analysis.id .. "@D):@w"
+    local contentLines = shallowCopy(analysis.lines)
+    local commandLine = analysis.pending ~= "" and ("@DSuggested eqsetflags:@w @Y" .. analysis.pending .. "@w") or nil
+
+    local maxw = #stripColors(title)
+    for _, line in ipairs(contentLines) do
+        local width = #stripColors(line)
+        if width > maxw then
+            maxw = width
+        end
+    end
+    if commandLine and #stripColors(commandLine) > maxw then
+        maxw = #stripColors(commandLine)
+    end
+    local w = maxw + 4
+
+    local border = "<steel_blue>"
+    local reset = "<reset>"
+    local top = border .. "." .. string.rep("-", w) .. "." .. reset
+    local bot = border .. "'" .. string.rep("-", w) .. "'" .. reset
+    local sep = border .. "|-" .. string.rep("-", w - 2) .. "-|" .. reset
+
+    m_Enchanter.print(top)
+    m_Enchanter.print(border .. "| " .. reset .. title .. string.rep(" ", w - #stripColors(title) - 1) .. border .. "|" .. reset)
+    m_Enchanter.print(sep)
+    for _, line in ipairs(contentLines) do
+        local pad = string.rep(" ", w - #stripColors(line) - 2)
+        m_Enchanter.print(border .. "| " .. reset .. line .. pad .. " " .. border .. "|" .. reset)
+    end
+    if commandLine then
+        m_Enchanter.print(sep)
+        local pad = string.rep(" ", w - #stripColors(commandLine) - 2)
+        m_Enchanter.print(border .. "| " .. reset .. commandLine .. pad .. " " .. border .. "|" .. reset)
+    end
+    m_Enchanter.print(bot)
+end
+
+function m_Enchanter.reportAnalysis(analysis)
+    if not m_Enchanter.settings.reporting_on then
+        return
+    end
+
+    local parts = {}
+    for _, line in ipairs(analysis.lines or {}) do
+        local part = line:gsub("^@D%- @w", "")
+        table.insert(parts, part)
+    end
+
+    local name = (analysis.colorName and analysis.colorName ~= "") and analysis.colorName or analysis.plainName
+    sendReportLine(name .. " - " .. table.concat(parts, ", "))
+end
+
+function m_Enchanter.analyzeId(objId, options)
+    options = options or {}
+    objId = tostring(objId or ""):match("^(%d+)$")
+    if not objId then
+        m_Enchanter.warn("Usage: eqanalyze <id|name>")
+        return nil
+    end
+
+    local item, source = m_Enchanter.findItemById(objId)
+    if not item then
+        m_Enchanter.warn("No DINV persistence entry found for id " .. tostring(objId) .. ". Run 'dinv search " .. tostring(objId) .. "' or refresh DINV.")
+        return nil
+    end
+
+    m_Enchanter.debug("Analyzing id " .. tostring(objId) .. " from " .. tostring(source or "unknown"))
+    local analysis = m_Enchanter.buildAnalysis(objId, item)
+    m_Enchanter.last = analysis
+    m_Enchanter.pending_command = analysis.pending or ""
+    m_Enchanter.pending_item_id = analysis.id or ""
+
+    if options.display ~= false then
+        m_Enchanter.displayAnalysis(analysis)
+    end
+    if options.report ~= false then
+        m_Enchanter.reportAnalysis(analysis)
+    end
+
+    return analysis
+end
+
+function m_Enchanter.resolveQuery(query, options)
+    options = options or {}
+    query = trim(query)
+    if query == "" then
+        return nil
+    end
+
+    if query:match("^%d+$") then
+        local item = m_Enchanter.findItemById(query)
+        if item then
+            return query
+        end
+        m_Enchanter.warn("No DINV persistence entry found for id " .. query .. ".")
+        return nil
+    end
+
+    local itemIds, retval = m_Enchanter.searchItems(query)
+    if not itemIds then
+        return nil
+    end
+
+    if options.displaySearch or #itemIds ~= 1 then
+        m_Enchanter.runDinvSearch(query)
+    end
+
+    if #itemIds == 1 then
+        return tostring(itemIds[1])
+    elseif #itemIds > 1 and options.warnMultiple ~= false then
+        m_Enchanter.warn("Multiple DINV matches for '" .. query .. "'. Refine the name or use an id.")
+    end
+    return nil
+end
+
+function m_Enchanter.resolveNameInventoryFirst(query, options)
+    options = options or {}
+    query = trim(query)
+    if query == "" then
+        return nil
+    end
+
+    local itemIds = m_Enchanter.searchItems(query)
+    if not itemIds then
+        return nil
+    end
+
+    local inventoryIds = {}
+    for _, objId in ipairs(itemIds) do
+        local item = m_Enchanter.findItemById(objId)
+        if item and itemIsInInventory(item) then
+            table.insert(inventoryIds, tostring(objId))
+        end
+    end
+
+    if #inventoryIds == 1 then
+        return inventoryIds[1]
+    elseif #inventoryIds > 1 then
+        m_Enchanter.displayItemIds(inventoryIds)
+        if options.warnMultiple ~= false then
+            m_Enchanter.warn("Multiple inventory matches for '" .. query .. "'. Refine the name or use an id.")
+        end
+        return nil
+    end
+
+    return m_Enchanter.resolveQuery(query, options)
+end
+
+function m_Enchanter.eqAnalyze(rawArg)
+    local arg = trim(rawArg)
+    if arg == "" or arg:lower() == "help" then
+        m_Enchanter.showHelp()
+        return
+    end
+
+    local debugMode = arg:match("^debug%s+(on|off)$")
+    if debugMode then
+        m_Enchanter.settings.debug = (debugMode == "on")
+        m_Enchanter.saveSettings()
+        m_Enchanter.info("Debug mode is now " .. (m_Enchanter.settings.debug and "ON" or "OFF") .. ".")
+        return
+    end
+
+    if arg:match("^%d+$") then
+        m_Enchanter.analyzeId(arg)
+        return
+    end
+
+    local objId = m_Enchanter.resolveNameInventoryFirst(arg, { displaySearch = true, warnMultiple = false })
+    if objId then
+        m_Enchanter.analyzeId(objId)
+    end
+end
+
+----------------------------------------------------------------------------------------------------
+-- Commands and settings
+----------------------------------------------------------------------------------------------------
+
+function m_Enchanter.showHelp()
+    m_Enchanter.print([[@Y
+m_Enchanter - Mudlet/DINV enchanting helper
+============================================
+@WCOMMANDS:@w
+  @Geqa <id>@w                       Analyze a persisted DINV item by id.
+  @Geqa <name|partial>@w             Run @Gdinv search <query>@w; analyze only when exactly one row matches.
+  @Geqsetflags@w                     Show the prepared setflag command, if any.
+  @Geqsetflags confirm@w             Execute the prepared setflag command.
+  @Geqenchant [id|name]@w            Cast permitted enchants from the latest DINV-backed analysis.
+  @Geqenchant fast <id|name>@w       Cast Solidify, Resonate, and Illuminate without gating.
+  @Geqdisenchant [id|name] <params>@w Params: solidify, resonate, illuminate, all.
+
+  @Geqfocus@w                        Check Enchanter's focus.
+  @Geqfocusignore <on|off>@w         Allow enchanting while focus is unknown/down.
+
+  @Geqreport <on|off>@w              Toggle local/channel analysis reporting.
+  @Geqreportchannel <channel>@w      Set report channel. Use @Gecho@w for local output.
+  @Geqquiet <on|off>@w               Toggle quiet command sending where Mudlet supports it.
+  @Geqa debug <on|off>@w             Toggle debug output.
+  @Geqa help@w                       Show this help and current settings.
+]])
+
+    local last = m_Enchanter.last
+    m_Enchanter.print("@YCurrent Settings:@w")
+    m_Enchanter.print(string.format("@W  Reporting:      @G%s@w", m_Enchanter.settings.reporting_on and "ON" or "OFF"))
+    m_Enchanter.print(string.format("@W  Report channel: @G%s@w", m_Enchanter.settings.report_channel or "echo"))
+    m_Enchanter.print(string.format("@W  Debug:          @G%s@w", m_Enchanter.settings.debug and "ON" or "OFF"))
+    m_Enchanter.print(string.format("@W  Quiet mode:     @G%s@w", m_Enchanter.settings.quiet and "ON" or "OFF"))
+    m_Enchanter.print(string.format("@W  Focus ignore:   @G%s@w", m_Enchanter.settings.focus_ignore and "ON" or "OFF"))
+    m_Enchanter.print(string.format("@W  Focus state:    @G%s@w", tostring(m_Enchanter.focus.status or "unknown"):upper()))
+    m_Enchanter.print(string.format("@W  Last analyzed:  @G%s@w", last and (last.plainName .. " (" .. last.id .. ")") or "(none)"))
+end
+
+function m_Enchanter.eqSetFlags(arg)
+    arg = trim(arg)
+    if arg == "confirm" then
+        if m_Enchanter.pending_command ~= "" then
+            local cmd = m_Enchanter.pending_command
+            local objId = m_Enchanter.pending_item_id
+            m_Enchanter.info("Executing: " .. cmd)
+            m_Enchanter.ensureInventoryThen(objId, function()
+                sendGameCommand(cmd)
+                m_Enchanter.schedulePostOperationIdentify(objId, 0.5, { kind = "analysis" })
+            end)
+            m_Enchanter.pending_command = ""
+            m_Enchanter.pending_item_id = ""
+        else
+            m_Enchanter.warn("No command to confirm. Use 'eqanalyze <id|name>' first.")
+        end
+        return
+    end
+
+    if m_Enchanter.pending_command ~= "" then
+        m_Enchanter.info("Current command is: " .. m_Enchanter.pending_command)
+    else
+        m_Enchanter.warn("No command is currently set. Use 'eqanalyze <id|name>' first.")
+    end
+end
+
+function m_Enchanter.setReport(onoff)
+    m_Enchanter.settings.reporting_on = (onoff == "on")
+    m_Enchanter.saveSettings()
+    m_Enchanter.info("Enchant reporting is now " .. (m_Enchanter.settings.reporting_on and "ON" or "OFF") .. ".")
+end
+
+function m_Enchanter.setReportChannel(channel)
+    channel = trim(channel)
+    if channel == "" then
+        channel = "echo"
+    end
+    m_Enchanter.settings.report_channel = channel
+    m_Enchanter.saveSettings()
+    m_Enchanter.info("Enchant report channel set to: " .. channel)
+end
+
+function m_Enchanter.setQuiet(onoff)
+    m_Enchanter.settings.quiet = (onoff == "on")
+    m_Enchanter.saveSettings()
+    m_Enchanter.info("Quiet mode is now " .. (m_Enchanter.settings.quiet and "ON" or "OFF") .. ".")
+end
+
+function m_Enchanter.eqSetupRace()
+    m_Enchanter.warn("eqsetup race is no longer used. m_Enchanter reads already-identified DINV persistence instead of sending identify/lore.")
+end
+
+----------------------------------------------------------------------------------------------------
+-- Focus
+----------------------------------------------------------------------------------------------------
+
+local function clearFocusTimers()
+    for _, key in ipairs({ "warn", "expire" }) do
+        local timerId = m_Enchanter.timers and m_Enchanter.timers[key]
+        if timerId then
+            pcall(killTimer, timerId)
+            m_Enchanter.timers[key] = nil
+        end
+    end
+end
+
+local function warnFocus30()
+    m_Enchanter.print("@YEnchanter's focus @Dis about to expire in @R30 SECONDS!@w")
+    m_Enchanter.print("@YEnchanter's focus @Dis about to expire in @R30 SECONDS!@w")
+    m_Enchanter.print("@YEnchanter's focus @Dis about to expire in @R30 SECONDS!@w")
+end
+
+function m_Enchanter.markFocusDown()
+    m_Enchanter.focus.status = "down"
+    m_Enchanter.warn("Enchanter's focus has expired. Enchant commands disabled.")
+end
+
+function m_Enchanter.scheduleFocus(seconds)
+    clearFocusTimers()
+    seconds = tonumber(seconds) or 0
+    if seconds <= 30 then
+        warnFocus30()
+    else
+        m_Enchanter.timers.warn = tempTimer(seconds - 30, warnFocus30)
+    end
+    m_Enchanter.timers.expire = tempTimer(seconds, function() m_Enchanter.markFocusDown() end)
+end
+
+function m_Enchanter.onFocusTimer(mm, ss)
+    local seconds = (tonumber(mm) or 0) * 60 + (tonumber(ss) or 0)
+    m_Enchanter.focus.status = "up"
+    m_Enchanter.debug(string.format("Focus up, %02d:%02d remaining.", tonumber(mm) or 0, tonumber(ss) or 0))
+    m_Enchanter.scheduleFocus(seconds)
+end
+
+function m_Enchanter.onNoAffects()
+    clearFocusTimers()
+    m_Enchanter.focus.status = "down"
+    cecho("\n")
+    m_Enchanter.warn("No affects found: Enchanter's focus DOWN. Enchant commands disabled.")
+end
+
+function m_Enchanter.onFocusFaded()
+    clearFocusTimers()
+    m_Enchanter.focus.status = "down"
+    m_Enchanter.warn("Your Enchanter's focus has faded. Enchant commands disabled.")
+end
+
+function m_Enchanter.enableSaffectsTipGag()
+    if m_Enchanter.triggers.saffectsTip then
+        pcall(killTrigger, m_Enchanter.triggers.saffectsTip)
+        m_Enchanter.triggers.saffectsTip = nil
+    end
+    if m_Enchanter.timers.saffectsTip then
+        pcall(killTimer, m_Enchanter.timers.saffectsTip)
+        m_Enchanter.timers.saffectsTip = nil
+    end
+
+    local triggerId = tempRegexTrigger(
+        [[^Use 'saffects' to see a short version of your affects\.$]],
+        function()
+            if deleteLine then
+                deleteLine()
+            end
+        end
+    )
+    m_Enchanter.triggers.saffectsTip = triggerId
+
+    m_Enchanter.timers.saffectsTip = tempTimer(0.5, function()
+        if m_Enchanter.triggers.saffectsTip then
+            pcall(killTrigger, m_Enchanter.triggers.saffectsTip)
+            m_Enchanter.triggers.saffectsTip = nil
+        end
+        m_Enchanter.timers.saffectsTip = nil
+    end)
+end
+
+function m_Enchanter.eqFocus()
+    m_Enchanter.enableSaffectsTipGag()
+    sendGameCommand("aff focus")
+end
+
+function m_Enchanter.eqFocusIgnore(onoff)
+    m_Enchanter.settings.focus_ignore = (onoff == "on")
+    m_Enchanter.saveSettings()
+    if m_Enchanter.settings.focus_ignore then
+        m_Enchanter.warn("@RWARNING@w: Focus ignore ENABLED. You can enchant without focus.")
+    else
+        m_Enchanter.info("Focus ignore disabled. Enchanting requires active focus.")
+    end
+end
+
+function m_Enchanter.focusAllowsEnchant()
+    if m_Enchanter.settings.focus_ignore then
+        return true
+    end
+    if m_Enchanter.focus.status == "up" then
+        return true
+    end
+    if m_Enchanter.focus.status == "down" then
+        m_Enchanter.warn("Cannot enchant: Enchanter's focus is DOWN. Use 'eqfocus' or 'eqfocusignore on'.")
+        return false
+    end
+    m_Enchanter.warn("Cannot enchant: Focus status is UNKNOWN. Run 'eqfocus' first or use 'eqfocusignore on'.")
+    return false
+end
+
+----------------------------------------------------------------------------------------------------
+-- Enchanting/disenchanting
+----------------------------------------------------------------------------------------------------
+
+function m_Enchanter.sendAndNote(command)
+    sendGameCommand(command)
+    m_Enchanter.print("@C -> Sent: @w" .. command)
+end
+
+local function reportRemovedEnchants(objId, context)
+    context = context or {}
+    local analysis = m_Enchanter.analyzeId(objId, { display = false, report = false })
+    if not m_Enchanter.settings.reporting_on then
+        return
+    end
+
+    local names = context.removedNames or {}
+    if #names == 0 then
+        return
+    end
+
+    local itemName = (analysis and analysis.plainName) or context.plainName or ("item " .. tostring(objId))
+    local msg = (#names == 1)
+        and ("Removed " .. names[1] .. " from " .. itemName)
+        or (niceJoin(names) .. " removed from " .. itemName)
+    sendReportLine(msg)
+end
+
+function m_Enchanter.finishPostIdentify(objId, context)
+    context = context or {}
+    local kind = context.kind or "analysis"
+
+    if kind == "disenchant" then
+        reportRemovedEnchants(objId, context)
+        return
+    end
+
+    local analysis = m_Enchanter.analyzeId(objId, { display = false, report = false })
+    if analysis then
+        m_Enchanter.reportAnalysis(analysis)
+    end
+end
+
+function m_Enchanter.onDinvIdentifyComplete(eventName, objId)
+    if objId == nil and tostring(eventName or "") ~= "DINV.identifyComplete" then
+        objId = eventName
+    end
+
+    objId = tostring(objId or ""):match("^(%d+)$")
+    if not objId then
+        return
+    end
+
+    local pending = m_Enchanter.pending_identifies and m_Enchanter.pending_identifies[objId]
+    if not pending then
+        return
+    end
+
+    m_Enchanter.pending_identifies[objId] = nil
+    m_Enchanter.finishPostIdentify(objId, pending.context)
+end
+
+function m_Enchanter.queuePostIdentifyReport(objId, context)
+    objId = tostring(objId or "")
+    if objId == "" then
+        return
+    end
+
+    m_Enchanter.pending_identifies[objId] = {
+        context = context or {},
+        startedAt = os.time(),
+    }
+
+    tempTimer(2, function()
+        if not (m_Enchanter.pending_identifies and m_Enchanter.pending_identifies[objId]) then
+            return
+        end
+
+        m_Enchanter.pending_identifies[objId] = nil
+        m_Enchanter.warn("DINV identify completion event was not received within 2 seconds for item " .. objId .. "; skipped post-operation report to avoid reading stale item data.")
+    end)
+end
+
+function m_Enchanter.schedulePostOperationIdentify(objId, delay, context)
+    objId = tostring(objId or "")
+    if objId == "" then
+        return
+    end
+
+    delay = tonumber(delay) or 0
+    tempTimer(delay, function()
+        m_Enchanter.queuePostIdentifyReport(objId, context)
+        runDinvCommand("dinv identify " .. objId)
+    end)
+end
+
+function m_Enchanter.ensureInventoryThen(objId, callback)
+    objId = tostring(objId or "")
+    if objId == "" then
+        return
+    end
+
+    local item = m_Enchanter.findItemById(objId)
+    local delay = 0
+    if not (item and itemIsInInventory(item)) then
+        runDinvCommand("dinv get " .. objId)
+        delay = 0.5
+    end
+
+    tempTimer(delay, function()
+        callback()
+    end)
+end
+
+local function scheduleCommands(commands, label, objId, postIdentifyContext)
+    if #commands == 0 then
+        return
+    end
+    local gap = 0.25
+    m_Enchanter.info(label .. ": " .. table.concat(commands, " ; "))
+    for i, command in ipairs(commands) do
+        tempTimer(gap * i, function() m_Enchanter.sendAndNote(command) end)
+    end
+    if objId then
+        m_Enchanter.schedulePostOperationIdentify(objId, gap * #commands + 0.5, postIdentifyContext)
+    end
+end
+
+function m_Enchanter.resolveForAction(arg)
+    arg = trim(arg)
+    if arg == "" then
+        if m_Enchanter.last and m_Enchanter.last.id and m_Enchanter.last.id ~= "" then
+            return m_Enchanter.last.id, m_Enchanter.last
+        end
+        return nil, nil
+    end
+
+    local objId
+    if arg:match("^%d+$") then
+        objId = m_Enchanter.resolveQuery(arg, { displaySearch = false })
+    else
+        objId = m_Enchanter.resolveNameInventoryFirst(arg, { displaySearch = false })
+    end
+    if not objId then
+        return nil, nil
+    end
+    local analysis = m_Enchanter.analyzeId(objId, { display = false, report = false })
+    return objId, analysis
+end
+
+function m_Enchanter.eqEnchant(arg)
+    if not m_Enchanter.focusAllowsEnchant() then
+        return
+    end
+
+    arg = trim(arg)
+    local fastArg = arg:match("^fast%s+(.+)$")
+    if fastArg then
+        m_Enchanter.eqEnchantFast(fastArg)
+        return
+    elseif arg == "fast" then
+        m_Enchanter.warn("Usage: eqenchant fast <id|name>")
+        return
+    end
+
+    local objId, analysis = m_Enchanter.resolveForAction(arg)
+    if not objId or not analysis then
+        m_Enchanter.warn("Usage: eqenchant [id|name] after 'eqanalyze <id|name>'.")
+        return
+    end
+
+    local target = quoteTarget(objId)
+    local commands = {}
+    if analysis.hasInvis and not analysis.hasSolidified then
+        table.insert(commands, "cast solidify " .. target)
+    end
+    if (not analysis.hasHum) and not analysis.hasResonated then
+        table.insert(commands, "cast resonate " .. target)
+    end
+    if (not analysis.hasGlow) and not analysis.hasIlluminated then
+        table.insert(commands, "cast illuminate " .. target)
+    end
+
+    if #commands == 0 then
+        if analysis.pending and analysis.pending ~= "" then
+            m_Enchanter.warn("Run 'eqsetflags confirm' first, then analyze again before enchanting.")
+            return
+        end
+        m_Enchanter.warn("Nothing to enchant for " .. analysis.plainName .. " (flags/enchants do not permit).")
+        return
+    end
+
+    m_Enchanter.ensureInventoryThen(objId, function()
+        scheduleCommands(commands, "Queueing enchants", objId, { kind = "enchant" })
+    end)
+end
+
+function m_Enchanter.eqEnchantFast(arg)
+    if not m_Enchanter.focusAllowsEnchant() then
+        return
+    end
+
+    local objId
+    if arg:match("^%d+$") then
+        objId = m_Enchanter.resolveQuery(arg, { displaySearch = false })
+    else
+        objId = m_Enchanter.resolveNameInventoryFirst(arg, { displaySearch = false })
+    end
+    if not objId then
+        m_Enchanter.warn("Usage: eqenchant fast <id|name>")
+        return
+    end
+
+    local target = quoteTarget(objId)
+    m_Enchanter.ensureInventoryThen(objId, function()
+        scheduleCommands({
+            "cast solidify " .. target,
+            "cast resonate " .. target,
+            "cast illuminate " .. target,
+        }, "Queueing enchants (fast)", objId, { kind = "enchant" })
+    end)
+end
+
+function m_Enchanter.eqDisenchant(rest)
+    if not m_Enchanter.focusAllowsEnchant() then
+        return
+    end
+
+    rest = trim(rest)
+    if rest == "" then
+        m_Enchanter.warn("Usage: eqdisenchant [id|name] <all|solidify|resonate|illuminate> ...")
+        return
+    end
+
+    local tokens = {}
+    for token in rest:gmatch("%S+") do
+        table.insert(tokens, token)
+    end
+
+    local valid = { solidify = true, resonate = true, illuminate = true }
+    local itemTokens, params = {}, {}
+    local hasAll = false
+    for _, token in ipairs(tokens) do
+        local lower = token:lower()
+        if valid[lower] then
+            table.insert(params, lower)
+        elseif lower == "all" then
+            hasAll = true
+        else
+            table.insert(itemTokens, token)
+        end
+    end
+
+    if hasAll then
+        params = { "solidify", "resonate", "illuminate" }
+    end
+    if #params == 0 then
+        m_Enchanter.warn("Please specify 'all' or at least one of: solidify, resonate, illuminate.")
+        return
+    end
+
+    local itemArg = table.concat(itemTokens, " ")
+    local objId, analysis = m_Enchanter.resolveForAction(itemArg)
+    if not objId then
+        m_Enchanter.warn("No item specified and no previous eqanalyze item remembered.")
+        return
+    end
+
+    local target = quoteTarget(objId)
+    local pretty = { solidify = "Solidify", resonate = "Resonate", illuminate = "Illuminate" }
+    local commands = {}
+    local removedNames = {}
+    for _, param in ipairs(params) do
+        table.insert(commands, "disenchant " .. target .. " " .. pretty[param] .. " confirm")
+        table.insert(removedNames, pretty[param])
+    end
+    m_Enchanter.ensureInventoryThen(objId, function()
+        scheduleCommands(commands, "Queueing disenchants", objId, {
+            kind = "disenchant",
+            removedNames = removedNames,
+            plainName = analysis and analysis.plainName or nil,
+        })
+    end)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Mudlet alias/trigger registration
+----------------------------------------------------------------------------------------------------
+
+local function killKnownIds(t, killFn)
+    for key, id in pairs(t or {}) do
+        if id then
+            pcall(killFn, id)
+        end
+        t[key] = nil
+    end
+end
+
+function m_Enchanter.registerAliases()
+    killKnownIds(m_Enchanter.aliases, killAlias)
+
+    m_Enchanter.aliases.eqanalyze = tempAlias([[^eqanalyze(?:\s+(.*))?$]], function()
+        m_Enchanter.eqAnalyze(matches[2] or "")
+    end)
+
+    m_Enchanter.aliases.eqa = tempAlias([[^eqa(?:\s+(.*))?$]], function()
+        m_Enchanter.eqAnalyze(matches[2] or "")
+    end)
+
+    m_Enchanter.aliases.eqsetflags = tempAlias([[^eqsetflags(?:\s+(confirm))?$]], function()
+        m_Enchanter.eqSetFlags(matches[2] or "")
+    end)
+
+    m_Enchanter.aliases.eqreport = tempAlias([[^eqreport\s+(on|off)$]], function()
+        m_Enchanter.setReport((matches[2] or ""):lower())
+    end)
+
+    m_Enchanter.aliases.eqreportchannel = tempAlias([[^eqreportchannel\s+(.+)$]], function()
+        m_Enchanter.setReportChannel(matches[2] or "echo")
+    end)
+
+    m_Enchanter.aliases.eqquiet = tempAlias([[^eqquiet\s+(on|off)$]], function()
+        m_Enchanter.setQuiet((matches[2] or ""):lower())
+    end)
+
+    m_Enchanter.aliases.eqenchant = tempAlias([[^eqenchant(?:\s+(.*))?$]], function()
+        m_Enchanter.eqEnchant(matches[2] or "")
+    end)
+
+    m_Enchanter.aliases.eqdisenchant = tempAlias([[^eqdisenchant(?:\s+(.*))?$]], function()
+        m_Enchanter.eqDisenchant(matches[2] or "")
+    end)
+
+    m_Enchanter.aliases.eqfocus = tempAlias([[^eqfocus$]], function()
+        m_Enchanter.eqFocus()
+    end)
+
+    m_Enchanter.aliases.eqfocusignore = tempAlias([[^eqfocusignore\s+(on|off)$]], function()
+        m_Enchanter.eqFocusIgnore((matches[2] or ""):lower())
+    end)
+
+    m_Enchanter.aliases.eqsetup = tempAlias([[^eqsetup\s+race\s+(.+)$]], function()
+        m_Enchanter.eqSetupRace(matches[2] or "")
+    end)
+end
+
+function m_Enchanter.registerTriggers()
+    killKnownIds(m_Enchanter.triggers, killTrigger)
+
+    m_Enchanter.triggers.focusTimer = tempRegexTrigger(
+        [[^\s*Enchanters\s+focus\s*:\s*100% enchanters focus \((\d{2}):(\d{2})\)\s*$]],
+        function() m_Enchanter.onFocusTimer(matches[2], matches[3]) end
+    )
+    m_Enchanter.triggers.noAffects = tempRegexTrigger(
+        [[^You are not affected by any skills or spells\.$]],
+        function() m_Enchanter.onNoAffects() end
+    )
+    m_Enchanter.triggers.focusFaded = tempRegexTrigger(
+        [[^Your enchanters focus fades\.$]],
+        function() m_Enchanter.onFocusFaded() end
+    )
+end
+
+function m_Enchanter.registerEvents()
+    if not registerAnonymousEventHandler then
+        m_Enchanter.warn("Mudlet event handlers are unavailable; post-identify reports need DINV.identifyComplete.")
+        return
+    end
+
+    if m_Enchanter.events.dinvIdentifyComplete and not killAnonymousEventHandler then
+        return
+    end
+
+    if m_Enchanter.events.dinvIdentifyComplete and killAnonymousEventHandler then
+        pcall(killAnonymousEventHandler, m_Enchanter.events.dinvIdentifyComplete)
+        m_Enchanter.events.dinvIdentifyComplete = nil
+    end
+
+    m_Enchanter.events.dinvIdentifyComplete =
+        registerAnonymousEventHandler("DINV.identifyComplete", "m_Enchanter.onDinvIdentifyComplete")
+end
+
+function m_Enchanter.initialize()
+    m_Enchanter.loadSettings()
+    m_Enchanter.registerAliases()
+    m_Enchanter.registerTriggers()
+    m_Enchanter.registerEvents()
+    m_Enchanter.info("v" .. m_Enchanter.version .. " loaded. Use 'eqanalyze help' or 'eqa help'.")
+end
+
+m_Enchanter.initialize()
+]]></script>
+        <eventHandlerList/>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+  <TriggerPackage/>
+  <AliasPackage/>
+  <KeyPackage/>
+  <TimerPackage/>
+</MudletPackage>

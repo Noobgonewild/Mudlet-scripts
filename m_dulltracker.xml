@@ -1,0 +1,2152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage/>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>m_dulltracker</name>
+      <script><![CDATA[]]></script>
+      <command></command>
+      <packageName>m_dulltracker</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>m_dulltracker_cmd</name>
+        <script><![CDATA[if DULL and DULL.command then DULL.command(matches[2] or "") end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^dull(?:\s+(.*))?$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>m_dulltracker</name>
+      <script></script>
+      <packageName>m_dulltracker</packageName>
+
+      <Script isActive="yes" isFolder="no">
+      <name>m_dulltracker_main</name>
+      <packageName>m_dulltracker</packageName>
+      <script><![CDATA[DULL = DULL or {}
+DULL.version = "1.2.0"
+DULL.ids = DULL.ids or { triggers = {}, timers = {} }
+DULL.ids.triggers = DULL.ids.triggers or {}
+DULL.ids.handlers = DULL.ids.handlers or {}
+
+local unpack_fn = table.unpack or unpack
+
+function DULL.trim(s)
+  return tostring(s or ""):match("^%s*(.-)%s*$")
+end
+
+function DULL.note(msg)
+  cecho("<cyan>[Dull]<reset> " .. tostring(msg or "") .. "\n")
+end
+
+function DULL.warn(msg)
+  cecho("<tomato>[Dull]<reset> " .. tostring(msg or "") .. "\n")
+end
+
+function DULL.fresh_line()
+  cecho("\n")
+end
+
+function DULL.to_bool(value)
+  local v = DULL.trim(value):lower()
+  if v == "y" or v == "yes" or v == "on" or v == "true" or v == "1" then return "y" end
+  if v == "n" or v == "no" or v == "off" or v == "false" or v == "0" then return "n" end
+  return nil
+end
+
+function DULL.bool_word(value)
+  return value == "y" and "on" or "off"
+end
+
+function DULL.timestamps_enabled()
+  return not DULL.settings or DULL.settings.timestamp ~= "n"
+end
+
+function DULL.today_key()
+  return os.date("%Y-%m-%d")
+end
+
+function DULL.seconds_until_next_day()
+  local now = os.time()
+  local t = os.date("*t", now)
+  t.hour, t.min, t.sec = 0, 0, 0
+  t.day = t.day + 1
+  return math.max(60, os.difftime(os.time(t), now) + 2)
+end
+
+function DULL.reset_session_data()
+  DULL.sessionData = {}
+  DULL.sessionId = tostring(os.time()) .. "-" .. tostring(math.random(100000, 999999))
+  DULL.lastIncrease = {}
+  DULL.sessionDay = DULL.today_key()
+end
+
+function DULL.configure_paths()
+  if DULL.paths_configured then return end
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  DULL.persistence_dir = dir
+  DULL.state_file = dir .. "/dull_tracker_state.lua"
+  DULL.db_file = dir .. "/dull_tracker.db"
+  DULL.paths_configured = true
+end
+
+DULL.defaults = {
+  channel = "echo",
+  report = "y",
+  highlight = "y",
+  mode = "normal",
+  sessionMode = "manual",
+  timestamp = "y",
+  valueColor = "@W",
+  labelColor = "@D",
+  blabelColor = "@C",
+  debug = "n",
+}
+
+DULL.default_gags = {
+  normal = { xp = "n", gold = "n", tax = "n", loot = "n", sac = "n", rare = "n" },
+  focused = { xp = "y", gold = "y", tax = "y", loot = "y", sac = "y", rare = "n" },
+}
+
+DULL.aard_color_map = {
+  k = "<black>", r = "<maroon>", g = "<green>", y = "<ansi_yellow>",
+  b = "<navy>", m = "<purple>", c = "<turquoise>", w = "<light_gray>",
+  D = "<gray>", R = "<red>", G = "<ansi_light_green>", Y = "<yellow>",
+  B = "<blue>", M = "<magenta>", C = "<cyan>", W = "<white>",
+}
+
+function DULL.aard_to_cecho(str)
+  local s = tostring(str or "")
+  s = s:gsub("@@", "\001")
+  s = s:gsub("@x(%d%d?%d?)", function(num)
+    local n = tonumber(num)
+    if not n or n < 0 or n > 255 then return "" end
+    if n < 16 then
+      local basic = {
+        "000000", "800000", "008000", "808000", "000080", "800080", "008080", "c0c0c0",
+        "808080", "ff0000", "00ff00", "ffff00", "0000ff", "ff00ff", "00ffff", "ffffff"
+      }
+      return "<#" .. basic[n + 1] .. ">"
+    end
+    return ""
+  end)
+  s = s:gsub("@([krgybmcwDRGYBMCW])", function(code)
+    return DULL.aard_color_map[code] or ""
+  end)
+  s = s:gsub("@%-", "~")
+  s = s:gsub("@[^@]", "")
+  s = s:gsub("\001", "@")
+  return s .. "<reset>"
+end
+
+function DULL.strip_aard(str)
+  local s = tostring(str or "")
+  s = s:gsub("@@", "\001")
+  s = s:gsub("@%-", "~")
+  s = s:gsub("@x%d?%d?%d?", "")
+  s = s:gsub("@.", "")
+  s = s:gsub("\001", "@")
+  return s
+end
+
+function DULL.disp_val(val)
+  return (DULL.settings.valueColor or "@W") .. tostring(val or "")
+end
+
+function DULL.disp_lbl(val)
+  return (DULL.settings.labelColor or "@D") .. tostring(val or "")
+end
+
+function DULL.disp_blbl(val)
+  return (DULL.settings.blabelColor or "@C") .. tostring(val or "")
+end
+
+function DULL.serialize_lua(value, indent)
+  indent = indent or 0
+  local t = type(value)
+  if t == "number" or t == "boolean" then return tostring(value) end
+  if t == "string" then return string.format("%q", value) end
+  if t ~= "table" then return "nil" end
+  local pieces = {"{"}
+  local next_indent = indent + 2
+  for k, v in pairs(value) do
+    local key
+    if type(k) == "string" and k:match("^[%a_][%w_]*$") then
+      key = k
+    else
+      key = "[" .. DULL.serialize_lua(k, next_indent) .. "]"
+    end
+    table.insert(pieces, "\n" .. string.rep(" ", next_indent) .. key .. " = " .. DULL.serialize_lua(v, next_indent) .. ",")
+  end
+  table.insert(pieces, "\n" .. string.rep(" ", indent) .. "}")
+  return table.concat(pieces)
+end
+
+function DULL.merge_defaults()
+  DULL.settings = type(DULL.settings) == "table" and DULL.settings or {}
+  for k, v in pairs(DULL.defaults) do
+    if DULL.settings[k] == nil then DULL.settings[k] = v end
+  end
+  if DULL.settings.channel == "default" then DULL.settings.channel = "echo" end
+  if DULL.settings.showinfo ~= nil then DULL.settings.showinfo = nil end
+
+  DULL.gags = type(DULL.gags) == "table" and DULL.gags or {}
+  for mode, defaults in pairs(DULL.default_gags) do
+    DULL.gags[mode] = type(DULL.gags[mode]) == "table" and DULL.gags[mode] or {}
+    for gag, value in pairs(defaults) do
+      if DULL.gags[mode][gag] == nil then DULL.gags[mode][gag] = value end
+    end
+  end
+end
+
+function DULL.load_state()
+  DULL.configure_paths()
+  local loaded
+  local f = io.open(DULL.state_file, "r")
+  if f then
+    f:close()
+    if type(table.load) == "function" then
+      local into = {}
+      local ok, result = pcall(table.load, DULL.state_file, into)
+      if ok and type(into) == "table" and next(into) ~= nil then
+        loaded = into
+      elseif ok and type(result) == "table" then
+        loaded = result
+      end
+    end
+    if not loaded then
+      local chunk = loadfile(DULL.state_file)
+      if chunk then
+        local ok, result = pcall(chunk)
+        if ok and type(result) == "table" then loaded = result end
+      end
+    end
+  end
+
+  loaded = type(loaded) == "table" and loaded or {}
+  DULL.settings = loaded.settings or {}
+  DULL.gags = loaded.gags or {}
+  DULL.sessionData = loaded.sessionData or {}
+  DULL.totalData = loaded.totalData or {}
+  DULL.totalStart = tonumber(loaded.totalStart) or os.time()
+  DULL.sessionId = loaded.sessionId or (tostring(os.time()) .. "-" .. tostring(math.random(100000, 999999)))
+  DULL.sessionDay = loaded.sessionDay or DULL.today_key()
+  DULL.saved_timer_starts = loaded.timerStarts or {}
+  DULL.lastReports = loaded.lastReports or {}
+  DULL.merge_defaults()
+end
+
+function DULL.state_payload()
+  local timer_starts = {}
+  for name, timer in pairs(DULL.timers or {}) do
+    timer_starts[name] = tonumber(timer.start) or os.time()
+  end
+  return {
+    settings = DULL.settings,
+    gags = DULL.gags,
+    sessionData = DULL.sessionData,
+    totalData = DULL.totalData,
+    totalStart = DULL.totalStart,
+    sessionId = DULL.sessionId,
+    sessionDay = DULL.sessionDay,
+    timerStarts = timer_starts,
+    lastReports = DULL.lastReports,
+  }
+end
+
+function DULL.save_state_now()
+  if not DULL.state_file then DULL.configure_paths() end
+  local payload = DULL.state_payload()
+  if type(table.save) == "function" then
+    local ok = pcall(table.save, DULL.state_file, payload)
+    if ok then return true end
+  end
+  local f, err = io.open(DULL.state_file, "w")
+  if not f then
+    DULL.warn("Could not save state: " .. tostring(err))
+    return false
+  end
+  f:write("return ", DULL.serialize_lua(payload), "\n")
+  f:close()
+  return true
+end
+
+function DULL.schedule_save(delay)
+  if DULL.ids.save_timer then pcall(killTimer, DULL.ids.save_timer) end
+  DULL.ids.save_timer = tempTimer(delay or 1.0, function()
+    DULL.ids.save_timer = nil
+    DULL.save_state_now()
+  end)
+end
+
+function DULL.open_db()
+  if DULL.db then return true end
+  if DULL.db_checked and DULL.db_available == false then return false end
+  DULL.configure_paths()
+
+  local ok, mod = pcall(require, "lsqlite3")
+  if not ok or type(mod) ~= "table" then
+    ok, mod = pcall(require, "lsqlite3complete")
+  end
+  if not ok or type(mod) ~= "table" then
+    DULL.db_checked = true
+    DULL.db_available = false
+    DULL.warn("SQLite unavailable; timer history DB disabled for this session.")
+    return false
+  end
+
+  local db, _, err = mod.open(DULL.db_file)
+  if not db then
+    DULL.db_checked = true
+    DULL.db_available = false
+    DULL.warn("Could not open DB: " .. tostring(err))
+    return false
+  end
+
+  DULL.sqlite3 = mod
+  db:exec("PRAGMA journal_mode=WAL")
+  db:exec("PRAGMA synchronous=NORMAL")
+  db:exec([[CREATE TABLE IF NOT EXISTS timer_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timer TEXT NOT NULL,
+    started_at INTEGER,
+    ended_at INTEGER,
+    duration_seconds INTEGER,
+    report TEXT,
+    xp INTEGER DEFAULT 0,
+    gold INTEGER DEFAULT 0,
+    qp INTEGER DEFAULT 0,
+    tp INTEGER DEFAULT 0,
+    practices INTEGER DEFAULT 0,
+    trains INTEGER DEFAULT 0,
+    levels INTEGER DEFAULT 0,
+    pups INTEGER DEFAULT 0,
+    area TEXT,
+    session_id TEXT,
+    details TEXT
+  )]])
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_timer_history_timer_end ON timer_history(timer, ended_at)")
+  DULL.db = db
+  DULL.db_checked = true
+  DULL.db_available = true
+  return true
+end
+
+function DULL.encode_details(details)
+  if type(details) ~= "table" then return "" end
+  if yajl and yajl.to_string then
+    local ok, encoded = pcall(yajl.to_string, details)
+    if ok then return encoded end
+  end
+  local parts = {}
+  for k, v in pairs(details) do
+    table.insert(parts, tostring(k) .. "=" .. tostring(v))
+  end
+  table.sort(parts)
+  return table.concat(parts, ";")
+end
+
+function DULL.insert_timer_history(row)
+  if not DULL.open_db() then return false end
+  local stmt = DULL.db:prepare([[
+    INSERT INTO timer_history
+      (timer, started_at, ended_at, duration_seconds, report, xp, gold, qp, tp, practices, trains, levels, pups, area, session_id, details)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ]])
+  if not stmt then return false end
+  local OK = DULL.sqlite3 and DULL.sqlite3.OK or 0
+  local DONE = DULL.sqlite3 and DULL.sqlite3.DONE or 101
+  local bind_ok = stmt:bind_values(
+    tostring(row.timer or ""),
+    tonumber(row.started_at) or os.time(),
+    tonumber(row.ended_at) or os.time(),
+    tonumber(row.duration_seconds) or 0,
+    tostring(row.report or ""),
+    tonumber(row.xp) or 0,
+    tonumber(row.gold) or 0,
+    tonumber(row.qp) or 0,
+    tonumber(row.tp) or 0,
+    tonumber(row.practices) or 0,
+    tonumber(row.trains) or 0,
+    tonumber(row.levels) or 0,
+    tonumber(row.pups) or 0,
+    tostring(row.area or ""),
+    tostring(DULL.sessionId or ""),
+    DULL.encode_details(row.details)
+  )
+  local step_ok = false
+  if bind_ok == OK then step_ok = stmt:step() == DONE end
+  stmt:finalize()
+  return step_ok
+end
+
+function DULL.sql_quote(value)
+  return "'" .. tostring(value or ""):gsub("'", "''") .. "'"
+end
+
+function DULL.valid_timer_name(timer)
+  timer = DULL.trim(timer):lower()
+  if timer == "double" then timer = "dbl" end
+  if DULL.timers and DULL.timers[timer] then return timer end
+  return nil
+end
+
+function DULL.parse_timer_history_command(cmd)
+  local first, rest = DULL.trim(cmd):match("^(%S+)%s*(.-)$")
+  local timer = DULL.valid_timer_name(first or "")
+  if not timer then return nil end
+
+  rest = DULL.trim(rest)
+  if rest:lower():match("^%-h") then
+    rest = DULL.trim(rest:sub(3))
+  end
+
+  local count = 1
+  if rest ~= "" then
+    if not rest:match("^%d+$") then return nil end
+    count = tonumber(rest) or 1
+  end
+  return timer, count
+end
+
+function DULL.query_history(timer, count)
+  timer = DULL.valid_timer_name(timer)
+  if not timer or not DULL.open_db() then return nil end
+  count = math.max(1, math.min(tonumber(count) or 10, 100))
+  local sql = string.format(
+    "SELECT timer, ended_at, report FROM timer_history WHERE timer=%s ORDER BY ended_at DESC LIMIT %d",
+    DULL.sql_quote(timer), count
+  )
+  local rows = {}
+  for row in DULL.db:nrows(sql) do table.insert(rows, row) end
+  return rows
+end
+
+function DULL.query_averages(timer, count)
+  timer = DULL.valid_timer_name(timer)
+  if not timer or not DULL.open_db() then return nil end
+  count = math.max(1, math.min(tonumber(count) or 50, 500))
+  local sql = string.format([[
+    SELECT COUNT(*) AS count, AVG(duration_seconds) AS avg_s, MIN(duration_seconds) AS best_s, MAX(duration_seconds) AS worst_s
+    FROM (
+      SELECT duration_seconds FROM timer_history
+      WHERE timer=%s AND duration_seconds > 0
+      ORDER BY ended_at DESC
+      LIMIT %d
+    )
+  ]], DULL.sql_quote(timer), count)
+  for row in DULL.db:nrows(sql) do return row end
+  return nil
+end
+
+function DULL.comma_value(n)
+  local s = tostring(n or 0)
+  local left, num, right = string.match(s, "^([^%d%-]*%-?%d)(%d*)(.-)$")
+  if not left then return s end
+  return left .. (num:reverse():gsub("(%d%d%d)", "%1,"):reverse()) .. right
+end
+
+function DULL.split_field(str)
+  local out = {}
+  for part in tostring(str or ""):gmatch("([^_]+)") do table.insert(out, part) end
+  return out
+end
+
+function DULL.add_to_field(data, fields, amount)
+  if type(data) ~= "table" or type(fields) ~= "table" or #fields == 0 then return end
+  local key = table.remove(fields, 1)
+  if #fields > 0 then
+    data[key] = type(data[key]) == "table" and data[key] or {}
+    DULL.add_to_field(data[key], fields, amount)
+  else
+    data[key] = (tonumber(data[key]) or 0) + (tonumber(amount) or 0)
+  end
+end
+
+function DULL.sum_field(field)
+  if field == nil then return 0 end
+  if type(field) ~= "table" then return tonumber(field) or 0 end
+  local total = 0
+  for _, v in pairs(field) do total = total + DULL.sum_field(v) end
+  return total
+end
+
+function DULL.report_field(field, levels, for_channel)
+  if field == nil then return "" end
+  if type(field) ~= "table" then
+    local val = DULL.comma_value(field)
+    return for_channel and DULL.disp_val(val) or tostring(val)
+  end
+  if (tonumber(levels) or 0) <= 0 then
+    local val = DULL.comma_value(DULL.sum_field(field))
+    return for_channel and DULL.disp_val(val) or tostring(val)
+  end
+  local keys = {}
+  for k, _ in pairs(field) do table.insert(keys, k) end
+  table.sort(keys)
+  local parts = {}
+  for _, key in ipairs(keys) do
+    local val = DULL.report_field(field[key], levels - 1, for_channel)
+    if val ~= "" then
+      if for_channel then
+        table.insert(parts, DULL.disp_val(val) .. DULL.disp_lbl(key))
+      else
+        table.insert(parts, tostring(val) .. key)
+      end
+    end
+  end
+  return table.concat(parts, for_channel and " " or "  ")
+end
+
+function DULL.nonzero_child_count(field)
+  if type(field) ~= "table" then return 0 end
+  local count = 0
+  for _, value in pairs(field) do
+    if DULL.sum_field(value) ~= 0 then count = count + 1 end
+  end
+  return count
+end
+
+function DULL.report_breakdown(field, levels, for_channel)
+  if DULL.nonzero_child_count(field) <= 1 then return "" end
+  return DULL.report_field(field, levels, for_channel)
+end
+
+DULL.source_labels = {
+  qp = { cp = "CP", q = "Qs", gq = "GQ", db = "DB" },
+  tp = { cp = "CP", q = "Qs", gq = "GQ", mob = "Mob", db = "DB" },
+  count = { kill = "Kills", q = "Quests", cp = "Campaigns", gq = "GQs", lvl = "Levels", pup = "PUPs", dbl = "Double XP" },
+}
+
+DULL.count_labels = {
+  cp = "CP", q = "Q", gq = "GQ", kill = "Kills", lvl = "Lvls", pup = "PUPs", dbl = "DXP",
+}
+
+DULL.source_order = {
+  cp = 10, q = 20, gq = 30, db = 40, mob = 50, kill = 60, lvl = 70, pup = 80, dbl = 90,
+}
+
+function DULL.source_breakdown(field, labels, include_single)
+  if not include_single and DULL.nonzero_child_count(field) <= 1 then return "" end
+  labels = labels or {}
+  local keys = {}
+  for key, value in pairs(field or {}) do
+    if DULL.sum_field(value) ~= 0 then table.insert(keys, key) end
+  end
+  table.sort(keys, function(a, b)
+    local ao = DULL.source_order[a] or 999
+    local bo = DULL.source_order[b] or 999
+    if ao == bo then return tostring(a) < tostring(b) end
+    return ao < bo
+  end)
+  local parts = {}
+  for _, key in ipairs(keys) do
+    table.insert(parts, tostring(labels[key] or key) .. " " .. DULL.comma_value(DULL.sum_field(field[key])))
+  end
+  return table.concat(parts, " + ")
+end
+
+function DULL.total_with_sources(field, labels)
+  local total = DULL.comma_value(DULL.sum_field(field))
+  local sources = DULL.source_breakdown(field, labels, false)
+  if sources ~= "" then return total .. " = " .. sources end
+  return total
+end
+
+function DULL.clear_gmcp_gain_buckets()
+  for _, name in ipairs({ "sessionData", "totalData", "doubleData", "timedData" }) do
+    local data = DULL[name]
+    if type(data) == "table" then
+      for _, root in ipairs({ "xp", "gold", "qp", "tp", "tr", "pr" }) do
+        if type(data[root]) == "table" then data[root].gmcp = nil end
+      end
+    end
+  end
+  if type(DULL.lastIncrease) == "table" then
+    for _, root in ipairs({ "xp", "gold", "qp", "tp", "tr", "pr" }) do
+      DULL.lastIncrease[root .. "_gmcp"] = nil
+    end
+  end
+  DULL.gmcpMonitor = nil
+  DULL.gmcpContext = nil
+end
+
+function DULL.counts_segment(field)
+  local keys = {}
+  for key, value in pairs(field or {}) do
+    if DULL.sum_field(value) ~= 0 then table.insert(keys, key) end
+  end
+  table.sort(keys, function(a, b)
+    local ao = DULL.source_order[a] or 999
+    local bo = DULL.source_order[b] or 999
+    if ao == bo then return tostring(a) < tostring(b) end
+    return ao < bo
+  end)
+
+  local parts = {}
+  for _, key in ipairs(keys) do
+    table.insert(parts, DULL.disp_blbl(DULL.count_labels[key] or key) ..
+      DULL.disp_lbl(": ") .. DULL.disp_val(DULL.comma_value(DULL.sum_field(field[key]))))
+  end
+  if #parts == 0 then
+    return DULL.disp_lbl("[") .. DULL.disp_blbl("Totals") .. DULL.disp_lbl(": ") .. DULL.disp_val("0") .. DULL.disp_lbl("]")
+  end
+  return DULL.disp_lbl("[") .. DULL.disp_blbl("Totals") .. DULL.disp_lbl(" ") ..
+    table.concat(parts, DULL.disp_lbl(" ")) .. DULL.disp_lbl("]")
+end
+
+function DULL.seconds_to_minutes(seconds)
+  seconds = math.max(0, tonumber(seconds) or 0)
+  return DULL.disp_val(math.floor(seconds / 60)) .. DULL.disp_lbl("m ") ..
+    DULL.disp_val(seconds % 60) .. DULL.disp_lbl("s")
+end
+
+function DULL.seconds_to_plain(seconds)
+  seconds = math.floor(math.max(0, tonumber(seconds) or 0))
+  return string.format("%dm %02ds", math.floor(seconds / 60), seconds % 60)
+end
+
+function DULL.seconds_to_days(seconds)
+  return DULL.disp_val(string.format("%.1f", (tonumber(seconds) or 0) / 86400)) .. DULL.disp_lbl("days")
+end
+
+function DULL.history_line(row)
+  local ts = tonumber(row and row.ended_at)
+  local report = tostring(row and row.report or "")
+  if not DULL.timestamps_enabled() or not ts or ts <= 0 then return report end
+  return DULL.disp_lbl("[") .. DULL.disp_val(os.date("%Y-%m-%d %H:%M", ts)) .. DULL.disp_lbl("] ") .. report
+end
+
+function DULL.configured_channel()
+  local channel = DULL.trim(DULL.settings and DULL.settings.channel or "echo")
+  if channel == "" then channel = "echo" end
+  return channel
+end
+
+function DULL.report_cached_history_row(index)
+  index = tonumber(index)
+  if not index then return DULL.note("Usage: click a Dull history row label.") end
+  local row = DULL.historyRows and DULL.historyRows[index] or nil
+  if not row then return DULL.note("No cached Dull history row #" .. tostring(index) .. ". Run a Dull history command first.") end
+  return DULL.report(DULL.history_report_text(row), DULL.configured_channel())
+end
+
+function DULL.history_date_tag(row)
+  if not DULL.timestamps_enabled() then return "" end
+  local ts = tonumber(row and row.ended_at)
+  if not ts or ts <= 0 then return "" end
+  return DULL.disp_lbl(" (") .. DULL.disp_val(os.date("%Y-%m-%d %H:%M", ts)) .. DULL.disp_lbl(")")
+end
+
+function DULL.history_report_text(row)
+  local report = tostring(row and row.report or "")
+  local tag = DULL.history_date_tag(row)
+  if tag ~= "" then return report .. tag end
+  return report
+end
+
+function DULL.echo_history_link(label, index)
+  local channel = DULL.configured_channel()
+  if type(cechoLink) == "function" then
+    local ok = pcall(cechoLink, "<cyan>" .. label .. "<reset>", function() DULL.report_cached_history_row(index) end,
+      "Click to report this row via " .. channel, true)
+    if ok then return end
+  end
+  cecho(label)
+end
+
+function DULL.echo_clickable_history_report(index, report)
+  report = tostring(report or "")
+  local plain = DULL.strip_aard(report)
+  local label, number = plain:match("^%[([A-Z]+)%s+#(%d+)")
+  if not label then
+    label = plain:match("^%[([A-Z]+):")
+  end
+  if not label then
+    cecho(DULL.aard_to_cecho(report))
+    return
+  end
+
+  local label_pos = report:find(label, 1, true)
+  if not label_pos then
+    cecho(DULL.aard_to_cecho(report))
+    return
+  end
+
+  local number_pos, number_end
+  if number then
+    number_pos, number_end = report:find(number, label_pos + #label, true)
+  end
+  local split_end = number_end or (label_pos + #label - 1)
+
+  cecho(DULL.aard_to_cecho(report:sub(1, label_pos - 1)))
+  DULL.echo_history_link(number and (label .. " #" .. number) or label, index)
+  cecho(DULL.aard_to_cecho(report:sub(split_end + 1)))
+end
+
+function DULL.echo_history_row(index, row)
+  DULL.echo_clickable_history_report(index, row and row.report or "")
+  local tag = DULL.history_date_tag(row)
+  if tag ~= "" then cecho(DULL.aard_to_cecho(tag)) end
+  cecho("\n")
+end
+
+function DULL.current_area()
+  local room = gmcp and ((gmcp.room and gmcp.room.info) or (gmcp.Room and gmcp.Room.Info))
+  if type(room) == "table" then
+    return tostring(room.zone or room.area or room.name or "none")
+  end
+  return "none"
+end
+
+function DULL.init_runtime()
+  DULL.lastIncrease = DULL.lastIncrease or {}
+  DULL.doubleRunning = DULL.doubleRunning or false
+  DULL.timedSessionRunning = DULL.timedSessionRunning or false
+  DULL.doubleData = DULL.doubleData or {}
+  DULL.timedData = DULL.timedData or {}
+  DULL.group_enabled = {
+    cp_capture = false,
+    gq_mob_capture = false,
+    gq_win_capture = false,
+  }
+  DULL.gqStarted = false
+  DULL.gqCompleted = false
+  DULL.areaXPR = DULL.areaXPR or {}
+  DULL.areaGR = DULL.areaGR or {}
+  DULL.areaDPS = DULL.areaDPS or {}
+  DULL.rates = {
+    xpr = { last = os.time(), total = 0, seconds = 0, rate = 0 },
+    xprDbl = { last = os.time(), total = 0, seconds = 0, rate = 0 },
+    xprTimed = { last = os.time(), total = 0, seconds = 0, rate = 0 },
+    gr = { last = os.time(), total = 0, seconds = 0, rate = 0 },
+    dps = { last = os.clock(), total = 0, seconds = 0, rate = 0 },
+  }
+  DULL.pending_timer_reports = {}
+  DULL.capture = DULL.capture or {}
+  DULL.timers = {
+    cp = { last = 0, start = tonumber(DULL.saved_timer_starts.cp) or os.time(), history = {} },
+    lvl = { last = 0, start = tonumber(DULL.saved_timer_starts.lvl) or os.time(), history = {} },
+    pup = { last = 0, start = tonumber(DULL.saved_timer_starts.pup) or os.time(), history = {} },
+    quest = { last = 0, start = tonumber(DULL.saved_timer_starts.quest) or os.time(), history = {} },
+    gq = { last = 0, start = tonumber(DULL.saved_timer_starts.gq) or os.time(), history = {} },
+    dbl = { last = 0, start = tonumber(DULL.saved_timer_starts.dbl) or os.time(), history = {} },
+    timed = { last = 0, start = tonumber(DULL.saved_timer_starts.timed) or os.time(), history = {} },
+  }
+end
+
+function DULL.set_last_increase(field, amount)
+  DULL.lastIncrease[field] = (tonumber(DULL.lastIncrease[field]) or 0) + (tonumber(amount) or 0)
+end
+
+function DULL.get_last_increase(field)
+  local val = tonumber(DULL.lastIncrease[field]) or 0
+  DULL.lastIncrease[field] = 0
+  return val
+end
+
+function DULL.gag_enabled(kind)
+  local mode = DULL.settings.mode or "normal"
+  return DULL.gags and DULL.gags[mode] and DULL.gags[mode][kind] == "y"
+end
+
+function DULL.apply_gag(kind)
+  if kind and DULL.gag_enabled(kind) and type(deleteLine) == "function" then
+    pcall(deleteLine)
+  end
+end
+
+function DULL.extract_amount(info, m)
+  if info.amount then return tonumber(info.amount) or 0 end
+  local idx = tonumber(info.amount_index) or 2
+  local raw = m and m[idx] or nil
+  raw = tostring(raw or "0"):gsub(",", "")
+  return tonumber(raw) or 0
+end
+
+function DULL.number_or_nil(value)
+  if value == nil then return nil end
+  local cleaned = tostring(value):gsub(",", "")
+  return tonumber(cleaned)
+end
+
+function DULL.increment_field(info, amount)
+  info = info or {}
+  local field = info.field
+  if not field or field == "" then return 0 end
+  amount = tonumber(amount) or 0
+  DULL.add_to_field(DULL.totalData, DULL.split_field(field), amount)
+  DULL.add_to_field(DULL.sessionData, DULL.split_field(field), amount)
+  if DULL.doubleRunning then DULL.add_to_field(DULL.doubleData, DULL.split_field(field), amount) end
+  if DULL.timedSessionRunning then DULL.add_to_field(DULL.timedData, DULL.split_field(field), amount) end
+  DULL.set_last_increase(field, amount)
+  DULL.schedule_save(1.0)
+  return amount
+end
+
+function DULL.increment(info, m, line)
+  local amount = DULL.extract_amount(info, m)
+  amount = DULL.increment_field(info, amount) or 0
+  if amount ~= 0 and info.rate == "xp" then DULL.xp_increase(amount, line) end
+  if amount ~= 0 and info.rate == "gold" then DULL.gold_increase(amount) end
+  if info.after == "disable_group" and info.group then DULL.group_enabled[info.group] = false end
+end
+
+function DULL.decrement(info, m, line)
+  local amount = -1 * DULL.extract_amount(info, m)
+  amount = DULL.increment_field(info, amount) or 0
+  if amount ~= 0 and info.rate == "gold" then DULL.gold_increase(amount) end
+end
+
+function DULL.increment_count(info)
+  DULL.increment_field(info, 1)
+end
+
+function DULL.shared_gold(info, m, line)
+  local total = tostring(m[2] or "0"):gsub(",", "")
+  local share = tostring(m[3] or "0"):gsub(",", "")
+  local total_amount = DULL.increment_field(info, -1 * (tonumber(total) or 0)) or 0
+  if total_amount ~= 0 then DULL.gold_increase(total_amount) end
+  local share_amount = DULL.increment_field(info, tonumber(share) or 0) or 0
+  if share_amount ~= 0 then DULL.gold_increase(share_amount) end
+end
+
+function DULL.bonus_stat(info, m)
+  local stat = tostring(m[2] or "")
+  if stat ~= "" then
+    DULL.lastIncrease.BonusStat = tostring(DULL.lastIncrease.BonusStat or "") .. stat .. " "
+  end
+end
+
+function DULL.start_timer(timer)
+  timer = DULL.valid_timer_name(timer)
+  if not timer then return end
+  if timer == "gq" then
+    DULL.gqStarted = true
+    DULL.gqCompleted = false
+  end
+  DULL.timers[timer].start = os.time()
+  DULL.timers[timer].ended_at = nil
+  DULL.schedule_save(1.0)
+end
+
+function DULL.end_timer(timer)
+  timer = DULL.valid_timer_name(timer)
+  if not timer then return end
+  if timer == "gq" then
+    if DULL.gqCompleted then
+      DULL.gqStarted = false
+      return
+    end
+    DULL.gqStarted = false
+    DULL.gqCompleted = true
+  end
+  local now = os.time()
+  DULL.timers[timer].last = now - (tonumber(DULL.timers[timer].start) or now)
+  DULL.timers[timer].ended_at = now
+  DULL.queue_timer_report(timer, 0.25)
+  DULL.schedule_save(1.0)
+end
+
+function DULL.queue_timer_report(timer, delay)
+  DULL.pending_timer_reports[timer] = true
+  if DULL.ids.report_timer then pcall(killTimer, DULL.ids.report_timer) end
+  DULL.ids.report_timer = tempTimer(delay or 0.25, function()
+    DULL.ids.report_timer = nil
+    DULL.report_timers()
+  end)
+end
+
+function DULL.report_timers()
+  for timer, pending in pairs(DULL.pending_timer_reports) do
+    if pending then DULL.report_timer(timer) end
+  end
+end
+
+function DULL.timer_common_row(timer, report, extra)
+  local t = DULL.timers[timer] or {}
+  local row = extra or {}
+  local started_at = tonumber(t.start) or os.time()
+  local duration_seconds = tonumber(t.last) or 0
+  row.timer = timer
+  row.started_at = started_at
+  row.ended_at = tonumber(t.ended_at) or (started_at + duration_seconds)
+  row.duration_seconds = duration_seconds
+  row.report = report
+  row.area = DULL.current_area()
+  return row
+end
+
+function DULL.timer_report_cp()
+  local qp = DULL.get_last_increase("qp_cp_reward")
+  local daily = DULL.get_last_increase("qp_cp_daily")
+  local gold = DULL.get_last_increase("gold_cp")
+  local tr = DULL.get_last_increase("tr_cp")
+  local pr = DULL.get_last_increase("pr_cp")
+  local tp = DULL.get_last_increase("tp_cp")
+  local count = DULL.report_field(DULL.sessionData.count and DULL.sessionData.count.cp, 0, true)
+  local tr_s = tr > 0 and (" " .. DULL.disp_val(tr) .. DULL.disp_lbl("tr")) or ""
+  local pr_s = pr > 0 and (" " .. DULL.disp_val(pr) .. DULL.disp_lbl("pr")) or ""
+  local tp_s = tp > 0 and (" " .. DULL.disp_val(tp) .. DULL.disp_lbl("tp")) or ""
+  local daily_s = daily > 0 and (DULL.disp_blbl(" + ") .. DULL.disp_val(daily) .. DULL.disp_lbl("daily")) or ""
+  local gold_s = " " .. DULL.disp_val(DULL.comma_value(gold)) .. DULL.disp_lbl("g")
+  local report = DULL.disp_lbl("[") .. DULL.disp_blbl("CP #") .. count .. DULL.disp_lbl(": ") ..
+    DULL.disp_val(qp) .. DULL.disp_lbl("qp") .. daily_s .. gold_s .. tp_s .. tr_s .. pr_s ..
+    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.cp.last)
+  return report, DULL.timer_common_row("cp", report, { qp = qp + daily, gold = gold, trains = tr, practices = pr, tp = tp })
+end
+
+function DULL.timer_report_lvl()
+  local tr = DULL.get_last_increase("tr_lvl")
+  local lucky = DULL.get_last_increase("tr_luck")
+  local db = DULL.get_last_increase("tr_db")
+  local bonus = DULL.trim(DULL.lastIncrease.BonusStat or "")
+  DULL.lastIncrease.BonusStat = ""
+  local count = DULL.report_field(DULL.sessionData.count and DULL.sessionData.count.lvl, 0, true)
+  local lucky_s = lucky > 0 and (" " .. DULL.disp_val(lucky) .. DULL.disp_lbl("lucky")) or ""
+  local db_s = db > 0 and (" " .. DULL.disp_val(db) .. DULL.disp_lbl("db")) or ""
+  local bonus_s = bonus ~= "" and (DULL.disp_blbl(" Bonus: ") .. DULL.disp_val(bonus)) or ""
+  local report = DULL.disp_lbl("[") .. DULL.disp_blbl("LVL #") .. count .. DULL.disp_lbl(": ") ..
+    DULL.disp_val(tr) .. DULL.disp_lbl("tr") .. lucky_s .. db_s ..
+    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.lvl.last) .. bonus_s
+  return report, DULL.timer_common_row("lvl", report, { levels = 1, trains = tr + lucky + db, details = { bonus_stat = bonus } })
+end
+
+function DULL.timer_report_pup()
+  local tr = DULL.get_last_increase("tr_pup")
+  local lucky = DULL.get_last_increase("tr_luck")
+  local db = DULL.get_last_increase("tr_db")
+  local bonus = DULL.trim(DULL.lastIncrease.BonusStat or "")
+  DULL.lastIncrease.BonusStat = ""
+  local count = DULL.report_field(DULL.sessionData.count and DULL.sessionData.count.pup, 0, true)
+  local lucky_s = lucky > 0 and (" " .. DULL.disp_val(lucky) .. DULL.disp_lbl("lucky")) or ""
+  local db_s = db > 0 and (" " .. DULL.disp_val(db) .. DULL.disp_lbl("db")) or ""
+  local bonus_s = bonus ~= "" and (DULL.disp_blbl(" Bonus: ") .. DULL.disp_val(bonus)) or ""
+  local report = DULL.disp_lbl("[") .. DULL.disp_blbl("PUP #") .. count .. DULL.disp_lbl(": ") ..
+    DULL.disp_val(tr) .. DULL.disp_lbl("tr") .. lucky_s .. db_s ..
+    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.pup.last) .. bonus_s
+  return report, DULL.timer_common_row("pup", report, { pups = 1, trains = tr + lucky + db, details = { bonus_stat = bonus } })
+end
+
+function DULL.timer_report_quest()
+  local reward = DULL.get_last_increase("qp_q_reward")
+  local tier = DULL.get_last_increase("qp_q_tier")
+  local opk = DULL.get_last_increase("qp_q_opk")
+  local hc = DULL.get_last_increase("qp_q_hc")
+  local mccp = DULL.get_last_increase("qp_q_mccp")
+  local lucky = DULL.get_last_increase("qp_q_lucky")
+  local db = DULL.get_last_increase("qp_q_db")
+  local gold = DULL.get_last_increase("gold_q")
+  local pr = DULL.get_last_increase("pr_q")
+  local tr = DULL.get_last_increase("tr_q")
+  local tp = DULL.get_last_increase("tp_q")
+  local regular = reward + tier + opk + hc + mccp
+  local total = regular + lucky + db
+  local count = DULL.report_field(DULL.sessionData.count and DULL.sessionData.count.q, 0, true)
+  local lucky_s = lucky > 0 and (DULL.disp_blbl(" + ") .. DULL.disp_val(lucky) .. DULL.disp_lbl("lucky")) or ""
+  local db_s = db > 0 and (DULL.disp_blbl(" + ") .. DULL.disp_val(db) .. DULL.disp_lbl("db")) or ""
+  local total_s = total > regular and (DULL.disp_blbl(" = ") .. DULL.disp_val(total) .. DULL.disp_lbl("total")) or ""
+  local pr_s = pr > 0 and (" " .. DULL.disp_val(pr) .. DULL.disp_lbl("pr")) or ""
+  local tr_s = tr > 0 and (" " .. DULL.disp_val(tr) .. DULL.disp_lbl("tr")) or ""
+  local tp_s = tp > 0 and (" " .. DULL.disp_val(tp) .. DULL.disp_lbl("tp")) or ""
+  local gold_s = " " .. DULL.disp_val(DULL.comma_value(gold)) .. DULL.disp_lbl("g")
+  local report = DULL.disp_lbl("[") .. DULL.disp_blbl("QUEST #") .. count .. DULL.disp_lbl(": ") ..
+    DULL.disp_val(regular) .. DULL.disp_lbl("qp") .. lucky_s .. db_s .. total_s .. gold_s .. tp_s .. tr_s .. pr_s ..
+    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.quest.last)
+  return report, DULL.timer_common_row("quest", report, { qp = total, gold = gold, practices = pr, trains = tr, tp = tp })
+end
+
+function DULL.timer_report_gq()
+  local win_qp = DULL.get_last_increase("qp_gq_win")
+  local mob_qp = DULL.get_last_increase("qp_gq_mob")
+  local gold = DULL.get_last_increase("gold_gq")
+  local tr = DULL.get_last_increase("tr_gq")
+  local pr = DULL.get_last_increase("pr_gq")
+  local tp = DULL.get_last_increase("tp_gq")
+  local count = DULL.report_field(DULL.sessionData.count and DULL.sessionData.count.gq, 0, true)
+  local tr_s = tr > 0 and (" " .. DULL.disp_val(tr) .. DULL.disp_lbl("tr")) or ""
+  local pr_s = pr > 0 and (" " .. DULL.disp_val(pr) .. DULL.disp_lbl("pr")) or ""
+  local tp_s = tp > 0 and (" " .. DULL.disp_val(tp) .. DULL.disp_lbl("tp")) or ""
+  local report = DULL.disp_lbl("[") .. DULL.disp_blbl("GQ #") .. count .. DULL.disp_lbl(": ") ..
+    DULL.disp_val(win_qp + mob_qp) .. DULL.disp_lbl("qp") .. tr_s .. pr_s .. tp_s ..
+    " " .. DULL.disp_val(DULL.comma_value(gold)) .. DULL.disp_lbl("g") ..
+    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.gq.last)
+  return report, DULL.timer_common_row("gq", report, { qp = win_qp + mob_qp, gold = gold, trains = tr, practices = pr, tp = tp })
+end
+
+function DULL.timer_report_aggregate(timer, data, rate)
+  local minutes = math.max(1 / 60, (DULL.timers[timer].last or 0) / 60)
+  local gold = DULL.sum_field(data.gold)
+  local xp = DULL.sum_field(data.xp)
+  local tr = DULL.sum_field(data.tr)
+  local lvl = data.count and (tonumber(data.count.lvl) or 0) or 0
+  local pup = data.count and (tonumber(data.count.pup) or 0) or 0
+  local label = timer == "dbl" and "DBL" or "TIMED"
+  local count = timer == "dbl" and (DULL.report_field(DULL.sessionData.count and DULL.sessionData.count.dbl, 0, true)) or ""
+  local count_s = timer == "dbl" and (DULL.disp_lbl(" #") .. count) or ""
+  local number_s = pup > 0 and (DULL.disp_val(DULL.comma_value(pup)) .. DULL.disp_lbl("pup ")) or
+    (DULL.disp_val(DULL.comma_value(lvl)) .. DULL.disp_lbl("lvl "))
+  local info = DULL.disp_blbl("XPR ") .. DULL.disp_val(string.format("%.1f", rate or 0)) .. DULL.disp_lbl("  ") ..
+    DULL.disp_blbl("GOLD ") .. DULL.disp_val(DULL.comma_value(gold)) .. DULL.disp_lbl("g ") ..
+    DULL.disp_val(DULL.comma_value(math.floor(gold / minutes))) .. DULL.disp_lbl("/m") .. DULL.disp_lbl("  ") ..
+    DULL.disp_blbl("XP ") .. DULL.disp_val(DULL.comma_value(xp)) .. DULL.disp_lbl("xp ") ..
+    DULL.disp_val(DULL.comma_value(math.floor(xp / minutes))) .. DULL.disp_lbl("/m") .. DULL.disp_lbl("  ") ..
+    DULL.disp_blbl("# ") .. number_s .. DULL.disp_val(DULL.comma_value(tr)) .. DULL.disp_lbl("tr")
+  local report = DULL.disp_lbl("[") .. DULL.disp_blbl(label) .. count_s .. DULL.disp_lbl(": ") ..
+    info .. DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers[timer].last)
+  return report, DULL.timer_common_row(timer, report, { xp = xp, gold = gold, trains = tr, levels = lvl, pups = pup })
+end
+
+function DULL.report_timer(timer)
+  timer = DULL.valid_timer_name(timer)
+  if not timer then return end
+  local report, row
+  if timer == "cp" then report, row = DULL.timer_report_cp()
+  elseif timer == "lvl" then report, row = DULL.timer_report_lvl()
+  elseif timer == "pup" then report, row = DULL.timer_report_pup()
+  elseif timer == "quest" then report, row = DULL.timer_report_quest()
+  elseif timer == "gq" then report, row = DULL.timer_report_gq()
+  elseif timer == "dbl" then report, row = DULL.timer_report_aggregate("dbl", DULL.doubleData, DULL.rates.xprDbl.rate); DULL.doubleData = {}
+  elseif timer == "timed" then report, row = DULL.timer_report_aggregate("timed", DULL.timedData, DULL.rates.xprTimed.rate); DULL.timedData = {}
+  end
+  if not report then return end
+  table.insert(DULL.timers[timer].history, report)
+  DULL.lastReports = DULL.lastReports or {}
+  DULL.lastReports[timer] = report
+  DULL.insert_timer_history(row or {})
+  if DULL.settings.report == "y" then DULL.report(report) end
+  if timer == "cp" then DULL.group_enabled.cp_capture = false end
+  DULL.pending_timer_reports[timer] = false
+end
+
+function DULL.double_start(info, m)
+  DULL.doubleRunning = true
+  DULL.doubleData = {}
+  DULL.start_timer("dbl")
+  local mins = ""
+  for i = 2, 6 do
+    if m[i] and m[i] ~= "" then mins = m[i] end
+  end
+  DULL.rates.xprDbl = { last = os.time(), total = 0, seconds = 0, rate = 0 }
+  if DULL.settings.report == "y" then
+    DULL.fresh_line()
+    DULL.report(DULL.disp_blbl("EXP: ") .. DULL.disp_val("DOUBLE EXP") .. DULL.disp_lbl(" for ") .. DULL.disp_val(mins) .. DULL.disp_lbl("m"))
+  end
+end
+
+function DULL.double_end()
+  DULL.increment_field({ field = "count_dbl" }, 1)
+  DULL.doubleRunning = false
+  DULL.end_timer("dbl")
+end
+
+function DULL.timed_session_start(minutes)
+  if DULL.timedSessionRunning then
+    local remaining = math.max(0, (DULL.timers.timed.finish or os.time()) - os.time())
+    DULL.note("A timed session is already running. Remaining: " .. tostring(remaining) .. " seconds")
+    return
+  end
+  local duration = tonumber(minutes) or 5
+  if duration < 1 then duration = 5 end
+  DULL.timedSessionRunning = true
+  DULL.timedData = {}
+  DULL.timers.timed.start = os.time()
+  DULL.timers.timed.ended_at = nil
+  DULL.timers.timed.finish = DULL.timers.timed.start + duration * 60
+  DULL.rates.xprTimed = { last = os.time(), total = 0, seconds = 0, rate = 0 }
+  if DULL.ids.timed_session_timer then pcall(killTimer, DULL.ids.timed_session_timer) end
+  DULL.ids.timed_session_timer = tempTimer(duration * 60, function() DULL.timed_session_end() end)
+  DULL.note("Timed session started. Duration: " .. tostring(duration) .. " minutes")
+  DULL.schedule_save(1.0)
+end
+
+function DULL.timed_session_clear()
+  DULL.timedSessionRunning = false
+  DULL.timedData = {}
+  if DULL.ids.timed_session_timer then pcall(killTimer, DULL.ids.timed_session_timer) end
+  DULL.ids.timed_session_timer = nil
+  DULL.note("Timed session cleared")
+end
+
+function DULL.timed_session_end()
+  DULL.ids.timed_session_timer = nil
+  if not DULL.timedSessionRunning then return end
+  local now = os.time()
+  DULL.timers.timed.last = now - (DULL.timers.timed.start or now)
+  DULL.timers.timed.ended_at = now
+  DULL.timedSessionRunning = false
+  DULL.queue_timer_report("timed", 0.25)
+end
+
+function DULL.xp_increase(amount, line)
+  local now = os.time()
+  local area = DULL.current_area()
+  amount = tonumber(amount) or 0
+  DULL.areaXPR[area] = DULL.areaXPR[area] or { rate = 0, total = 0, seconds = 0, dblRate = 0, dblTotal = 0, dblSeconds = 0, rare = 0 }
+  local info = DULL.areaXPR[area]
+  local is_rare = tostring(line or ""):find("rare kill", 1, true) ~= nil
+
+  if not DULL.doubleRunning then
+    local delta = now - (DULL.rates.xpr.last or now)
+    if is_rare and delta < 60 then
+      info.total = (info.total or 0) - amount
+      info.rare = (info.rare or 0) + amount
+    end
+    if delta < 60 then
+      DULL.rates.xpr.total = DULL.rates.xpr.total + amount
+      DULL.rates.xpr.seconds = DULL.rates.xpr.seconds + delta
+      if DULL.rates.xpr.total > 0 then DULL.rates.xpr.rate = 1000 / (DULL.rates.xpr.total / DULL.rates.xpr.seconds) end
+      info.total = (info.total or 0) + amount
+      info.seconds = (info.seconds or 0) + delta
+      if info.total > 0 then info.rate = 1000 / (info.total / info.seconds) end
+    end
+    DULL.rates.xpr.last = now
+  else
+    local delta = now - (DULL.rates.xprDbl.last or now)
+    if is_rare and delta < 60 then
+      info.dblTotal = (info.dblTotal or 0) - 2 * amount
+      info.rare = (info.rare or 0) + 2 * amount
+    end
+    if delta < 60 then
+      DULL.rates.xprDbl.total = DULL.rates.xprDbl.total + amount
+      DULL.rates.xprDbl.seconds = DULL.rates.xprDbl.seconds + delta
+      if DULL.rates.xprDbl.total > 0 then DULL.rates.xprDbl.rate = 1000 / (DULL.rates.xprDbl.total / DULL.rates.xprDbl.seconds) end
+      info.dblTotal = (info.dblTotal or 0) + amount
+      info.dblSeconds = (info.dblSeconds or 0) + delta
+      if info.dblTotal > 0 then info.dblRate = 1000 / (info.dblTotal / info.dblSeconds) end
+    end
+    DULL.rates.xprDbl.last = now
+  end
+
+  if DULL.timedSessionRunning then
+    local delta = now - (DULL.rates.xprTimed.last or now)
+    if delta < 60 and not tostring(line or ""):find("bonus", 1, true) then
+      DULL.rates.xprTimed.total = DULL.rates.xprTimed.total + amount
+      DULL.rates.xprTimed.seconds = DULL.rates.xprTimed.seconds + delta
+      if DULL.rates.xprTimed.total > 0 then
+        DULL.rates.xprTimed.rate = 1000 / (DULL.rates.xprTimed.total / DULL.rates.xprTimed.seconds)
+      end
+    end
+    DULL.rates.xprTimed.last = now
+  end
+end
+
+function DULL.gold_increase(amount)
+  local now = os.time()
+  local area = DULL.current_area()
+  amount = tonumber(amount) or 0
+  DULL.areaGR[area] = DULL.areaGR[area] or { rate = 0, total = 0, seconds = 0 }
+  local delta = now - (DULL.rates.gr.last or now)
+  if delta < 60 then
+    DULL.rates.gr.total = DULL.rates.gr.total + amount
+    DULL.rates.gr.seconds = DULL.rates.gr.seconds + delta
+    if DULL.rates.gr.seconds > 0 then DULL.rates.gr.rate = DULL.rates.gr.total / (DULL.rates.gr.seconds / 60) end
+    local info = DULL.areaGR[area]
+    info.total = (info.total or 0) + amount
+    info.seconds = (info.seconds or 0) + delta
+    if info.seconds > 0 then info.rate = info.total / (info.seconds / 60) end
+  end
+  DULL.rates.gr.last = now
+end
+
+function DULL.damage_increase(info, m)
+  local now = os.clock()
+  local area = DULL.current_area()
+  local amount = DULL.extract_amount(info, m)
+  DULL.areaDPS[area] = DULL.areaDPS[area] or { rate = 0, total = 0, seconds = 0 }
+  local delta = now - (DULL.rates.dps.last or now)
+  if delta < 60 then
+    DULL.rates.dps.total = DULL.rates.dps.total + amount
+    DULL.rates.dps.seconds = DULL.rates.dps.seconds + delta
+    if DULL.rates.dps.seconds > 0 then DULL.rates.dps.rate = DULL.rates.dps.total / DULL.rates.dps.seconds end
+    local row = DULL.areaDPS[area]
+    row.total = (row.total or 0) + amount
+    row.seconds = (row.seconds or 0) + delta
+    if row.seconds > 0 then row.rate = row.total / row.seconds end
+  end
+  DULL.rates.dps.last = now
+end
+
+function DULL.pad_left(str, width)
+  str = tostring(str or "")
+  return string.sub(string.rep(" ", width) .. str, -1 * width)
+end
+
+function DULL.sorted_keys_by(t, fn)
+  local keys = {}
+  for k, _ in pairs(t or {}) do table.insert(keys, k) end
+  table.sort(keys, function(a, b) return fn(t, a, b) end)
+  return keys
+end
+
+function DULL.show_area_rate(kind, filter)
+  filter = DULL.trim(filter or "")
+  local data = kind == "xpr" and DULL.areaXPR or kind == "gr" and DULL.areaGR or DULL.areaDPS
+  local total, longest = 0, 0
+  for area, info in pairs(data) do
+    longest = math.max(longest, #tostring(area))
+    total = total + (tonumber(info.total) or 0) + (tonumber(info.dblTotal) or 0)
+  end
+  if total == 0 then
+    DULL.report(DULL.segment(kind:upper(), "no data"), "echo")
+    return
+  end
+
+  local count_filter = tonumber(filter)
+  local area_filter = count_filter and "" or filter
+  local shown = 0
+  local keys
+  if kind == "xpr" then
+    keys = DULL.sorted_keys_by(data, function(t, a, b) return (t[a].rate or 999999) < (t[b].rate or 999999) end)
+  else
+    keys = DULL.sorted_keys_by(data, function(t, a, b) return (t[a].rate or 0) > (t[b].rate or 0) end)
+  end
+
+  for _, area in ipairs(keys) do
+    local info = data[area]
+    local area_total = (tonumber(info.total) or 0) + (tonumber(info.dblTotal) or 0)
+    local percent = total > 0 and area_total / total * 100 or 0
+    local display = percent >= 5
+    if count_filter then display = shown < count_filter end
+    if area_filter ~= "" then display = tostring(area):lower():find(area_filter:lower(), 1, true) ~= nil end
+    if display then
+      shown = shown + 1
+      if kind == "xpr" then
+        DULL.report(DULL.disp_lbl("[") .. DULL.disp_blbl(DULL.pad_left(area, longest)) .. DULL.disp_lbl(": ") ..
+          DULL.disp_val(DULL.pad_left(string.format("%.1f", info.rate or 0), 5)) .. DULL.disp_lbl("xpr ") ..
+          DULL.disp_val(DULL.pad_left(string.format("%.1fK", (info.total or 0) / 1000), 8)) .. DULL.disp_lbl("xp ") ..
+          DULL.seconds_to_minutes(info.seconds or 0) .. DULL.disp_lbl("  ") ..
+          DULL.disp_val(DULL.pad_left(string.format("%.1f", info.dblRate or 0), 5)) .. DULL.disp_lbl("dbl ") ..
+          DULL.disp_val(DULL.pad_left(string.format("%.1fK", (info.dblTotal or 0) / 1000), 8)) .. DULL.disp_lbl("xp ") ..
+          DULL.seconds_to_minutes(info.dblSeconds or 0) .. DULL.disp_lbl("  ") ..
+          DULL.disp_val(string.format("%.1fK", (info.rare or 0) / 1000)) .. DULL.disp_lbl("rare ") ..
+          DULL.disp_val(string.format("%.1f%%", percent)) .. DULL.disp_lbl("]"), "echo")
+      elseif kind == "gr" then
+        DULL.report(DULL.disp_lbl("[") .. DULL.disp_blbl(DULL.pad_left(area, longest)) .. DULL.disp_lbl(": ") ..
+          DULL.disp_val(string.format("%.1fK", (info.rate or 0) / 1000)) .. DULL.disp_lbl(" gpm ") ..
+          DULL.disp_val(string.format("%.1fM", (info.total or 0) / 1000000)) .. DULL.disp_lbl("g ") ..
+          DULL.seconds_to_minutes(info.seconds or 0) .. DULL.disp_lbl("  ") ..
+          DULL.disp_val(string.format("%.1f%%", percent)) .. DULL.disp_lbl("]"), "echo")
+      else
+        DULL.report(DULL.disp_lbl("[") .. DULL.disp_blbl(DULL.pad_left(area, longest)) .. DULL.disp_lbl(": ") ..
+          DULL.disp_val(string.format("%.1f", info.rate or 0)) .. DULL.disp_lbl("dps ") ..
+          DULL.disp_val(string.format("%.1fM", (info.total or 0) / 1000000)) .. DULL.disp_lbl("dmg ") ..
+          DULL.seconds_to_minutes(info.seconds or 0) .. DULL.disp_lbl("  ") ..
+          DULL.disp_val(string.format("%.1f%%", percent)) .. DULL.disp_lbl("]"), "echo")
+      end
+    end
+  end
+end
+
+function DULL.clear_area_rate(kind, filter)
+  filter = DULL.trim(filter or "")
+  local map_name = kind == "xpr" and "EXP Rate" or kind == "gr" and "Gold Rate" or "DPS"
+  local data_name = kind == "xpr" and "areaXPR" or kind == "gr" and "areaGR" or "areaDPS"
+  if filter == "" then
+    DULL[data_name] = {}
+    DULL.note("All area " .. map_name .. " data cleared")
+    return
+  end
+  for area, _ in pairs(DULL[data_name]) do
+    if tostring(area):lower():find(filter:lower(), 1, true) then
+      DULL[data_name][area] = nil
+      DULL.note("Area " .. map_name .. " data cleared for: " .. area)
+    end
+  end
+end
+
+function DULL.reset_rate(kind)
+  if kind == "xpr" then
+    DULL.rates.xpr = { last = os.time(), total = 0, seconds = 0, rate = 0 }
+    DULL.rates.xprDbl = { last = os.time(), total = 0, seconds = 0, rate = 0 }
+  elseif kind == "gr" then
+    DULL.rates.gr = { last = os.time(), total = 0, seconds = 0, rate = 0 }
+  elseif kind == "dps" then
+    DULL.rates.dps = { last = os.clock(), total = 0, seconds = 0, rate = 0 }
+  end
+  DULL.note(kind:upper() .. " counter reset")
+end
+
+function DULL.resolve_report_channel(channel)
+  local target = DULL.trim(channel)
+  if target == "" then target = DULL.settings.channel or "echo" end
+  if target == "default" then target = "echo" end
+  return target
+end
+
+function DULL.report(text, channel)
+  local msg = tostring(text or "")
+  if msg == "" then return end
+  local target = DULL.resolve_report_channel(channel)
+  local lower = target:lower()
+
+  if lower == "echo" or lower == "cecho" or lower == "local" then
+    cecho(DULL.aard_to_cecho(msg) .. "\n")
+  elseif lower == "gchan" then
+    if _G.GCH and type(GCH.send_gchan) == "function" then
+      GCH.send_gchan(msg)
+    elseif type(expandAlias) == "function" then
+      expandAlias("gchan " .. msg, false)
+    else
+      send("gchan " .. msg, false)
+    end
+  elseif lower == "group" or lower == "gt" or lower == "gtell" then
+    send("gtell " .. msg .. "@w", false)
+  else
+    send(target:gsub(";", "") .. " " .. msg .. "@w", false)
+  end
+end
+
+function DULL.segment(label, value)
+  return DULL.disp_lbl("[") .. DULL.disp_blbl(label) .. DULL.disp_lbl(": ") .. DULL.disp_val(value) .. DULL.disp_lbl("]")
+end
+
+function DULL.segment_suffix(label, value, suffix)
+  local piece = DULL.disp_lbl("[") .. DULL.disp_blbl(label) .. DULL.disp_lbl(": ") .. DULL.disp_val(value)
+  if suffix and suffix ~= "" then
+    piece = piece .. DULL.disp_lbl("/") .. DULL.disp_val(suffix)
+  end
+  return piece .. DULL.disp_lbl("]")
+end
+
+function DULL.report_session(channel)
+  local info = DULL.segment("XPR", string.format("%.1f", DULL.doubleRunning and DULL.rates.xprDbl.rate or DULL.rates.xpr.rate)) ..
+    " " .. DULL.segment("GOLD", string.format("%.1fM", DULL.sum_field(DULL.sessionData.gold) / 1000000)) ..
+    " " .. DULL.segment("XP", string.format("%.0fK", DULL.sum_field(DULL.sessionData.xp) / 1000)) ..
+    " " .. DULL.segment("QP", DULL.total_with_sources(DULL.sessionData.qp, DULL.source_labels.qp))
+  if DULL.sum_field(DULL.sessionData.tp) > 0 then
+    info = info .. " " .. DULL.segment("TP", DULL.total_with_sources(DULL.sessionData.tp, DULL.source_labels.tp))
+  end
+  if DULL.sum_field(DULL.sessionData.tr) > 0 then
+    info = info .. " " .. DULL.segment("TR", DULL.comma_value(DULL.sum_field(DULL.sessionData.tr)))
+  end
+  if DULL.sessionData.tr and DULL.sessionData.tr.instinct then
+    info = info .. " " .. DULL.segment("iTR", DULL.comma_value(DULL.sum_field(DULL.sessionData.tr.instinct)))
+  end
+  info = info .. " " .. DULL.counts_segment(DULL.sessionData.count)
+  DULL.report(info, channel)
+end
+
+function DULL.report_total(channel)
+  local days = math.max((os.time() - (DULL.totalStart or os.time())) / 86400, 1 / 24)
+  local gold = DULL.sum_field(DULL.totalData.gold)
+  local xp = DULL.sum_field(DULL.totalData.xp)
+  local qp = DULL.sum_field(DULL.totalData.qp)
+  local tp = DULL.sum_field(DULL.totalData.tp)
+  local qp_text = DULL.comma_value(qp) .. " " .. string.format("%.0f/d", qp / days)
+  local qp_sources = DULL.source_breakdown(DULL.totalData.qp, DULL.source_labels.qp, false)
+  if qp_sources ~= "" then qp_text = qp_text .. " = " .. qp_sources end
+  local info = DULL.segment("GOLD", string.format("%.1fM %s/d", gold / 1000000, string.format("%.1fM", gold / 1000000 / days))) ..
+    " " .. DULL.segment("XP", string.format("%.0fK %s/d", xp / 1000, string.format("%.0fK", xp / 1000 / days))) ..
+    " " .. DULL.segment("QP", qp_text)
+  if tp > 0 then
+    local tp_text = tostring(tp) .. " " .. string.format("%.1f/d", tp / days)
+    local tp_sources = DULL.source_breakdown(DULL.totalData.tp, DULL.source_labels.tp, false)
+    if tp_sources ~= "" then tp_text = tp_text .. " = " .. tp_sources end
+    info = info .. " " .. DULL.segment("TP", tp_text)
+  end
+  if DULL.sum_field(DULL.totalData.tr) > 0 then
+    info = info .. " " .. DULL.segment("TR", DULL.comma_value(DULL.sum_field(DULL.totalData.tr)))
+  end
+  if DULL.totalData.tr and DULL.totalData.tr.instinct then
+    info = info .. " " .. DULL.segment("iTR", DULL.comma_value(DULL.sum_field(DULL.totalData.tr.instinct)))
+  end
+  info = info .. " " .. DULL.counts_segment(DULL.totalData.count) .. " " ..
+    DULL.seconds_to_days(os.time() - (DULL.totalStart or os.time()))
+  DULL.report(info, channel)
+end
+
+function DULL.report_double(channel)
+  local rows = DULL.query_history("dbl", 1)
+  if rows and rows[1] and rows[1].report then
+    DULL.report(rows[1].report, channel)
+    return
+  end
+  local hist = DULL.timers.dbl.history
+  local last = hist[#hist] or (DULL.lastReports and DULL.lastReports.dbl)
+  DULL.report(last or "No completed double report to display yet.", channel)
+end
+
+function DULL.report_history(timer, count)
+  timer = DULL.valid_timer_name(timer)
+  if not timer then return DULL.warn("Unknown timer history type.") end
+  count = tonumber(count) or 10
+  DULL.historyRows = {}
+  local rows = DULL.query_history(timer, count)
+  if rows and #rows > 0 then
+    cecho("<gray>Click a report label to send that row via " .. DULL.configured_channel() .. ".<reset>\n")
+    local display_index = 0
+    for i = #rows, 1, -1 do
+      display_index = display_index + 1
+      DULL.historyRows[display_index] = rows[i]
+      DULL.echo_history_row(display_index, rows[i])
+    end
+    return
+  end
+  local hist = DULL.timers[timer].history or {}
+  if #hist == 0 and count == 1 and DULL.lastReports and DULL.lastReports[timer] then
+    DULL.historyRows[1] = { report = DULL.lastReports[timer] }
+    cecho("<gray>Click a report label to send that row via " .. DULL.configured_channel() .. ".<reset>\n")
+    return DULL.echo_history_row(1, DULL.historyRows[1])
+  end
+  if #hist == 0 then return DULL.note("No " .. timer .. " history yet.") end
+  local start = math.max(1, #hist - count + 1)
+  cecho("<gray>Click a report label to send that row via " .. DULL.configured_channel() .. ".<reset>\n")
+  local display_index = 0
+  for i = start, #hist do
+    display_index = display_index + 1
+    DULL.historyRows[display_index] = { report = hist[i] }
+    DULL.echo_history_row(display_index, DULL.historyRows[display_index])
+  end
+end
+
+function DULL.report_averages(timer, count, channel)
+  timer = DULL.valid_timer_name(timer or "pup") or "pup"
+  count = tonumber(count) or 50
+  local row = DULL.query_averages(timer, count)
+  if not row or tonumber(row.count) == 0 then
+    return DULL.note("No DB history for " .. timer .. " yet.")
+  end
+  local label = timer:upper() .. " AVG"
+  local report = DULL.segment(label, tostring(row.count) .. " rows avg " ..
+    DULL.seconds_to_plain(row.avg_s) .. " best " .. DULL.seconds_to_plain(row.best_s) ..
+    " worst " .. DULL.seconds_to_plain(row.worst_s))
+  DULL.report(report, channel or "echo")
+end
+
+function DULL.status(channel)
+  DULL.report_session(channel or "echo")
+end
+
+function DULL.gmcp_root()
+  if type(gmcp) ~= "table" then return {} end
+  return gmcp.char or gmcp.Char or {}
+end
+
+function DULL.gmcp_table(root, ...)
+  local current = root
+  for _, key in ipairs({...}) do
+    if type(current) ~= "table" then return {} end
+    current = current[key] or current[key:sub(1, 1):upper() .. key:sub(2)]
+  end
+  return type(current) == "table" and current or {}
+end
+
+function DULL.safe_number(value)
+  return DULL.number_or_nil(value) or 0
+end
+
+function DULL.on_gmcp()
+end
+
+function DULL_OnGMCP()
+end
+
+function DULL.report_stats(channel)
+  local root = DULL.gmcp_root()
+  local stats = DULL.gmcp_table(root, "stats")
+  local maxstats = DULL.gmcp_table(root, "maxstats")
+  local vitals = DULL.gmcp_table(root, "vitals")
+  local order = {
+    { "STR", stats.str, maxstats.maxstr },
+    { "INT", stats.int, maxstats.maxint },
+    { "WIS", stats.wis, maxstats.maxwis },
+    { "DEX", stats.dex, maxstats.maxdex },
+    { "CON", stats.con, maxstats.maxcon },
+    { "LUK", stats.luck, maxstats.maxluck },
+    { "HR", stats.hr or stats.hitroll, nil },
+    { "DR", stats.dr or stats.damroll, nil },
+    { "HP", vitals.hp, vitals.maxhp or maxstats.maxhp },
+    { "MN", vitals.mana, vitals.maxmana or maxstats.maxmana },
+    { "MV", vitals.moves, vitals.maxmoves or maxstats.maxmoves },
+  }
+  local parts = {}
+  for _, item in ipairs(order) do
+    local value = DULL.safe_number(item[2])
+    local base = item[3] and DULL.safe_number(item[3]) or nil
+    table.insert(parts, DULL.segment_suffix(item[1], value, base))
+  end
+  DULL.report(table.concat(parts, " "), channel)
+end
+
+function DULL.kill_capture(kind)
+  local cap = DULL.capture[kind]
+  if not cap then return end
+  for _, id in ipairs(cap.triggers or {}) do if id then pcall(killTrigger, id) end end
+  if cap.timer then pcall(killTimer, cap.timer) end
+  DULL.capture[kind] = nil
+end
+
+function DULL.bump_capture(kind)
+  local cap = DULL.capture[kind]
+  if not cap then return end
+  if cap.timer then pcall(killTimer, cap.timer) end
+  cap.timer = tempTimer(0.15, function() DULL.finish_capture(kind) end)
+end
+
+function DULL.report_mastery(channel)
+  DULL.kill_capture("mastery")
+  DULL.capture.mastery = { channel = channel, rows = {}, triggers = {} }
+  local pat = "^(Bash|Pierce|Slash|Acid|Air|Cold|Disease|Earth|Electric|Energy|Fire|Holy|Light|Magic|Mental|Negative|Poison|Shadow|Sonic|Water)\\s+([0-9]+)\\s*[0-9]+\\s*[0-9,]+$"
+  local id = tempRegexTrigger(pat, function()
+    local cap = DULL.capture.mastery
+    if not cap then return end
+    cap.rows[matches[2]] = tonumber(matches[3]) or 0
+    DULL.bump_capture("mastery")
+  end)
+  table.insert(DULL.capture.mastery.triggers, id)
+  send("mastery", false)
+end
+
+function DULL.report_instinct(channel)
+  DULL.kill_capture("instinct")
+  DULL.capture.instinct = { channel = channel, rows = {}, triggers = {} }
+  local pat = "^\\s*(?:Level\\s+\\d+\\s*:\\s*)?([A-Za-z][A-Za-z\\s\\-']*[A-Za-z])\\s+\\d+\\s+(?:[0-9]+%|N/A)\\s+([0-9]+)\\s+(?:[0-9,]+|N/A)\\s+(?:[0-9,]+|N/A)(?:\\s+.*)?$"
+  local id = tempRegexTrigger(pat, function()
+    local cap = DULL.capture.instinct
+    if not cap then return end
+    local skill = DULL.trim(matches[2] or "")
+    if skill ~= "" then cap.rows[skill] = tonumber(matches[3]) or 0 end
+    DULL.bump_capture("instinct")
+  end)
+  table.insert(DULL.capture.instinct.triggers, id)
+  send("instinct", false)
+end
+
+function DULL.report_resists(channel)
+  DULL.kill_capture("resists")
+  DULL.capture.resists = { channel = channel, rows = {}, triggers = {} }
+  local pat = "^\\s*(Bash|Pierce|Slash|Acid|Air|Cold|Disease|Earth|Electric|Energy|Fire|Holy|Light|Magic|Mental|Negative|Poison|Shadow|Sonic|Water)\\s+[-+]?[0-9]+%?\\s+[-+]?[0-9]+\\s+[-+]?[0-9%.]+%?\\s+([-+]?[0-9%.]+)%?\\s*$"
+  local id = tempRegexTrigger(pat, function()
+    local cap = DULL.capture.resists
+    if not cap then return end
+    local damtype = DULL.trim(matches[2] or "")
+    if damtype ~= "" then cap.rows[damtype] = tonumber(matches[3]) or 0 end
+    DULL.bump_capture("resists")
+  end)
+  table.insert(DULL.capture.resists.triggers, id)
+  send("resists", false)
+end
+
+function DULL.finish_capture(kind)
+  local cap = DULL.capture[kind]
+  if not cap then return end
+  local rows = cap.rows or {}
+  local keys = {}
+  for k, _ in pairs(rows) do table.insert(keys, k) end
+  table.sort(keys, function(a, b) return (tonumber(rows[a]) or 0) > (tonumber(rows[b]) or 0) end)
+  local out = {}
+  for _, key in ipairs(keys) do
+    if (tonumber(rows[key]) or 0) > 0 then
+      table.insert(out, DULL.segment(key, rows[key]))
+    end
+  end
+  if #out == 0 then table.insert(out, DULL.segment(kind:upper(), "none")) end
+  local channel = cap.channel
+  DULL.kill_capture(kind)
+  DULL.report(table.concat(out, " "), channel)
+end
+
+function DULL.set_setting(key, value)
+  if key == "report" or key == "highlight" or key == "timestamp" or key == "debug" then
+    local b = DULL.to_bool(value)
+    if not b then return DULL.warn("Use y/n or on/off for " .. key) end
+    value = b
+  end
+  if key == "channel" and DULL.trim(value) == "" then value = "echo" end
+  DULL.settings[key] = value
+  DULL.save_state_now()
+  DULL.note(key .. " set to: " .. tostring(value))
+end
+
+function DULL.set_mode(mode)
+  if mode ~= "normal" and mode ~= "focused" then return DULL.warn("Mode must be normal or focused.") end
+  DULL.settings.mode = mode
+  DULL.save_state_now()
+  DULL.note("mode set to: " .. mode)
+end
+
+function DULL.auto_clear_session_if_needed()
+  DULL.sessionDay = DULL.sessionDay or DULL.today_key()
+  if DULL.settings.sessionMode ~= "auto" then return false end
+
+  local today = DULL.today_key()
+  if DULL.sessionDay == today then return false end
+
+  DULL.reset_session_data()
+  DULL.save_state_now()
+  DULL.note("Session auto-cleared for " .. today)
+  return true
+end
+
+function DULL.schedule_session_rollover()
+  if DULL.ids.session_rollover then pcall(killTimer, DULL.ids.session_rollover) end
+  DULL.ids.session_rollover = nil
+  if DULL.settings.sessionMode ~= "auto" then return end
+
+  DULL.ids.session_rollover = tempTimer(DULL.seconds_until_next_day(), function()
+    DULL.ids.session_rollover = nil
+    DULL.auto_clear_session_if_needed()
+    DULL.schedule_session_rollover()
+  end)
+end
+
+function DULL.set_session_mode(mode)
+  if mode ~= "manual" and mode ~= "auto" then return DULL.warn("Session mode must be manual or auto.") end
+  DULL.settings.sessionMode = mode
+  DULL.sessionDay = DULL.sessionDay or DULL.today_key()
+  local cleared = mode == "auto" and DULL.auto_clear_session_if_needed()
+  if not cleared then DULL.save_state_now() end
+  DULL.schedule_session_rollover()
+  if mode == "auto" then
+    DULL.note("session mode set to: auto (daily clear at local midnight)")
+  else
+    DULL.note("session mode set to: manual")
+  end
+end
+
+function DULL.set_mode_gag(mode, gag, value)
+  local b = DULL.to_bool(value)
+  if not b then return DULL.warn("Use y/n or on/off for gag settings.") end
+  DULL.gags[mode][gag] = b
+  DULL.save_state_now()
+  DULL.note("gag for " .. mode .. " / " .. gag .. " set to: " .. b)
+end
+
+function DULL.report_settings()
+  cecho("\n<white>DullTracker Settings<reset>\n")
+  cecho("<gray>----------------------------------------<reset>\n")
+  local keys = { "channel", "report", "highlight", "mode", "sessionMode", "timestamp", "valueColor", "labelColor", "blabelColor", "debug" }
+  for _, key in ipairs(keys) do
+    cecho(string.format("  <cyan>%-12s<reset> <light_grey>%s<reset>\n", key, tostring(DULL.settings[key])))
+  end
+  cecho("<gray>----------------------------------------<reset>\n")
+end
+
+function DULL.report_gags()
+  cecho("\n<white>DullTracker Gags<reset>\n")
+  cecho("<gray>----------------------------------------<reset>\n")
+  for _, mode in ipairs({ "normal", "focused" }) do
+    cecho("  <yellow>" .. mode .. "<reset> ")
+    for _, gag in ipairs({ "xp", "gold", "tax", "loot", "sac", "rare" }) do
+      cecho(string.format("<cyan>%s<reset>:<white>%s<reset> ", gag, DULL.gags[mode][gag] or "n"))
+    end
+    cecho("\n")
+  end
+  cecho("<gray>----------------------------------------<reset>\n")
+end
+
+function DULL.clear_session()
+  DULL.reset_session_data()
+  DULL.save_state_now()
+  DULL.note("Session cleared")
+end
+
+function DULL.clear_total()
+  DULL.totalData = {}
+  DULL.totalStart = os.time()
+  DULL.save_state_now()
+  DULL.note("Totals cleared")
+end
+
+function DULL.show_variables(which)
+  local data = which == "total" and DULL.totalData or DULL.sessionData
+  cecho("<cyan>[Dull]<reset> " .. which .. ": " .. DULL.serialize_lua(data) .. "\n")
+end
+
+function DULL.apply_highlight(info)
+  if DULL.settings.highlight ~= "y" then return end
+  if type(selectCurrentLine) == "function" then pcall(selectCurrentLine) end
+  if info.fg and type(fg) == "function" then pcall(fg, info.fg) end
+  if info.bg and type(bg) == "function" then pcall(bg, info.bg) end
+  if type(resetFormat) == "function" then pcall(resetFormat) end
+end
+
+function DULL.on_trigger(info, m, current_line)
+  if info.group and not DULL.group_enabled[info.group] then return end
+  if info.gag then DULL.apply_gag(info.gag) end
+  if info.action == "increment" then DULL.increment(info, m, current_line)
+  elseif info.action == "decrement" then DULL.decrement(info, m, current_line)
+  elseif info.action == "count" then DULL.increment_count(info)
+  elseif info.action == "shared_gold" then DULL.shared_gold(info, m, current_line)
+  elseif info.action == "start_timer" then DULL.start_timer(info.timer)
+  elseif info.action == "end_timer" then DULL.end_timer(info.timer)
+  elseif info.action == "double_start" then DULL.double_start(info, m)
+  elseif info.action == "double_end" then DULL.double_end()
+  elseif info.action == "bonus_stat" then DULL.bonus_stat(info, m)
+  elseif info.action == "damage" then DULL.damage_increase(info, m)
+  elseif info.action == "enable_group" then
+    DULL.group_enabled[info.group_name] = true
+  elseif info.action == "disable_group" then DULL.group_enabled[info.group_name] = false
+  elseif info.action == "highlight" then DULL.apply_highlight(info)
+  elseif info.action == "campaign_done" then
+    DULL.group_enabled.cp_capture = true
+    DULL.increment_count({ field = "count_cp" })
+    DULL.end_timer("cp")
+  elseif info.action == "level_done" then
+    DULL.increment_count({ field = "count_lvl" })
+    DULL.end_timer("lvl")
+    DULL.start_timer("lvl")
+  elseif info.action == "pup_done" then
+    DULL.increment_count({ field = "count_pup" })
+    DULL.end_timer("pup")
+    DULL.start_timer("pup")
+  elseif info.action == "quest_done" then
+    DULL.increment_count({ field = "count_q" })
+    DULL.end_timer("quest")
+  elseif info.action == "gq_join" then
+    DULL.increment_count({ field = "count_gq" })
+    DULL.start_timer("gq")
+  elseif info.action == "gq_done" then
+    DULL.end_timer("gq")
+  end
+end
+
+function DULL.add_trigger(info)
+  local ref = info
+  local id = tempRegexTrigger(ref.pattern, function()
+    DULL.on_trigger(ref, matches, line)
+  end)
+  table.insert(DULL.ids.triggers, id)
+end
+
+function DULL.install_triggers()
+  DULL.triggers = {
+    { id = "cp_start", pattern = "^.* tells you 'Good luck in your campaign!'$", action = "start_timer", timer = "cp" },
+    { id = "cp_done", pattern = "^CONGRATULATIONS! You have completed your campaign\\.$", action = "campaign_done" },
+    { id = "cp_capture_end", pattern = "^You have completed [0-9]+ campaigns today\\.$", action = "disable_group", group_name = "cp_capture" },
+
+    { id = "gq_mob_start", pattern = "^Congratulations, that was one of the GLOBAL QUEST mobs!$", action = "enable_group", group_name = "gq_mob_capture" },
+    { id = "gq_win_start", pattern = "^You were the first to complete this quest!$", action = "enable_group", group_name = "gq_win_capture" },
+    { id = "gq_win_end", pattern = "^You may win [0-9]+ more gquests at this level\\.$", action = "disable_group", group_name = "gq_win_capture" },
+    { id = "gq_join", pattern = "^You have now joined (?:Global Quest # [0-9]+|the quest)\\. See 'help gquest' for available commands\\.$", action = "gq_join" },
+    { id = "gq_start_announce", pattern = "^Global Quest: Global quest # [0-9]+ for levels .* to .* has now started\\.$", action = "start_timer", timer = "gq" },
+    { id = "gq_done", pattern = "^(You were the first to complete this quest!|You have finished this global quest\\.)$", action = "gq_done" },
+
+    { id = "level_done", pattern = "^You raise a level! You are now level [0-9]+\\.$", action = "level_done" },
+    { id = "pup_done", pattern = "^Congratulations, hero\\. You have increased your powers!$", action = "pup_done" },
+    { id = "quest_start", pattern = "^.*tells you 'You have [0-9]+ minutes to complete your quest\\.'$", action = "start_timer", timer = "quest" },
+    { id = "quest_done", pattern = "^.*tells you 'Congratulations, .*, on completing your quest!'$", action = "quest_done" },
+
+    { id = "double_start", pattern = "^For the next ([0-9]+) minutes experience is doubled in honor of the new superhero\\.$|^Double experience for ([0-9]+) minutes courtesy of.+$|^\\[    ([0-9]+) minutes of double exp started courtesy of donations being open   \\]$|^For the next ([0-9]+) minutes all experience is doubled!!$", action = "double_start" },
+    { id = "double_login", pattern = "^INFO: Double experience is running in honor of .* reaching superhero\\. - ([0-9]+) minutes left\\.?$|^INFO: Double experience is running courtesy of Aardwolf supporters - see 'help donate'\\. - ([0-9]+) minutes left$|^INFO: Double experience is running courtesy of .* daily blessing\\. - ([0-9]+) minutes left\\.$", action = "double_start" },
+    { id = "double_end", pattern = "^INFO: Bonus experience has now expired\\.$", action = "double_end" },
+
+    { id = "xp_mob_1", pattern = "^You receive ([0-9,]+)(?:\\+[0-9,]+)?(?:\\+[0-9,]+)?(?:\\+[0-9,]+)? experience points?\\.$", action = "increment", field = "xp_mob", gag = "xp", rate = "xp" },
+    { id = "xp_mob_2", pattern = "^You receive [0-9,]+\\+([0-9,]+)(?:\\+[0-9,]+)?(?:\\+[0-9,]+)? experience points?\\.$", action = "increment", field = "xp_mob", gag = "xp", rate = "xp" },
+    { id = "xp_mob_3", pattern = "^You receive [0-9,]+(?:\\+[0-9,]+)\\+([0-9,]+)(?:\\+[0-9,]+)? experience points?\\.$", action = "increment", field = "xp_mob", gag = "xp", rate = "xp" },
+    { id = "xp_mob_4", pattern = "^You receive [0-9,]+(?:\\+[0-9,]+)(?:\\+[0-9,]+)\\+([0-9,]+) experience points?\\.$", action = "increment", field = "xp_mob", gag = "xp", rate = "xp" },
+    { id = "xp_bonus", pattern = "^You receive ([0-9,]+) bonus experience points? (?:in honor of|courtesy of|to rejoice)", action = "increment", field = "xp_bonus", gag = "xp", rate = "xp" },
+    { id = "xp_rare", pattern = "^You receive ([0-9,]+) 'rare kill' experience bonus\\.$", action = "increment", field = "xp_rare", gag = "rare", rate = "xp" },
+    { id = "xp_daily", pattern = "^You receive ([0-9,]+) bonus experience points? from your daily blessing\\.$", action = "increment", field = "xp_daily", gag = "xp" },
+
+    { id = "gold_mob", pattern = "^You get ([0-9,]+) gold coins? from .* of .*\\.$", action = "increment", field = "gold_mob", gag = "gold", rate = "gold" },
+    { id = "gold_crumble", pattern = "^.* crumbles into ([0-9,]+) gold pieces\\.$", action = "increment", field = "gold_crumble", gag = "gold", rate = "gold" },
+    { id = "gold_shared_other", pattern = "^.* shares [0-9,]+ gold(?: coins?)? with .*\\. Your share is ([0-9,]+) gold(?: coins?)?\\.$", action = "increment", field = "gold_shared", gag = "gold", rate = "gold" },
+    { id = "gold_shared_you", pattern = "^You share ([0-9,]+) gold(?: coins?)? with .*\\. Your share is ([0-9,]+) gold(?: coins?)?\\.$", action = "shared_gold", field = "gold_shared", gag = "gold" },
+    { id = "gold_sac", pattern = "^.*gives you ([0-9,]+) gold coins? for .*\\.$", action = "increment", field = "gold_sac", gag = "sac" },
+    { id = "gold_sell", pattern = "^You sell .* for ([0-9,]+) gold\\.$", action = "increment", field = "gold_sell" },
+    { id = "gold_fence", pattern = "^You fenced .* items? for ([0-9,]+)\\.$", action = "increment", field = "gold_fence" },
+    { id = "gold_haggle_add", pattern = "^You haggle with .* for an extra ([0-9,]+) gold\\.$", action = "increment", field = "gold_haggle" },
+    { id = "gold_haggle_sub", pattern = "^You haggle with .* for an extra ([0-9,]+) gold\\.$", action = "decrement", field = "gold_sell" },
+    { id = "gold_db_gold", pattern = "^.* blesses you with ([0-9,]+) additional gold\\.$", action = "increment", field = "gold_db_gold" },
+    { id = "gold_db_kill", pattern = "^Your daily blessing added ([0-9,]+) gold to the corpse\\.$", action = "increment", field = "gold_db_kill", gag = "gold" },
+    { id = "gold_db_kill_sub", pattern = "^Your daily blessing added ([0-9,]+) gold to the corpse\\.$", action = "decrement", field = "gold_mob" },
+    { id = "gold_tax", pattern = "^You are taxed ([0-9,]+) gold(?: coins?)? by your clan\\.$", action = "decrement", field = "gold_tax", gag = "tax", rate = "gold" },
+    { id = "gold_cp", pattern = "^\\s*Reward of ([0-9,]+) gold coins? added\\.$", action = "increment", field = "gold_cp", group = "cp_capture" },
+    { id = "gold_q", pattern = "^.*tells you 'As a reward, I am giving you [0-9]+ quest points? and ([0-9]+) gold\\.'$", action = "increment", field = "gold_q" },
+    { id = "gold_titan", pattern = "^a man in a suit gives you ([0-9,]+) gold\\.$", action = "increment", field = "gold_titan" },
+
+    { id = "qp_q_reward", pattern = "^.*tells you 'As a reward, I am giving you ([0-9]+) quest points? and [0-9]+ gold\\.'$", action = "increment", field = "qp_q_reward" },
+    { id = "qp_q_tier", pattern = "^.*tells you 'I am also giving you a ([0-9]+) quest points? tier bonus.*", action = "increment", field = "qp_q_tier" },
+    { id = "qp_q_opk", pattern = "^.* tells you '.* ([0-9]+) quest points? OPK bonus\\.'$", action = "increment", field = "qp_q_opk" },
+    { id = "qp_q_hc", pattern = "^.* tells you '.* ([0-9]+) quest points? Hardcore bonus\\.'$", action = "increment", field = "qp_q_hc" },
+    { id = "qp_q_lucky", pattern = "^You get lucky and gain an extra ([0-9]+) quest points?\\.$", action = "increment", field = "qp_q_lucky" },
+    { id = "qp_q_mccp", pattern = "^You gain an extra ([0-9]+) quest points? 'MCCP Bonus'\\.$", action = "increment", field = "qp_q_mccp" },
+    { id = "qp_q_db", pattern = "^You receive ([0-9]+) bonus quest points from your daily blessing\\.$", action = "increment", field = "qp_q_db" },
+    { id = "qp_db", pattern = "^.* blesses you with ([0-9]+) bonus quest points\\.$", action = "increment", field = "qp_db" },
+    { id = "qp_cp_reward", pattern = "^\\s*Reward of ([0-9]+) quest points added\\.$", action = "increment", field = "qp_cp_reward", group = "cp_capture" },
+    { id = "qp_cp_daily", pattern = "^You receive ([0-9]+) quest points? bonus for your first campaign completed today\\.$", action = "increment", field = "qp_cp_daily", group = "cp_capture" },
+    { id = "qp_gq_mob", pattern = "^([0-9]+) quest points? awarded\\.$", action = "increment", field = "qp_gq_mob", group = "gq_mob_capture", after = "disable_group" },
+    { id = "qp_gq_win", pattern = "^Reward of ([0-9]+) quest points added\\.$", action = "increment", field = "qp_gq_win", group = "gq_win_capture" },
+
+    { id = "tp_cp", pattern = "^\\s*Reward of ([0-9]+) trivia points? added\\.$", action = "increment", field = "tp_cp", group = "cp_capture" },
+    { id = "tp_gq", pattern = "^Reward of ([0-9]+) trivia points? added\\.$", action = "increment", field = "tp_gq", group = "gq_win_capture" },
+    { id = "tp_mob", pattern = "^You killed a Trivia Point bonus mob!! Trivia point added\\.$", action = "count", field = "tp_mob" },
+    { id = "tp_db", pattern = "^[\\w\\s]+ blesses you with a trivia point!$", action = "count", field = "tp_db" },
+    { id = "tp_q", pattern = "^\\*\\* You gain a bonus trivia point! \\*\\*\\s*$", action = "count", field = "tp_q" },
+
+    { id = "pr_lvl", pattern = "^You gain [0-9]+ hit points, [0-9]+ mana, [0-9]+ moves, ([0-9]+) practices? and [0-9]+ trains?\\.$", action = "increment", field = "pr_lvl" },
+    { id = "pr_q_many", pattern = "^\\*\\* You gain a bonus ([0-9]+) practices? \\*\\*\\s*$", action = "increment", field = "pr_q" },
+    { id = "pr_q_one", pattern = "^\\*\\* You gain a bonus practice \\*\\*\\s*$", action = "count", field = "pr_q" },
+    { id = "pr_cp", pattern = "^\\s*Reward of ([0-9]+) practice sessions? added\\.$", action = "increment", field = "pr_cp", group = "cp_capture" },
+    { id = "pr_gq", pattern = "^Reward of ([0-9]+) practice sessions? added\\.$", action = "increment", field = "pr_gq", group = "gq_win_capture" },
+
+    { id = "tr_lvl", pattern = "^You gain [0-9]+ hit points, [0-9]+ mana, [0-9]+ moves, [0-9]+ practices?(?:,| and) ([0-9]+) trains?(?: and [0-9]+ instinct trains?)?\\.$", action = "increment", field = "tr_lvl" },
+    { id = "tr_instinct_level", pattern = "^You gain [0-9]+ hit points, [0-9]+ mana, [0-9]+ moves, [0-9]+ practices?, [0-9]+ trains? and ([0-9]+) instinct trains?\\.$", action = "increment", field = "tr_instinct_level" },
+    { id = "tr_instinct_deposit", pattern = "^You deposit ([0-9]+) trains? for later use on instinct\\.$", action = "increment", field = "tr_instinct_deposit" },
+    { id = "tr_pup", pattern = "^You gain ([0-9]+) trains?\\.$", action = "increment", field = "tr_pup" },
+    { id = "tr_db", pattern = "^You gain ([0-9]+) extra trains? daily blessing bonus\\.$", action = "increment", field = "tr_db" },
+    { id = "tr_q_many", pattern = "^\\*\\* You gain a bonus ([0-9]+) trains? \\*\\*\\s*$", action = "increment", field = "tr_q" },
+    { id = "tr_q_one", pattern = "^\\*\\* You gain a bonus training session \\*\\*\\s*$", action = "count", field = "tr_q" },
+    { id = "tr_luck", pattern = "^Lucky! You gain an extra ([0-9]+) training sessions?!$", action = "increment", field = "tr_luck" },
+    { id = "tr_cp", pattern = "^\\s*Reward of ([0-9]+) training sessions? added\\.$", action = "increment", field = "tr_cp", group = "cp_capture" },
+    { id = "tr_gq", pattern = "^Reward of ([0-9]+) training sessions? added\\.$", action = "increment", field = "tr_gq", group = "gq_win_capture" },
+    { id = "tr_titan", pattern = "^A man in a suit gives you ([0-9]+) trains\\.$", action = "increment", field = "tr_titan" },
+
+    { id = "count_kill", pattern = "^You receive [0-9,]+(?:\\+[0-9,]+){0,3} experience points?\\.$", action = "count", field = "count_kill" },
+    { id = "bonus_stat", pattern = "^You gain a bonus (Strength|Intelligence|Wisdom|Dexterity|Constitution|Luck) point!$", action = "bonus_stat" },
+    { id = "damage", pattern = "^(?:\\[[0-9]+\\] )?Your .*(?:\\.|!) \\[([0-9]+)\\]$", action = "damage" },
+
+    { id = "gag_loot", pattern = "^You get (?![0-9,]+ gold coins?)(.+) from the (.+) of (.+)\\.$", action = "gag", gag = "loot" },
+    { id = "gag_sac_1", pattern = "^You bury your fangs deep into .+, drinking thirstily\\.$", action = "gag", gag = "sac" },
+    { id = "gag_sac_2", pattern = "^Ahhhh, that feels better!$", action = "gag", gag = "sac" },
+    { id = "gag_sac_3", pattern = ".* sacrifices .* to .*\\.$", action = "gag", gag = "sac" },
+    { id = "gag_sac_4", pattern = "^.* drinks thirstily from .*\\.$", action = "gag", gag = "sac" },
+    { id = "gag_sac_5", pattern = "^.* is not impressed with .*\\.$", action = "gag", gag = "sac" },
+    { id = "gag_xp_other", pattern = "^.* receives [0-9,]+(?:\\+[0-9,]+)? experience points?\\.$", action = "gag", gag = "xp" },
+  }
+
+  DULL.highlight_triggers = {
+    { pattern = "^QUEST: You may now quest again\\.$", fg = "black", bg = "red" },
+    { pattern = "^\\*\\* You can take revenge on (\\w+) for 15 minutes\\.$", fg = "white", bg = "red" },
+    { pattern = "^.* has fled!$", fg = "white", bg = "dim_gray" },
+    { pattern = "^.* is here!$", fg = "white", bg = "dim_gray" },
+    { pattern = "^No one in this area by the name '.*'\\.$", fg = "white", bg = "red" },
+    { pattern = "^Magic walls bounce you back\\.$", fg = "white", bg = "dim_gray" },
+    { pattern = "^You cannot recall from this room\\.$", fg = "white", bg = "dim_gray" },
+    { pattern = "^There is no .* around here\\.$", fg = "white", bg = "red" },
+    { pattern = "^\\*\\* You gain a bonus trivia point! \\*\\*$", fg = "white", bg = "purple" },
+    { pattern = "^QUEST: You have almost completed your QUEST!$", fg = "black", bg = "red" },
+    { pattern = "^Congratulations, that was one of the GLOBAL QUEST mobs!$", fg = "black", bg = "green" },
+    { pattern = "^Congratulations, that was one of your CAMPAIGN mobs!$", fg = "white", bg = "green" },
+    { pattern = "^You killed a Trivia Point bonus mob!! Trivia point added\\.$", fg = "white", bg = "purple" },
+    { pattern = "^You spot an AardWords \\(TM\\) tile in the corpse!$", fg = "white", bg = "purple" },
+    { pattern = "^You find an \\(Aarchaeology\\) piece hidden in the corpse!$", fg = "white", bg = "purple" },
+    { pattern = "^You find a \\|P\\[Poker Card\\]P\\| special item hidden in the corpse!$", fg = "white", bg = "purple" },
+    { pattern = "^.* eyes are seared by .*$", fg = "dodger_blue", bg = "black" },
+    { pattern = "^.* is poisoned by the venom on .*$", fg = "dodger_blue", bg = "black" },
+    { pattern = "^.* muscles stop responding\\.$", fg = "dodger_blue", bg = "black" },
+    { pattern = "^.* turns blue and shivers\\.$", fg = "dodger_blue", bg = "black" },
+    { pattern = "^Your .* glows brightly and almost decapitates .*\\.$", fg = "white", bg = "dodger_blue" },
+    { pattern = "^Your death blow CLEAVES .* in two!$", fg = "white", bg = "dodger_blue" },
+    { pattern = "^You feel as if you are being watched\\.$", fg = "white", bg = "tomato" },
+    { pattern = "^You are blinded\\.$", fg = "white", bg = "tomato" },
+    { pattern = "^([\\w\\s]+) DISARMS you and you struggle not to drop your weapon!$", fg = "white", bg = "tomato" },
+    { pattern = "^You are trapped in an invisible web!$", fg = "white", bg = "tomato" },
+    { pattern = "^You feel unwell\\.$", fg = "white", bg = "tomato" },
+    { pattern = "^You feel very sick\\.$", fg = "white", bg = "tomato" },
+    { pattern = "^You feel unclean\\.$", fg = "white", bg = "tomato" },
+    { pattern = ".* is unaffected by your .*", fg = "white", bg = "dark_slate_gray" },
+  }
+
+  for _, info in ipairs(DULL.triggers) do DULL.add_trigger(info) end
+  for _, hi in ipairs(DULL.highlight_triggers) do
+    hi.action = "highlight"
+    DULL.add_trigger(hi)
+  end
+end
+
+function DULL.kill_temp()
+  if not DULL.ids then return end
+  for _, id in ipairs(DULL.ids.triggers or {}) do if id then pcall(killTrigger, id) end end
+  DULL.ids.triggers = {}
+  if type(killAnonymousEventHandler) == "function" then
+    for _, id in ipairs(DULL.ids.handlers or {}) do if id then pcall(killAnonymousEventHandler, id) end end
+    DULL.ids.handlers = {}
+  end
+  if DULL.ids.report_timer then pcall(killTimer, DULL.ids.report_timer) end
+  DULL.ids.report_timer = nil
+  if DULL.ids.save_timer then pcall(killTimer, DULL.ids.save_timer) end
+  DULL.ids.save_timer = nil
+  if DULL.ids.session_rollover then pcall(killTimer, DULL.ids.session_rollover) end
+  DULL.ids.session_rollover = nil
+end
+
+DULL.help_index_rows = {
+  { cmd = "dull help", desc = "Show this list" },
+  { cmd = "dull help reports", desc = "Session, total, double, history, and average reports" },
+  { cmd = "dull help rates", desc = "Area XP rate, gold rate, and DPS commands" },
+  { cmd = "dull help settings", desc = "Settings, gags, colors, and report channel" },
+  { cmd = "dull help colors", desc = "Value, label, and bright-label color settings" },
+  { cmd = "dull help data", desc = "Save, clear, status, and diagnostic commands" },
+}
+
+DULL.help_sections = {
+  reports = {
+    header = "Reports",
+    rows = {
+      { cmd = "dull status [channel]", desc = "Show the current session summary. Defaults to local echo." },
+      { cmd = "dull session [channel]", desc = "Report current session totals." },
+      { cmd = "dull total [channel]", desc = "Report persisted totals and daily rates." },
+      { cmd = "dull double [channel]", desc = "Report the latest double-exp summary." },
+      { cmd = "dull <cp|gq|quest|lvl|pup|dbl|timed> [n]", desc = "Show timer history. Click the report label to send that row via dull channel." },
+      { cmd = "dull avg [timer] [n]", desc = "Show average/best/worst time for the last n DB rows. Defaults to pup, 50." },
+      { cmd = "dull stats [channel]", desc = "Report core character stats." },
+      { cmd = "dull mastery|instinct|resists [channel]", desc = "Capture and report non-zero rows from the game command." },
+    }
+  },
+  rates = {
+    header = "Rates",
+    rows = {
+      { cmd = "dull xpr [area|n]", desc = "Show area XP rate rows over 5 percent of session XP, or filter/top n." },
+      { cmd = "dull xpr clear [area]", desc = "Clear all or matching area XP rate data." },
+      { cmd = "dull xpr reset", desc = "Reset live XP rate counters." },
+      { cmd = "dull gr [area|n]", desc = "Show area gold rate rows." },
+      { cmd = "dull gr clear [area]", desc = "Clear all or matching area gold rate data." },
+      { cmd = "dull gr reset", desc = "Reset live gold-rate counters." },
+      { cmd = "dull dps [area|n]", desc = "Show area DPS rows." },
+      { cmd = "dull dps clear [area]", desc = "Clear all or matching area DPS data." },
+      { cmd = "dull dps reset", desc = "Reset live DPS counters." },
+    }
+  },
+  settings = {
+    header = "Settings",
+    rows = {
+      { cmd = "dull channel <echo|gchan|gtell|...>", desc = "Set default report target. Default is echo." },
+      { cmd = "dull report y|n", desc = "Toggle automatic timer reports." },
+      { cmd = "dull highlight y|n", desc = "Toggle highlight triggers." },
+      { cmd = "dull mode normal|focused", desc = "Select the active gag profile." },
+      { cmd = "dull session manual|auto", desc = "Manual keeps the current session until cleared; auto clears it daily at local midnight." },
+      { cmd = "dull timestamp on|off", desc = "Show or hide timestamps on timer history rows and clicked history reports." },
+      { cmd = "dull <normal|focused> <xp|gold|tax|loot|sac|rare> y|n", desc = "Set a gag in a profile." },
+      { cmd = "dull settings", desc = "Show current settings." },
+      { cmd = "dull gags", desc = "Show gag profiles." },
+    }
+  },
+  colors = {
+    header = "Colors",
+    rows = {
+      { cmd = "dull valueColor <code>", desc = "Set the color used for report values. Default: @W." },
+      { cmd = "dull labelColor <code>", desc = "Set the color used for brackets, punctuation, and suffix labels. Default: @D." },
+      { cmd = "dull blabelColor <code>", desc = "Set the color used for bright labels like XPR, GOLD, and QP. Default: @C." },
+      { cmd = "dull valueColor|labelColor|blabelColor", desc = "Show the current color code for that setting." },
+      { cmd = "Aardwolf color codes", desc = "Use codes like @W, @C, @D, or xterm codes like @x123." },
+    }
+  },
+  data = {
+    header = "Data",
+    rows = {
+      { cmd = "dull timer [minutes]", desc = "Start a timed tracking session. Default is 5 minutes." },
+      { cmd = "dull timer clear", desc = "Cancel a timed session." },
+      { cmd = "dull clear session", desc = "Reset current session data and start a new session id." },
+      { cmd = "dull clear total", desc = "Reset persisted total counters. Does not erase DB history." },
+      { cmd = "dull save session", desc = "Force-save current state to /persistence." },
+      { cmd = "dull show|showtotal", desc = "Print raw session or total tables for troubleshooting." },
+      { cmd = "dull db", desc = "Show DB path and availability." },
+    }
+  },
+}
+
+function DULL.wrap_text(text, width)
+  local words, lines, line = {}, {}, ""
+  for word in tostring(text or ""):gmatch("%S+") do table.insert(words, word) end
+  for _, word in ipairs(words) do
+    if line == "" then line = word
+    elseif #line + #word + 1 <= width then line = line .. " " .. word
+    else table.insert(lines, line); line = word end
+  end
+  if line ~= "" then table.insert(lines, line) end
+  if #lines == 0 then lines[1] = "" end
+  return lines
+end
+
+function DULL.help_row(row, command_width, desc_width)
+  local cmd = tostring(row.cmd or "")
+  local desc = tostring(row.desc or "")
+
+  if #cmd > command_width then
+    cecho("  <cyan>" .. cmd .. "<reset>\n")
+    local block_desc_width = command_width + desc_width - 4
+    local block_desc_lines = DULL.wrap_text(desc, block_desc_width)
+    for i, line in ipairs(block_desc_lines) do
+      local prefix = i == 1 and "    <light_grey>- " or "      <light_grey>  "
+      cecho(prefix .. line .. "<reset>\n")
+    end
+    return
+  end
+
+  local desc_lines = DULL.wrap_text(desc, desc_width)
+  cecho(string.format("  <cyan>%-" .. command_width .. "s<reset>  <light_grey>- %s<reset>\n", cmd, desc_lines[1] or ""))
+  local continuation_indent = string.rep(" ", command_width + 4)
+  for i = 2, #desc_lines do
+    cecho(continuation_indent .. "<light_grey>  " .. desc_lines[i] .. "<reset>\n")
+  end
+end
+
+function DULL.show_help(topic)
+  topic = DULL.trim(topic):lower()
+  if topic == "color" then topic = "colors" end
+  local command_width, desc_width = 34, 76
+  cecho("\n<white>DullTracker - Mudlet Port<reset>\n")
+  cecho("<gray>----------------------------------------<reset>\n")
+  if topic == "" then
+    for _, row in ipairs(DULL.help_index_rows) do DULL.help_row(row, command_width, desc_width) end
+  elseif topic == "all" then
+    for _, key in ipairs({ "reports", "rates", "settings", "colors", "data" }) do
+      local section = DULL.help_sections[key]
+      cecho("\n<yellow>" .. section.header .. "<reset>\n\n")
+      for _, row in ipairs(section.rows) do DULL.help_row(row, command_width, desc_width) end
+    end
+  elseif DULL.help_sections[topic] then
+    local section = DULL.help_sections[topic]
+    cecho("\n<yellow>" .. section.header .. "<reset>\n\n")
+    for _, row in ipairs(section.rows) do DULL.help_row(row, command_width, desc_width) end
+  else
+    DULL.warn("Unknown help topic. Try: dull help all")
+  end
+  cecho("\n")
+end
+
+function DULL.db_status()
+  local ok = DULL.open_db()
+  cecho("\n<white>DullTracker DB<reset>\n")
+  cecho("<gray>----------------------------------------<reset>\n")
+  cecho("  <cyan>Path<reset>       <light_grey>" .. tostring(DULL.db_file) .. "<reset>\n")
+  cecho("  <cyan>Available<reset>  " .. (ok and "<green>yes" or "<red>no") .. "<reset>\n")
+  cecho("<gray>----------------------------------------<reset>\n")
+end
+
+function DULL.command(arg)
+  local cmd = DULL.trim(arg)
+  local lower = cmd:lower()
+  local setting_keys = {
+    channel = "channel",
+    report = "report",
+    highlight = "highlight",
+    timestamp = "timestamp",
+    timestamps = "timestamp",
+    valuecolor = "valueColor",
+    labelcolor = "labelColor",
+    blabelcolor = "blabelColor",
+    debug = "debug",
+  }
+  local gag_types = { xp = true, gold = true, tax = true, loot = true, sac = true, rare = true }
+  if lower == "" or lower == "help" then return DULL.show_help("") end
+  local help_topic = lower:match("^help%s+(.+)$")
+  if help_topic then return DULL.show_help(help_topic) end
+
+  local timer, hist_n = DULL.parse_timer_history_command(cmd)
+  if timer and lower:match("^%S+%s+%-h") then
+    return DULL.report_history(timer, hist_n)
+  end
+
+  local avg_timer, avg_n = lower:match("^avg%s*(%S*)%s*(%d*)$")
+  if avg_timer ~= nil then return DULL.report_averages(avg_timer ~= "" and avg_timer or "pup", avg_n ~= "" and avg_n or 50, "echo") end
+  avg_timer, avg_n = lower:match("^averages?%s*(%S*)%s*(%d*)$")
+  if avg_timer ~= nil then return DULL.report_averages(avg_timer ~= "" and avg_timer or "pup", avg_n ~= "" and avg_n or 50, "echo") end
+
+  local session_mode = lower:match("^session%s+(%S+)$")
+  if session_mode == "manual" or session_mode == "auto" then return DULL.set_session_mode(session_mode) end
+
+  local report_cmd, report_channel = cmd:match("^(session)%s*(.-)$")
+  if report_cmd then return DULL.report_session(report_channel) end
+  report_cmd, report_channel = cmd:match("^(total)%s*(.-)$")
+  if report_cmd then return DULL.report_total(report_channel) end
+  report_cmd, report_channel = cmd:match("^(double)%s*(.-)$")
+  if report_cmd then return DULL.report_double(report_channel) end
+  report_cmd, report_channel = cmd:match("^(status)%s*(.-)$")
+  if report_cmd then return DULL.status(report_channel) end
+
+  report_cmd, report_channel = cmd:match("^(stats)%s*(.-)$")
+  if report_cmd then return DULL.report_stats(report_channel) end
+  report_cmd, report_channel = cmd:match("^(mastery)%s*(.-)$")
+  if report_cmd then return DULL.report_mastery(report_channel) end
+  report_cmd, report_channel = cmd:match("^(instinct)%s*(.-)$")
+  if report_cmd then return DULL.report_instinct(report_channel) end
+  report_cmd, report_channel = cmd:match("^(resists?)%s*(.-)$")
+  if report_cmd then return DULL.report_resists(report_channel) end
+
+  timer, hist_n = DULL.parse_timer_history_command(cmd)
+  if timer then
+    return DULL.report_history(timer, hist_n)
+  end
+
+  if lower == "xpr reset" then return DULL.reset_rate("xpr") end
+  local rest = cmd:match("^xpr%s+clear%s*(.-)$")
+  if rest ~= nil then return DULL.clear_area_rate("xpr", rest) end
+  rest = cmd:match("^xpr%s*(.-)$")
+  if rest ~= nil then return DULL.show_area_rate("xpr", rest) end
+
+  if lower == "gr reset" then return DULL.reset_rate("gr") end
+  rest = cmd:match("^gr%s+clear%s*(.-)$")
+  if rest ~= nil then return DULL.clear_area_rate("gr", rest) end
+  rest = cmd:match("^gr%s*(.-)$")
+  if rest ~= nil then return DULL.show_area_rate("gr", rest) end
+
+  if lower == "dps reset" then return DULL.reset_rate("dps") end
+  rest = cmd:match("^dps%s+clear%s*(.-)$")
+  if rest ~= nil then return DULL.clear_area_rate("dps", rest) end
+  rest = cmd:match("^dps%s*(.-)$")
+  if rest ~= nil then return DULL.show_area_rate("dps", rest) end
+
+  local mins = lower:match("^timer%s*(%d*)$")
+  if mins ~= nil then return DULL.timed_session_start(mins ~= "" and mins or nil) end
+  if lower == "timer clear" then return DULL.timed_session_clear() end
+
+  local one_word = lower:match("^(%S+)$")
+  if one_word and setting_keys[one_word] then
+    local key = setting_keys[one_word]
+    return DULL.note(key .. " is: " .. tostring(DULL.settings[key]))
+  end
+  if one_word == "mode" then
+    return DULL.note("mode is: " .. tostring(DULL.settings.mode))
+  end
+
+  local first_word, rest_words = cmd:match("^(%S+)%s+(.+)$")
+  if first_word then
+    local key = setting_keys[first_word:lower()]
+    if key then return DULL.set_setting(key, rest_words) end
+  end
+
+  local mode_value = lower:match("^mode%s+(%S+)$")
+  if mode_value then return DULL.set_mode(mode_value) end
+
+  local gag_mode, gag_type, gag_value = lower:match("^(%S+)%s+(%S+)%s+(%S+)$")
+  if (gag_mode == "normal" or gag_mode == "focused") and gag_types[gag_type] then
+    return DULL.set_mode_gag(gag_mode, gag_type, gag_value)
+  end
+
+  if lower == "settings" then return DULL.report_settings() end
+  if lower == "gags" then return DULL.report_gags() end
+  if lower == "save session" then DULL.save_state_now(); return DULL.note("Session saved") end
+  if lower == "clear session" then return DULL.clear_session() end
+  if lower == "clear total" then return DULL.clear_total() end
+  if lower == "refresh" then return DULL.status("echo") end
+  if lower == "show" then return DULL.show_variables("session") end
+  if lower == "showtotal" then return DULL.show_variables("total") end
+  if lower == "db" then return DULL.db_status() end
+
+  DULL.warn("Invalid command. Try: dull help")
+end
+
+function DULL.install()
+  math.randomseed(os.time())
+  DULL.kill_temp()
+  DULL.load_state()
+  DULL.init_runtime()
+  DULL.clear_gmcp_gain_buckets()
+  DULL.auto_clear_session_if_needed()
+  DULL.schedule_session_rollover()
+  DULL.install_triggers()
+  DULL.open_db()
+  DULL.schedule_save(1.0)
+  DULL.note("m_dulltracker v" .. DULL.version .. " loaded. Type 'dull help'.")
+end
+
+DULL.install()
+]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

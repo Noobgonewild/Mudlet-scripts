@@ -31,7 +31,7 @@
       <name>m_dulltracker_main</name>
       <packageName>m_dulltracker</packageName>
       <script><![CDATA[DULL = DULL or {}
-DULL.version = "1.2.0"
+DULL.version = "1.2.1"
 DULL.ids = DULL.ids or { triggers = {}, timers = {} }
 DULL.ids.triggers = DULL.ids.triggers or {}
 DULL.ids.handlers = DULL.ids.handlers or {}
@@ -1764,6 +1764,7 @@ function DULL.install_triggers()
     { id = "gold_db_kill_sub", pattern = "^Your daily blessing added ([0-9,]+) gold to the corpse\\.$", action = "decrement", field = "gold_mob" },
     { id = "gold_tax", pattern = "^You are taxed ([0-9,]+) gold(?: coins?)? by your clan\\.$", action = "decrement", field = "gold_tax", gag = "tax", rate = "gold" },
     { id = "gold_cp", pattern = "^\\s*Reward of ([0-9,]+) gold coins? added\\.$", action = "increment", field = "gold_cp", group = "cp_capture" },
+    { id = "gold_gq", pattern = "^Reward of ([0-9,]+) gold coins? added\\.$", action = "increment", field = "gold_gq", group = "gq_win_capture" },
     { id = "gold_q", pattern = "^.*tells you 'As a reward, I am giving you [0-9]+ quest points? and ([0-9]+) gold\\.'$", action = "increment", field = "gold_q" },
     { id = "gold_titan", pattern = "^a man in a suit gives you ([0-9,]+) gold\\.$", action = "increment", field = "gold_titan" },
 

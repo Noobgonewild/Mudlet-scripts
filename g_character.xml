@@ -78,6 +78,22 @@
         <regex>^gstats(?:\s+(.*))?$</regex>
       </Alias>
 
+      <Alias isActive="yes" isFolder="no">
+        <name>g_character_gchar_cmd</name>
+        <script><![CDATA[if GSTATS and GSTATS.command then GSTATS.command(matches[2] or "") end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gchar(?:\s+(.*))?$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>g_character_score_override</name>
+        <script><![CDATA[if GSTATS and GSTATS.score_alias then GSTATS.score_alias(matches[2] or "score") else send(matches[2] or "score") end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^(sc|score)$</regex>
+      </Alias>
+
     </AliasGroup>
   </AliasPackage>
 
@@ -110,11 +126,18 @@ GSTATS.defaults = {
   layout = "horizontal",
   compact = false,
   report_channel = "gt",
+  score_mode = "none",
 }
 GSTATS.state = GSTATS.state or {}
 GSTATS.ui = GSTATS.ui or {}
 GSTATS.last = GSTATS.last or nil
 GSTATS.capture = GSTATS.capture or {}
+GSTATS.refresh_delay = 0.04
+GSTATS.save_delay = 1.0
+GSTATS.refresh_timer = GSTATS.refresh_timer or nil
+GSTATS.save_timer = GSTATS.save_timer or nil
+GSTATS.state_dirty = GSTATS.state_dirty or false
+GSTATS.last_rendered_text = GSTATS.last_rendered_text or nil
 
 function GSTATS.merge_defaults()
   if GSTATS.state.font ~= nil and GSTATS.state.fontsize == nil then
@@ -124,6 +147,9 @@ function GSTATS.merge_defaults()
   for k, v in pairs(GSTATS.defaults) do
     if GSTATS.state[k] == nil then GSTATS.state[k] = v end
   end
+  local score_modes = { none = true, tactical = true, vitals = true, sheet = true, minimal = true }
+  local score_mode = tostring(GSTATS.state.score_mode or "none"):lower()
+  GSTATS.state.score_mode = score_modes[score_mode] and score_mode or "none"
 end
 
 function GSTATS.load_state()
@@ -152,6 +178,11 @@ function GSTATS.load_state()
 end
 
 function GSTATS.save_state()
+  if GSTATS.save_timer and type(killTimer) == "function" then
+    pcall(killTimer, GSTATS.save_timer)
+  end
+  GSTATS.save_timer = nil
+
   if GSTATS.ui and GSTATS.ui.container then
     if GSTATS.ui.container.get_x then GSTATS.state.x = GSTATS.ui.container:get_x() end
     if GSTATS.ui.container.get_y then GSTATS.state.y = GSTATS.ui.container:get_y() end
@@ -160,7 +191,10 @@ function GSTATS.save_state()
   end
   if type(table.save) == "function" then
     local ok = pcall(table.save, GSTATS.state_file, GSTATS.state)
-    if ok then return true end
+    if ok then
+      GSTATS.state_dirty = false
+      return true
+    end
   end
 
   if yajl and yajl.to_string then
@@ -170,11 +204,29 @@ function GSTATS.save_state()
       if f then
         f:write(payload)
         f:close()
+        GSTATS.state_dirty = false
         return true
       end
     end
   end
   return false
+end
+
+function GSTATS.schedule_state_save(delay)
+  GSTATS.state_dirty = true
+  if GSTATS.save_timer then return end
+
+  if type(tempTimer) ~= "function" then
+    GSTATS.save_state()
+    return
+  end
+
+  local timer_id = tempTimer(delay or GSTATS.save_delay, function()
+    GSTATS.save_timer = nil
+    if GSTATS.state_dirty then GSTATS.save_state() end
+  end)
+  GSTATS.save_timer = timer_id
+  if not timer_id then GSTATS.save_state() end
 end
 
 function GSTATS.ensure_ui()
@@ -216,6 +268,7 @@ function GSTATS.ensure_ui()
       name = "GSTATSConsole",
       x = 0, y = 0, width = "100%", height = "100%",
     }, container)
+    GSTATS.last_rendered_text = nil
     GSTATS.ui.console:setColor(0, 0, 0, 120)
     GSTATS.ui.console:setFontSize(tonumber(GSTATS.state.fontsize) or 9)
     GSTATS.ui.console:setWrap(300)
@@ -295,6 +348,11 @@ function GSTATS.from_gmcp()
   local standing_map = { [1] = "at login screen", [2] = "logging in", [3] = "standing", [4] = "afk", [5] = "writing a note", [6] = "editing a note", [7] = "at paged output prompt", [8] = "in combat", [9] = "sleeping", [11] = "resting", [12] = "running" }
   local standing_num = GSTATS.safe_number(s.state, s.pos, s.position)
   d.standing = standing_map[standing_num] or tostring(s.state or s.pos or s.position or ""):lower()
+  d.name = tostring(b.name or s.name or GSTATS.player_name())
+  d.race = tostring(b.race or s.race or "")
+  d.class = tostring(b.class or s.class or "")
+  d.subclass = tostring(b.subclass or s.subclass or "")
+  d.gender = tostring(b.gender or s.gender or "")
   d.hp = GSTATS.safe_number(v.hp, s.hp)
   d.maxhp = GSTATS.safe_number(m.maxhp, v.maxhp, s.maxhp)
   d.mana = GSTATS.safe_number(v.mana, s.mana)
@@ -305,10 +363,23 @@ function GSTATS.from_gmcp()
   d.damroll = GSTATS.safe_number(st.dr, st.damroll, s.damroll, s.dam)
   d.tnl = GSTATS.safe_number(s.tnl, b.perlevel)
   d.level = GSTATS.safe_number(s.level, b.level)
+  d.total_level = GSTATS.safe_number(s.totallevel, s.total_level, s.totlvl, b.totallevel, b.total_level, b.totlvl)
   d.align = GSTATS.safe_number(s.align)
+  d.wimpy = GSTATS.safe_number(s.wimpy)
+  d.hunger = GSTATS.safe_number(s.hunger)
+  d.thirst = GSTATS.safe_number(s.thirst)
+  d.quest_time = GSTATS.safe_number(s.questtime, s.quest_time, w.questtime, w.quest_time)
+  d.goals_done = GSTATS.safe_number(s.goals, s.goalsdone, s.goals_done, w.goals, w.goalsdone, w.goals_done)
+  d.age = GSTATS.safe_number(s.age, b.age)
+  d.hours = GSTATS.safe_number(s.hours, b.hours)
+  d.weight = GSTATS.safe_number(s.weight, v.weight)
+  d.maxweight = GSTATS.safe_number(s.maxweight, s.max_weight, v.maxweight, v.max_weight)
+  d.items = GSTATS.safe_number(s.items, v.items)
+  d.maxitems = GSTATS.safe_number(s.maxitems, s.max_items, v.maxitems, v.max_items)
   d.gold = GSTATS.safe_number(w.gold)
   d.qp = GSTATS.safe_number(w.qp)
   d.tp = GSTATS.safe_number(w.tp)
+  d.trivia = d.tp
   d.trains = GSTATS.safe_number(w.trains)
   d.pracs = GSTATS.safe_number(w.pracs)
 
@@ -460,24 +531,50 @@ function GSTATS.format_stats_horizontal(data)
   return out
 end
 
-function GSTATS.render_from_gmcp()
+function GSTATS.render_from_gmcp(force)
   GSTATS.ensure_ui()
   if GSTATS.gmcp_has_stats() then
     GSTATS.last = GSTATS.from_gmcp()
     GSTATS.state.last_stats = GSTATS.last
-    GSTATS.save_state()
+    GSTATS.schedule_state_save()
   elseif not GSTATS.last and type(GSTATS.state.last_stats) == "table" then
     GSTATS.last = GSTATS.state.last_stats
   end
   if not GSTATS.last then
     GSTATS.last = GSTATS.from_gmcp()
   end
-  GSTATS.ui.console:clear()
-  GSTATS.ui.console:cecho(GSTATS.format_stats(GSTATS.last))
+
+  local console = GSTATS.ui and GSTATS.ui.console
+  if not console then return false end
+
+  local rendered = GSTATS.format_stats(GSTATS.last)
+  if not force and rendered == GSTATS.last_rendered_text then return false end
+
+  console:clear()
+  console:cecho(rendered)
+  GSTATS.last_rendered_text = rendered
+  return true
+end
+
+function GSTATS.schedule_refresh(delay)
+  if GSTATS.refresh_timer then return end
+
+  local refresh = function()
+    GSTATS.refresh_timer = nil
+    GSTATS.render_from_gmcp()
+  end
+
+  if type(tempTimer) == "function" then
+    local timer_id = tempTimer(delay or GSTATS.refresh_delay, refresh)
+    GSTATS.refresh_timer = timer_id
+    if not timer_id then refresh() end
+  else
+    refresh()
+  end
 end
 
 function GSTATS.on_gmcp()
-  GSTATS.render_from_gmcp()
+  GSTATS.schedule_refresh()
 end
 
 function GSTATS.trim(s)
@@ -524,6 +621,1104 @@ end
 function GSTATS.format_pct(n)
   return string.format("%.2f%%", tonumber(n) or 0)
 end
+
+GSTATS.score_modes = {
+  none = true,
+  tactical = true,
+  vitals = true,
+  sheet = true,
+  minimal = true,
+}
+
+GSTATS.score_colors = {
+  border = "ansiLightWhite",
+  name = "ansiLightRed",
+  section = "ansiLightCyan",
+  label = "ansiCyan",
+  value = "ansiLightWhite",
+  muted = "ansiLightBlack",
+  hp = "ansiLightGreen",
+  mana = "ansiLightCyan",
+  moves = "ansiLightMagenta",
+  hot = "ansiLightYellow",
+  danger = "ansiLightRed",
+  warn = "ansiLightYellow",
+}
+
+function GSTATS.score_visible_width(text)
+  local s = tostring(text or "")
+  local _, count = s:gsub("[^\128-\193]", "")
+  return count
+end
+
+function GSTATS.score_repeat(character, count)
+  return string.rep(tostring(character or " "), math.max(0, tonumber(count) or 0))
+end
+
+function GSTATS.score_pad(text, width, align)
+  local s = tostring(text or "")
+  local missing = math.max(0, (tonumber(width) or 0) - GSTATS.score_visible_width(s))
+  if align == "right" then return string.rep(" ", missing) .. s end
+  if align == "center" then
+    local left = math.floor(missing / 2)
+    return string.rep(" ", left) .. s .. string.rep(" ", missing - left)
+  end
+  return s .. string.rep(" ", missing)
+end
+
+function GSTATS.score_line()
+  return {}
+end
+
+function GSTATS.score_add(target, text, color)
+  local s = tostring(text or "")
+  if s ~= "" then
+    target[#target + 1] = { text = s, color = color or "border" }
+  end
+  return target
+end
+
+function GSTATS.score_add_parts(target, parts)
+  for _, part in ipairs(parts or {}) do
+    GSTATS.score_add(target, part.text, part.color)
+  end
+  return target
+end
+
+function GSTATS.score_parts_width(parts)
+  local width = 0
+  for _, part in ipairs(parts or {}) do
+    width = width + GSTATS.score_visible_width(part.text)
+  end
+  return width
+end
+
+function GSTATS.score_pad_line(line, width, color)
+  local missing = (tonumber(width) or 0) - GSTATS.score_parts_width(line)
+  if missing > 0 then GSTATS.score_add(line, string.rep(" ", missing), color or "border") end
+  return line
+end
+
+function GSTATS.score_parts(...)
+  local parts = {}
+  local values = { ... }
+  for _, item in ipairs(values) do
+    if type(item) == "table" and item.text ~= nil then
+      parts[#parts + 1] = item
+    elseif type(item) == "table" then
+      GSTATS.score_add_parts(parts, item)
+    else
+      GSTATS.score_add(parts, item, "border")
+    end
+  end
+  return parts
+end
+
+function GSTATS.score_part(text, color)
+  return { text = tostring(text or ""), color = color or "border" }
+end
+
+function GSTATS.score_field_need(label, value)
+  return GSTATS.score_visible_width(label) + GSTATS.score_visible_width(value) + 3
+end
+
+function GSTATS.score_field(label, value, width, label_color, value_color)
+  local line = GSTATS.score_line()
+  local label_text = tostring(label or "")
+  local value_text = tostring(value or "")
+  GSTATS.score_add(line, " ", "border")
+  GSTATS.score_add(line, label_text, label_color or "label")
+  local gap = width - GSTATS.score_visible_width(label_text) - GSTATS.score_visible_width(value_text) - 2
+  GSTATS.score_add(line, string.rep(" ", math.max(1, gap)), "border")
+  GSTATS.score_add(line, value_text, value_color or "value")
+  GSTATS.score_add(line, " ", "border")
+  return GSTATS.score_pad_line(line, width)
+end
+
+function GSTATS.score_text_cell(parts, width)
+  local line = GSTATS.score_line()
+  GSTATS.score_add_parts(line, parts)
+  return GSTATS.score_pad_line(line, width)
+end
+
+function GSTATS.score_section_cell(title, width, fill)
+  local character = fill or "─"
+  local line = GSTATS.score_line()
+  GSTATS.score_add(line, character .. " ", "border")
+  GSTATS.score_add(line, tostring(title or ""), "section")
+  GSTATS.score_add(line, " ", "border")
+  local missing = width - GSTATS.score_parts_width(line)
+  GSTATS.score_add(line, GSTATS.score_repeat(character, missing), "border")
+  return line
+end
+
+function GSTATS.score_title_cell(parts, width, fill)
+  local character = fill or "─"
+  local line = GSTATS.score_line()
+  GSTATS.score_add(line, character .. " ", "border")
+  GSTATS.score_add_parts(line, parts)
+  GSTATS.score_add(line, " ", "border")
+  GSTATS.score_add(line, GSTATS.score_repeat(character, width - GSTATS.score_parts_width(line)), "border")
+  return line
+end
+
+function GSTATS.score_box_line(left_edge, cells, separators, right_edge)
+  local line = GSTATS.score_line()
+  GSTATS.score_add(line, left_edge, "border")
+  for i, cell in ipairs(cells or {}) do
+    GSTATS.score_add_parts(line, cell)
+    if i < #cells then GSTATS.score_add(line, separators, "border") end
+  end
+  GSTATS.score_add(line, right_edge, "border")
+  return line
+end
+
+function GSTATS.score_emit(lines, expected_width)
+  local width = tonumber(expected_width) or 0
+  for _, score_line in ipairs(lines or {}) do
+    local visible = GSTATS.score_parts_width(score_line)
+    if visible > width then width = visible end
+  end
+
+  GSTATS.score_last_widths = {}
+  for _, score_line in ipairs(lines or {}) do
+    GSTATS.score_pad_line(score_line, width)
+    GSTATS.score_last_widths[#GSTATS.score_last_widths + 1] = GSTATS.score_parts_width(score_line)
+    local rendered = {}
+    for _, part in ipairs(score_line) do
+      local color = GSTATS.score_colors[part.color] or GSTATS.score_colors.border
+      rendered[#rendered + 1] = "<" .. color .. ">" .. part.text
+    end
+    cecho(table.concat(rendered) .. "<reset>\n")
+  end
+  GSTATS.score_last_width = width
+  return width
+end
+
+function GSTATS.score_text(value, fallback)
+  local result = GSTATS.trim(value)
+  if result == "" then return tostring(fallback or "?") end
+  return result
+end
+
+function GSTATS.score_title_case(value, fallback)
+  local text = GSTATS.score_text(value, fallback)
+  return text:gsub("^%l", string.upper)
+end
+
+function GSTATS.score_number_text(value)
+  return GSTATS.format_int(tonumber(value) or 0)
+end
+
+function GSTATS.score_pair_text(current, maximum, spaced)
+  local separator = spaced and " / " or "/"
+  return GSTATS.score_number_text(current) .. separator .. GSTATS.score_number_text(maximum)
+end
+
+function GSTATS.score_identity(data, style)
+  local race = GSTATS.score_text(data.race, "Unknown")
+  local class_name = GSTATS.score_text(data.class, "Unknown")
+  local subclass = GSTATS.trim(data.subclass)
+  local separator = style == "slash" and " / " or " · "
+  local identity = style == "tactical" and (race .. " " .. class_name) or (race .. separator .. class_name)
+  if subclass ~= "" then identity = identity .. separator .. subclass end
+  return identity
+end
+
+function GSTATS.score_resistance(data, name)
+  local source = type(data.resists) == "table" and data.resists[name:lower()] or nil
+  source = type(source) == "table" and source or {}
+  return {
+    name = name,
+    pct = tonumber(source.pct) or 0,
+    desc = GSTATS.score_text(source.desc, "Unknown"),
+  }
+end
+
+function GSTATS.score_resistance_bar_parts(resistance, label_width, pct_width, bar_width)
+  local line = GSTATS.score_line()
+  local pct_text = string.format("%.1f%%", tonumber(resistance.pct) or 0)
+  local filled = math.floor(math.min(50, math.abs(tonumber(resistance.pct) or 0)) / 50 * bar_width + 0.5)
+  local red = math.min(math.ceil(filled / 2), filled)
+  local yellow = math.max(0, filled - red)
+  local empty = math.max(0, bar_width - filled)
+  GSTATS.score_add(line, " ", "border")
+  GSTATS.score_add(line, GSTATS.score_pad(resistance.name, label_width), "label")
+  GSTATS.score_add(line, " ", "border")
+  GSTATS.score_add(line, GSTATS.score_pad(pct_text, pct_width, "right"), "warn")
+  GSTATS.score_add(line, "  ", "border")
+  GSTATS.score_add(line, GSTATS.score_repeat("█", red), "danger")
+  GSTATS.score_add(line, GSTATS.score_repeat("█", yellow), "warn")
+  GSTATS.score_add(line, GSTATS.score_repeat("·", empty), "muted")
+  GSTATS.score_add(line, "  ", "border")
+  GSTATS.score_add(line, resistance.desc, "value")
+  return line
+end
+
+function GSTATS.score_resource_bar_parts(label, current, maximum, label_width, pair_width, bar_width, color)
+  local line = GSTATS.score_line()
+  local pair = GSTATS.score_pair_text(current, maximum, true)
+  local max_value = tonumber(maximum) or 0
+  local ratio = max_value > 0 and math.max(0, math.min(1, (tonumber(current) or 0) / max_value)) or 0
+  local filled = math.floor(ratio * bar_width + 0.5)
+  local pct = math.floor(ratio * 100 + 0.5)
+  GSTATS.score_add(line, GSTATS.score_pad(label, label_width), color)
+  GSTATS.score_add(line, "  ", "border")
+  GSTATS.score_add(line, GSTATS.score_pad(pair, pair_width, "right"), "value")
+  GSTATS.score_add(line, "   ", "border")
+  GSTATS.score_add(line, GSTATS.score_repeat("█", filled), color)
+  GSTATS.score_add(line, GSTATS.score_repeat("·", bar_width - filled), "muted")
+  GSTATS.score_add(line, "  ", "border")
+  GSTATS.score_add(line, string.format("%3d%%", pct), "value")
+  return line
+end
+
+function GSTATS.score_render_tactical(data)
+  local name = GSTATS.score_text(data.name, GSTATS.player_name())
+  local identity = GSTATS.score_identity(data, "tactical")
+  local level = GSTATS.score_number_text(data.level)
+  local total_level = GSTATS.score_number_text(data.total_level)
+  local standing = GSTATS.score_title_case(data.standing, "Unknown")
+
+  local hp = GSTATS.score_pair_text(data.hp, data.maxhp, true)
+  local mana = GSTATS.score_pair_text(data.mana, data.maxmana, true)
+  local moves = GSTATS.score_pair_text(data.moves, data.maxmoves, true)
+  local hitroll = GSTATS.score_number_text(data.hitroll)
+  local damroll = GSTATS.score_number_text(data.damroll)
+  local wimpy = GSTATS.score_number_text(data.wimpy)
+  local tnl = GSTATS.score_number_text(data.tnl)
+  local qp = GSTATS.score_number_text(data.qp)
+  local quest_time = GSTATS.score_number_text(data.quest_time)
+
+  local attr_rows = {
+    GSTATS.score_parts(
+      GSTATS.score_part(" STR ", "border"), GSTATS.score_part(GSTATS.score_number_text(data.str), "value"),
+      GSTATS.score_part("/", "border"), GSTATS.score_part(GSTATS.score_number_text(data.maxstr), "muted"),
+      GSTATS.score_part("  DEX ", "border"), GSTATS.score_part(GSTATS.score_number_text(data.dex), "value"),
+      GSTATS.score_part("/", "border"), GSTATS.score_part(GSTATS.score_number_text(data.maxdex), "muted"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" INT ", "border"), GSTATS.score_part(GSTATS.score_number_text(data.int), "value"),
+      GSTATS.score_part("/", "border"), GSTATS.score_part(GSTATS.score_number_text(data.maxint), "muted"),
+      GSTATS.score_part(" CON ", "border"), GSTATS.score_part(GSTATS.score_number_text(data.con), "value"),
+      GSTATS.score_part("/", "border"), GSTATS.score_part(GSTATS.score_number_text(data.maxcon), "muted"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" WIS ", "border"), GSTATS.score_part(GSTATS.score_number_text(data.wis), "value"),
+      GSTATS.score_part("/", "border"), GSTATS.score_part(GSTATS.score_number_text(data.maxwis), "muted"),
+      GSTATS.score_part(" LCK ", "border"), GSTATS.score_part(GSTATS.score_number_text(data.luck), "value"),
+      GSTATS.score_part("/", "border"), GSTATS.score_part(GSTATS.score_number_text(data.maxluck), "muted"),
+      GSTATS.score_part(" ", "border")
+    ),
+  }
+
+  local carry_values = {
+    { "Weight", GSTATS.score_number_text(data.weight) .. "/" .. GSTATS.score_number_text(data.maxweight) },
+    { "Items", GSTATS.score_number_text(data.items) .. "/" .. GSTATS.score_number_text(data.maxitems) },
+    { "Gold", GSTATS.score_number_text(data.gold) },
+  }
+
+  local life_rows = {
+    GSTATS.score_parts(
+      GSTATS.score_part(" Status", "label"),
+      GSTATS.score_part(" ", "border"),
+      GSTATS.score_part(standing, "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" Age ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.age), "value"),
+      GSTATS.score_part(" · ", "border"), GSTATS.score_part("Hours ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.hours), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" Hunger ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.hunger), "value"),
+      GSTATS.score_part(" · ", "border"), GSTATS.score_part("Thirst ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.thirst), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+  }
+
+  local left = 25
+  left = math.max(left, GSTATS.score_field_need("HP", hp), GSTATS.score_field_need("Mana", mana), GSTATS.score_field_need("Moves", moves))
+  for _, row in ipairs(attr_rows) do left = math.max(left, GSTATS.score_parts_width(row)) end
+
+  local middle = 22
+  middle = math.max(middle, GSTATS.score_field_need("Hitroll", hitroll), GSTATS.score_field_need("Damroll", damroll), GSTATS.score_field_need("Wimpy", wimpy))
+  for _, entry in ipairs(carry_values) do middle = math.max(middle, GSTATS.score_field_need(entry[1], entry[2])) end
+
+  local right = 27
+  right = math.max(right, GSTATS.score_field_need("To level", tnl), GSTATS.score_field_need("Quest points", qp), GSTATS.score_field_need("Quest timer", quest_time))
+  right = math.max(right, GSTATS.score_field_need("Status", standing))
+  for _, row in ipairs(life_rows) do right = math.max(right, GSTATS.score_parts_width(row)) end
+
+  local title_parts = GSTATS.score_parts(
+    GSTATS.score_part(name, "name"),
+    GSTATS.score_part(" ─ ", "border"),
+    GSTATS.score_part(identity, "value"),
+    GSTATS.score_part(" ───── ", "border"),
+    GSTATS.score_part("Level " .. level, "hot"),
+    GSTATS.score_part(" / " .. total_level, "value")
+  )
+
+  local resistances = {
+    GSTATS.score_resistance(data, "Pierce"),
+    GSTATS.score_resistance(data, "Bash"),
+    GSTATS.score_resistance(data, "Slash"),
+  }
+  local resist_label_width, resist_pct_width, resist_desc_width = 0, 0, 0
+  for _, resistance in ipairs(resistances) do
+    resist_label_width = math.max(resist_label_width, GSTATS.score_visible_width(resistance.name))
+    resist_pct_width = math.max(resist_pct_width, GSTATS.score_visible_width(string.format("%.1f%%", resistance.pct)))
+    resist_desc_width = math.max(resist_desc_width, GSTATS.score_visible_width(resistance.desc))
+  end
+  local resist_need = 1 + resist_label_width + 1 + resist_pct_width + 2 + 20 + 2 + resist_desc_width
+  local inner = left + 1 + middle + 1 + right
+  local header_need = 3 + GSTATS.score_parts_width(title_parts) + 10
+  local needed_inner = math.max(inner, resist_need, header_need)
+  if needed_inner > inner then
+    right = right + (needed_inner - inner)
+    inner = needed_inner
+  end
+  local width = inner + 2
+
+  local lines = {}
+  lines[#lines + 1] = GSTATS.score_box_line("┌", { GSTATS.score_title_cell(title_parts, inner, "─") }, "┬", "┐")
+  lines[#lines + 1] = GSTATS.score_box_line("│", {
+    GSTATS.score_text_cell({ GSTATS.score_part(" VITALS", "section") }, left),
+    GSTATS.score_text_cell({ GSTATS.score_part(" COMBAT", "section") }, middle),
+    GSTATS.score_text_cell({ GSTATS.score_part(" PROGRESS", "section") }, right),
+  }, "│", "│")
+  lines[#lines + 1] = GSTATS.score_box_line("│", {
+    GSTATS.score_field("HP", hp, left, "hp", "value"),
+    GSTATS.score_field("Hitroll", hitroll, middle, "label", "value"),
+    GSTATS.score_field("To level", tnl, right, "label", "value"),
+  }, "│", "│")
+  lines[#lines + 1] = GSTATS.score_box_line("│", {
+    GSTATS.score_field("Mana", mana, left, "mana", "value"),
+    GSTATS.score_field("Damroll", damroll, middle, "label", "value"),
+    GSTATS.score_field("Quest points", qp, right, "label", "value"),
+  }, "│", "│")
+  lines[#lines + 1] = GSTATS.score_box_line("│", {
+    GSTATS.score_field("Moves", moves, left, "moves", "value"),
+    GSTATS.score_field("Wimpy", wimpy, middle, "label", "value"),
+    GSTATS.score_field("Quest timer", quest_time, right, "label", "value"),
+  }, "│", "│")
+  lines[#lines + 1] = GSTATS.score_box_line("├", {
+    GSTATS.score_section_cell("ATTRIBUTES", left),
+    GSTATS.score_section_cell("CARRY", middle),
+    GSTATS.score_section_cell("LIFE", right),
+  }, "┼", "┤")
+  for i = 1, 3 do
+    local life_cell = i == 1 and GSTATS.score_field("Status", standing, right, "label", "value") or GSTATS.score_text_cell(life_rows[i], right)
+    lines[#lines + 1] = GSTATS.score_box_line("│", {
+      GSTATS.score_text_cell(attr_rows[i], left),
+      GSTATS.score_field(carry_values[i][1], carry_values[i][2], middle, "label", "value"),
+      life_cell,
+    }, "│", "│")
+  end
+  lines[#lines + 1] = GSTATS.score_box_line("├", { GSTATS.score_section_cell("RESISTANCES", inner) }, "┼", "┤")
+  for _, resistance in ipairs(resistances) do
+    lines[#lines + 1] = GSTATS.score_box_line("│", {
+      GSTATS.score_text_cell(GSTATS.score_resistance_bar_parts(resistance, resist_label_width, resist_pct_width, 20), inner),
+    }, "│", "│")
+  end
+  lines[#lines + 1] = GSTATS.score_box_line("└", {
+    { GSTATS.score_part(GSTATS.score_repeat("─", inner), "border") },
+  }, "┴", "┘")
+  return lines, width
+end
+
+function GSTATS.score_two_column_line(left_parts, left_width, right_parts, right_width)
+  local line = GSTATS.score_line()
+  GSTATS.score_add_parts(line, GSTATS.score_text_cell(left_parts, left_width))
+  GSTATS.score_add(line, " │ ", "border")
+  GSTATS.score_add_parts(line, GSTATS.score_text_cell(right_parts, right_width))
+  return line
+end
+
+function GSTATS.score_kv_parts(label, value, width, label_color, value_color)
+  local line = GSTATS.score_line()
+  local label_text = tostring(label or "")
+  local value_text = tostring(value or "")
+  GSTATS.score_add(line, label_text, label_color or "label")
+  local gap = width - GSTATS.score_visible_width(label_text) - GSTATS.score_visible_width(value_text) - 1
+  GSTATS.score_add(line, string.rep(" ", math.max(1, gap)), "border")
+  GSTATS.score_add(line, value_text, value_color or "value")
+  GSTATS.score_add(line, " ", "border")
+  return line
+end
+
+function GSTATS.score_render_vitals(data)
+  local name = GSTATS.score_text(data.name, GSTATS.player_name())
+  local identity = GSTATS.score_identity(data, "slash")
+  local level = GSTATS.score_number_text(data.level)
+  local standing = "● " .. GSTATS.score_title_case(data.standing, "Unknown")
+  local bar_width = 20
+  local pair_width = math.max(
+    GSTATS.score_visible_width(GSTATS.score_pair_text(data.hp, data.maxhp, true)),
+    GSTATS.score_visible_width(GSTATS.score_pair_text(data.mana, data.maxmana, true)),
+    GSTATS.score_visible_width(GSTATS.score_pair_text(data.moves, data.maxmoves, true))
+  )
+  local label_width = 6
+
+  local combat_rows = {
+    { "Hitroll", GSTATS.score_number_text(data.hitroll) },
+    { "Damroll", GSTATS.score_number_text(data.damroll) },
+    { "Wimpy", GSTATS.score_number_text(data.wimpy) },
+    { "Alignment", GSTATS.score_number_text(data.align) },
+  }
+  local progress_rows = {
+    { "Total levels", GSTATS.score_number_text(data.total_level) },
+    { "To next level", GSTATS.score_number_text(data.tnl) },
+    { "Quest points", GSTATS.score_number_text(data.qp) },
+  }
+  local progress_four = GSTATS.score_parts(
+    GSTATS.score_part(" Practices ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.pracs), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Trains ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.trains), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Trivia ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.trivia or data.tp), "value"),
+    GSTATS.score_part(" ", "border")
+  )
+  local attribute_rows = {
+    GSTATS.score_parts(
+      GSTATS.score_part(" STR ", "label"), GSTATS.score_part(GSTATS.score_pair_text(data.str, data.maxstr, false), "value"),
+      GSTATS.score_part("   INT ", "label"), GSTATS.score_part(GSTATS.score_pair_text(data.int, data.maxint, false), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" DEX ", "label"), GSTATS.score_part(GSTATS.score_pair_text(data.dex, data.maxdex, false), "value"),
+      GSTATS.score_part("  CON ", "label"), GSTATS.score_part(GSTATS.score_pair_text(data.con, data.maxcon, false), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" WIS ", "label"), GSTATS.score_part(GSTATS.score_pair_text(data.wis, data.maxwis, false), "value"),
+      GSTATS.score_part("  LCK ", "label"), GSTATS.score_part(GSTATS.score_pair_text(data.luck, data.maxluck, false), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+  }
+  local inventory_rows = {
+    GSTATS.score_parts(
+      GSTATS.score_part(" Weight ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.weight) .. "/" .. GSTATS.score_number_text(data.maxweight), "value"),
+      GSTATS.score_part(" · ", "border"), GSTATS.score_part("Items ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.items) .. "/" .. GSTATS.score_number_text(data.maxitems), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" Gold ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.gold), "value"),
+      GSTATS.score_part(" · ", "border"), GSTATS.score_part("Age ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.age), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+    GSTATS.score_parts(
+      GSTATS.score_part(" Hours ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.hours), "value"),
+      GSTATS.score_part(" · ", "border"), GSTATS.score_part("Hunger ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.hunger), "value"),
+      GSTATS.score_part(" · ", "border"), GSTATS.score_part("Thirst ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.thirst), "value"),
+      GSTATS.score_part(" ", "border")
+    ),
+  }
+
+  local left, right = 31, 40
+  for _, row in ipairs(combat_rows) do left = math.max(left, GSTATS.score_field_need(row[1], row[2])) end
+  for _, row in ipairs(attribute_rows) do left = math.max(left, GSTATS.score_parts_width(row)) end
+  for _, row in ipairs(progress_rows) do right = math.max(right, GSTATS.score_field_need(row[1], row[2])) end
+  right = math.max(right, GSTATS.score_parts_width(progress_four))
+  for _, row in ipairs(inventory_rows) do right = math.max(right, GSTATS.score_parts_width(row)) end
+
+  local resistance_parts = GSTATS.score_parts(
+    GSTATS.score_part("RESISTS", "section"),
+    GSTATS.score_part("   Pierce ", "border"), GSTATS.score_part(string.format("%.1f%%", GSTATS.score_resistance(data, "Pierce").pct), "warn"),
+    GSTATS.score_part("  ·  Bash ", "border"), GSTATS.score_part(string.format("%.1f%%", GSTATS.score_resistance(data, "Bash").pct), "warn"),
+    GSTATS.score_part("  ·  Slash ", "border"), GSTATS.score_part(string.format("%.1f%%", GSTATS.score_resistance(data, "Slash").pct), "warn"),
+    GSTATS.score_part("  ·  ", "border"), GSTATS.score_part(GSTATS.score_resistance(data, "Pierce").desc, "muted")
+  )
+  local resource_need = label_width + 2 + pair_width + 3 + bar_width + 2 + 4
+  local identity_left = name .. "  Lv " .. level .. "  " .. identity
+  local total = left + 3 + right
+  local needed = math.max(total, resource_need, GSTATS.score_parts_width(resistance_parts), GSTATS.score_visible_width(identity_left) + 2 + GSTATS.score_visible_width(standing))
+  if needed > total then
+    right = right + (needed - total)
+    total = needed
+  end
+
+  local lines = {}
+  local header = GSTATS.score_line()
+  GSTATS.score_add(header, name, "name")
+  GSTATS.score_add(header, "  ", "border")
+  GSTATS.score_add(header, "Lv " .. level, "hot")
+  GSTATS.score_add(header, "  " .. identity, "value")
+  local header_gap = total - GSTATS.score_parts_width(header) - GSTATS.score_visible_width(standing)
+  GSTATS.score_add(header, string.rep(" ", math.max(2, header_gap)), "border")
+  GSTATS.score_add(header, standing, "hp")
+  GSTATS.score_pad_line(header, total)
+  lines[#lines + 1] = header
+  lines[#lines + 1] = { GSTATS.score_part(GSTATS.score_repeat("━", total), "muted") }
+  lines[#lines + 1] = {}
+  lines[#lines + 1] = GSTATS.score_text_cell(GSTATS.score_resource_bar_parts("HEALTH", data.hp, data.maxhp, label_width, pair_width, bar_width, "hp"), total)
+  lines[#lines + 1] = GSTATS.score_text_cell(GSTATS.score_resource_bar_parts("MANA", data.mana, data.maxmana, label_width, pair_width, bar_width, "mana"), total)
+  lines[#lines + 1] = GSTATS.score_text_cell(GSTATS.score_resource_bar_parts("MOVES", data.moves, data.maxmoves, label_width, pair_width, bar_width, "moves"), total)
+  lines[#lines + 1] = {}
+  lines[#lines + 1] = GSTATS.score_two_column_line({ GSTATS.score_part("COMBAT", "section") }, left, { GSTATS.score_part("PROGRESSION", "section") }, right)
+  for i = 1, 4 do
+    local right_parts
+    if i <= 3 then
+      right_parts = GSTATS.score_field(progress_rows[i][1], progress_rows[i][2], right, "label", "value")
+    else
+      right_parts = GSTATS.score_text_cell(progress_four, right)
+    end
+    lines[#lines + 1] = GSTATS.score_two_column_line(
+      GSTATS.score_field(combat_rows[i][1], combat_rows[i][2], left, "label", "value"),
+      left,
+      right_parts,
+      right
+    )
+  end
+  lines[#lines + 1] = {}
+  lines[#lines + 1] = GSTATS.score_two_column_line({ GSTATS.score_part("ATTRIBUTES", "section") }, left, { GSTATS.score_part("INVENTORY & LIFE", "section") }, right)
+  for i = 1, 3 do
+    lines[#lines + 1] = GSTATS.score_two_column_line(attribute_rows[i], left, inventory_rows[i], right)
+  end
+  lines[#lines + 1] = {}
+  lines[#lines + 1] = GSTATS.score_text_cell(resistance_parts, total)
+  return lines, total
+end
+
+function GSTATS.score_full_split(left_parts, right_parts, inner)
+  local line = GSTATS.score_line()
+  GSTATS.score_add(line, " ", "border")
+  GSTATS.score_add_parts(line, left_parts)
+  local right_width = GSTATS.score_parts_width(right_parts)
+  local gap = inner - 2 - GSTATS.score_parts_width(left_parts) - right_width
+  GSTATS.score_add(line, string.rep(" ", math.max(1, gap)), "border")
+  GSTATS.score_add_parts(line, right_parts)
+  GSTATS.score_add(line, " ", "border")
+  return GSTATS.score_pad_line(line, inner)
+end
+
+function GSTATS.score_plain_split(left_parts, right_parts, width)
+  local line = GSTATS.score_line()
+  GSTATS.score_add_parts(line, left_parts)
+  local gap = width - GSTATS.score_parts_width(left_parts) - GSTATS.score_parts_width(right_parts)
+  GSTATS.score_add(line, string.rep(" ", math.max(1, gap)), "border")
+  GSTATS.score_add_parts(line, right_parts)
+  return GSTATS.score_pad_line(line, width)
+end
+
+function GSTATS.score_render_sheet(data)
+  local name = GSTATS.score_text(data.name, GSTATS.player_name())
+  local identity = GSTATS.score_identity(data, "dots")
+  local gender = GSTATS.trim(data.gender)
+  local level = GSTATS.score_number_text(data.level)
+  local right_identity = (gender ~= "" and gender .. " · " or "") .. "Level " .. level
+  local standing = GSTATS.score_title_case(data.standing, "Unknown")
+
+  local core = {
+    { "Strength", GSTATS.score_pair_text(data.str, data.maxstr, true) },
+    { "Intelligence", GSTATS.score_pair_text(data.int, data.maxint, true) },
+    { "Wisdom", GSTATS.score_pair_text(data.wis, data.maxwis, true) },
+    { "Dexterity", GSTATS.score_pair_text(data.dex, data.maxdex, true) },
+    { "Constitution", GSTATS.score_pair_text(data.con, data.maxcon, true) },
+    { "Luck", GSTATS.score_pair_text(data.luck, data.maxluck, true) },
+  }
+  local adventure = {
+    { "Total level", GSTATS.score_number_text(data.total_level) },
+    { "To next level", GSTATS.score_number_text(data.tnl) },
+    { "Quest points", GSTATS.score_number_text(data.qp) },
+    { "Quest timer", GSTATS.score_number_text(data.quest_time) },
+    { "Goals done", GSTATS.score_number_text(data.goals_done) },
+  }
+  local adventure_last = GSTATS.score_parts(
+    GSTATS.score_part(" Practices ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.pracs), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Trains ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.trains), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Trivia ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.trivia or data.tp), "value"),
+    GSTATS.score_part(" ", "border")
+  )
+  local status = {
+    { "Hit points", GSTATS.score_pair_text(data.hp, data.maxhp, true), "hp" },
+    { "Mana", GSTATS.score_pair_text(data.mana, data.maxmana, true), "mana" },
+    { "Moves", GSTATS.score_pair_text(data.moves, data.maxmoves, true), "moves" },
+    { "Status", standing, "label" },
+  }
+  local combat = {
+    { "Hitroll", GSTATS.score_number_text(data.hitroll) },
+    { "Damroll", GSTATS.score_number_text(data.damroll) },
+    { "Wimpy", GSTATS.score_number_text(data.wimpy) },
+    { "Alignment", GSTATS.score_number_text(data.align) },
+  }
+
+  local left, right = 34, 41
+  for _, row in ipairs(core) do left = math.max(left, GSTATS.score_field_need(row[1], row[2])) end
+  for _, row in ipairs(status) do left = math.max(left, GSTATS.score_field_need(row[1], row[2])) end
+  for _, row in ipairs(adventure) do right = math.max(right, GSTATS.score_field_need(row[1], row[2])) end
+  for _, row in ipairs(combat) do right = math.max(right, GSTATS.score_field_need(row[1], row[2])) end
+  right = math.max(right, GSTATS.score_parts_width(adventure_last))
+
+  local possessions = GSTATS.score_parts(
+    GSTATS.score_part(" Weight ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.weight) .. "/" .. GSTATS.score_number_text(data.maxweight), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Items ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.items) .. "/" .. GSTATS.score_number_text(data.maxitems), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Gold ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.gold), "value")
+  )
+  local life = GSTATS.score_parts(
+    GSTATS.score_part(" Age ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.age), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Hours ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.hours), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Hunger ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.hunger), "value"),
+    GSTATS.score_part(" · ", "border"), GSTATS.score_part("Thirst ", "label"), GSTATS.score_part(GSTATS.score_number_text(data.thirst), "value")
+  )
+  local resist_left = GSTATS.score_parts(
+    GSTATS.score_part("Pierce ", "label"), GSTATS.score_part(string.format("%.1f%%", GSTATS.score_resistance(data, "Pierce").pct), "warn"),
+    GSTATS.score_part(" · Bash ", "border"), GSTATS.score_part(string.format("%.1f%%", GSTATS.score_resistance(data, "Bash").pct), "warn"),
+    GSTATS.score_part(" · Slash ", "border"), GSTATS.score_part(string.format("%.1f%%", GSTATS.score_resistance(data, "Slash").pct), "warn")
+  )
+  local resist_right = { GSTATS.score_part(GSTATS.score_resistance(data, "Pierce").desc, "value") }
+
+  local inner = left + 1 + right
+  local identity_need = 2 + GSTATS.score_visible_width(identity) + GSTATS.score_visible_width(right_identity) + 1
+  local name_need = 3 + GSTATS.score_visible_width(name) + 10
+  local full_need = math.max(
+    GSTATS.score_parts_width(possessions) + 2,
+    GSTATS.score_parts_width(life) + 2,
+    GSTATS.score_parts_width(resist_left) + GSTATS.score_parts_width(resist_right) + 3,
+    identity_need,
+    name_need
+  )
+  if full_need > inner then
+    right = right + (full_need - inner)
+    inner = full_need
+  end
+  local width = inner + 2
+
+  local lines = {}
+  lines[#lines + 1] = GSTATS.score_box_line("╔", {
+    GSTATS.score_title_cell({ GSTATS.score_part(name, "name") }, inner, "═"),
+  }, "╦", "╗")
+  lines[#lines + 1] = GSTATS.score_box_line("║", {
+    GSTATS.score_full_split({ GSTATS.score_part(identity, "value") }, {
+      GSTATS.score_part(right_identity, "hot"),
+    }, inner),
+  }, "║", "║")
+  lines[#lines + 1] = GSTATS.score_box_line("╠", {
+    GSTATS.score_section_cell("CORE", left, "═"),
+    GSTATS.score_section_cell("ADVENTURE", right, "═"),
+  }, "╦", "╣")
+  for i = 1, 6 do
+    local right_cell
+    if i <= 5 then
+      right_cell = GSTATS.score_field(adventure[i][1], adventure[i][2], right, "label", "value")
+    else
+      right_cell = GSTATS.score_text_cell(adventure_last, right)
+    end
+    lines[#lines + 1] = GSTATS.score_box_line("║", {
+      GSTATS.score_field(core[i][1], core[i][2], left, "label", "value"),
+      right_cell,
+    }, "║", "║")
+  end
+  lines[#lines + 1] = GSTATS.score_box_line("╠", {
+    GSTATS.score_section_cell("STATUS", left, "═"),
+    GSTATS.score_section_cell("COMBAT", right, "═"),
+  }, "╬", "╣")
+  for i = 1, 4 do
+    lines[#lines + 1] = GSTATS.score_box_line("║", {
+      GSTATS.score_field(status[i][1], status[i][2], left, status[i][3], "value"),
+      GSTATS.score_field(combat[i][1], combat[i][2], right, "label", "value"),
+    }, "║", "║")
+  end
+  lines[#lines + 1] = GSTATS.score_box_line("╠", { GSTATS.score_section_cell("POSSESSIONS & LIFE", inner, "═") }, "╬", "╣")
+  lines[#lines + 1] = GSTATS.score_box_line("║", { GSTATS.score_text_cell(possessions, inner) }, "║", "║")
+  lines[#lines + 1] = GSTATS.score_box_line("║", { GSTATS.score_text_cell(life, inner) }, "║", "║")
+  lines[#lines + 1] = GSTATS.score_box_line("╠", { GSTATS.score_section_cell("RESISTANCES", inner, "═") }, "╬", "╣")
+  lines[#lines + 1] = GSTATS.score_box_line("║", {
+    GSTATS.score_full_split(resist_left, resist_right, inner),
+  }, "║", "║")
+  lines[#lines + 1] = GSTATS.score_box_line("╚", {
+    { GSTATS.score_part(GSTATS.score_repeat("═", inner), "border") },
+  }, "╩", "╝")
+  return lines, width
+end
+
+function GSTATS.score_minimal_row(group, items, widths, group_width)
+  local line = GSTATS.score_line()
+  GSTATS.score_add(line, GSTATS.score_pad(group or "", group_width), group ~= "" and "section" or "border")
+  for i, item in ipairs(items or {}) do
+    GSTATS.score_add_parts(line, GSTATS.score_kv_parts(item[1], item[2], widths[i], item[3] or "label", item[4] or "value"))
+  end
+  return line
+end
+
+function GSTATS.score_kv_need(label, value)
+  return GSTATS.score_visible_width(label) + GSTATS.score_visible_width(value) + 2
+end
+
+function GSTATS.score_render_minimal(data)
+  local name = GSTATS.score_text(data.name, GSTATS.player_name())
+  local identity = GSTATS.score_identity(data, "dots")
+  local level_status = "Level " .. GSTATS.score_number_text(data.level) .. " · " .. GSTATS.score_title_case(data.standing, "Unknown")
+  local total_text = "Total " .. GSTATS.score_number_text(data.total_level)
+  local group_width = math.max(13, GSTATS.score_visible_width("Resistances") + 2)
+
+  local rows3 = {
+    {
+      { "Hit", GSTATS.score_pair_text(data.hp, data.maxhp, false), "hp", "value" },
+      { "Mana", GSTATS.score_pair_text(data.mana, data.maxmana, false), "mana", "value" },
+      { "Moves", GSTATS.score_pair_text(data.moves, data.maxmoves, false), "moves", "value" },
+    },
+    {
+      { "STR", GSTATS.score_pair_text(data.str, data.maxstr, false) },
+      { "INT", GSTATS.score_pair_text(data.int, data.maxint, false) },
+      { "WIS", GSTATS.score_pair_text(data.wis, data.maxwis, false) },
+    },
+    {
+      { "DEX", GSTATS.score_pair_text(data.dex, data.maxdex, false) },
+      { "CON", GSTATS.score_pair_text(data.con, data.maxcon, false) },
+      { "LCK", GSTATS.score_pair_text(data.luck, data.maxluck, false) },
+    },
+    {
+      { "Pierce", string.format("%.1f%%", GSTATS.score_resistance(data, "Pierce").pct), "label", "warn" },
+      { "Bash", string.format("%.1f%%", GSTATS.score_resistance(data, "Bash").pct), "label", "warn" },
+      { "Slash", string.format("%.1f%%", GSTATS.score_resistance(data, "Slash").pct), "label", "warn" },
+    },
+  }
+  local widths3 = { 19, 20, 20 }
+  for _, items in ipairs(rows3) do
+    for i, item in ipairs(items) do widths3[i] = math.max(widths3[i], GSTATS.score_kv_need(item[1], item[2])) end
+  end
+
+  local rows4 = {
+    {
+      { "Hitroll", GSTATS.score_number_text(data.hitroll) },
+      { "Damroll", GSTATS.score_number_text(data.damroll) },
+      { "Wimpy", GSTATS.score_number_text(data.wimpy) },
+      { "Align", GSTATS.score_number_text(data.align) },
+    },
+    {
+      { "Next", GSTATS.score_number_text(data.tnl) },
+      { "QP", GSTATS.score_number_text(data.qp) },
+      { "Timer", GSTATS.score_number_text(data.quest_time) },
+      { "Goals", GSTATS.score_number_text(data.goals_done) },
+    },
+    {
+      { "Age", GSTATS.score_number_text(data.age) },
+      { "Hours", GSTATS.score_number_text(data.hours) },
+      { "Hunger", GSTATS.score_number_text(data.hunger) },
+      { "Thirst", GSTATS.score_number_text(data.thirst) },
+    },
+  }
+  local widths4 = { 15, 16, 14, 14 }
+  for _, items in ipairs(rows4) do
+    for i, item in ipairs(items) do widths4[i] = math.max(widths4[i], GSTATS.score_kv_need(item[1], item[2])) end
+  end
+  local training = {
+    { "Practices", GSTATS.score_number_text(data.pracs) },
+    { "Trains", GSTATS.score_number_text(data.trains) },
+    { "Trivia", GSTATS.score_number_text(data.trivia or data.tp) },
+  }
+  for i, item in ipairs(training) do widths4[i] = math.max(widths4[i], GSTATS.score_kv_need(item[1], item[2])) end
+
+  local carrying = {
+    { "Weight", GSTATS.score_number_text(data.weight) .. "/" .. GSTATS.score_number_text(data.maxweight) },
+    { "Items", GSTATS.score_number_text(data.items) .. "/" .. GSTATS.score_number_text(data.maxitems) },
+    { "Gold", GSTATS.score_number_text(data.gold) },
+  }
+  local carry_widths = { 16, 16, 27 }
+  for i, item in ipairs(carrying) do carry_widths[i] = math.max(carry_widths[i], GSTATS.score_kv_need(item[1], item[2])) end
+
+  local total3 = group_width + widths3[1] + widths3[2] + widths3[3]
+  local total4 = group_width + widths4[1] + widths4[2] + widths4[3] + widths4[4]
+  local total_carry = group_width + carry_widths[1] + carry_widths[2] + carry_widths[3]
+  local width = math.max(72, total3, total4, total_carry, GSTATS.score_visible_width(name) + GSTATS.score_visible_width(level_status) + 2, GSTATS.score_visible_width(identity) + GSTATS.score_visible_width(total_text) + 2)
+  widths3[3] = widths3[3] + (width - total3)
+  widths4[4] = widths4[4] + (width - total4)
+  carry_widths[3] = carry_widths[3] + (width - total_carry)
+
+  local lines = {}
+  lines[#lines + 1] = GSTATS.score_plain_split({ GSTATS.score_part(name, "name") }, { GSTATS.score_part(level_status, "hot") }, width)
+  lines[#lines + 1] = GSTATS.score_plain_split({ GSTATS.score_part(identity, "value") }, { GSTATS.score_part(total_text, "value") }, width)
+  lines[#lines + 1] = { GSTATS.score_part(GSTATS.score_repeat("─", width), "muted") }
+  lines[#lines + 1] = GSTATS.score_minimal_row("Vitals", rows3[1], widths3, group_width)
+  lines[#lines + 1] = {}
+  lines[#lines + 1] = GSTATS.score_minimal_row("Attributes", rows3[2], widths3, group_width)
+  lines[#lines + 1] = GSTATS.score_minimal_row("", rows3[3], widths3, group_width)
+  lines[#lines + 1] = {}
+  lines[#lines + 1] = GSTATS.score_minimal_row("Combat", rows4[1], widths4, group_width)
+  lines[#lines + 1] = GSTATS.score_minimal_row("Progress", rows4[2], widths4, group_width)
+  lines[#lines + 1] = GSTATS.score_minimal_row("Training", training, widths4, group_width)
+  lines[#lines + 1] = GSTATS.score_minimal_row("Carrying", carrying, carry_widths, group_width)
+  lines[#lines + 1] = GSTATS.score_minimal_row("Life", rows4[3], widths4, group_width)
+  lines[#lines + 1] = GSTATS.score_minimal_row("Resistances", rows3[4], widths3, group_width)
+  return lines, width
+end
+
+function GSTATS.render_score(data, mode)
+  local selected = GSTATS.score_text(mode or GSTATS.state.score_mode, "none"):lower()
+  local renderers = {
+    tactical = GSTATS.score_render_tactical,
+    vitals = GSTATS.score_render_vitals,
+    sheet = GSTATS.score_render_sheet,
+    minimal = GSTATS.score_render_minimal,
+  }
+  local renderer = renderers[selected]
+  if not renderer then return false end
+  local lines, width = renderer(data or GSTATS.score_data())
+  GSTATS.score_last_lines = lines
+  GSTATS.score_emit(lines, width)
+  return true
+end
+
+function GSTATS.score_data()
+  local cached = type(GSTATS.state.last_score) == "table" and GSTATS.state.last_score or {}
+  local fresh = GSTATS.from_gmcp()
+  local data = {}
+  for key, value in pairs(cached) do data[key] = value end
+  for key, value in pairs(fresh) do
+    if type(value) == "table" then
+      if next(value) ~= nil then data[key] = value end
+    elseif value ~= nil and value ~= "" and (type(value) ~= "number" or value ~= 0 or data[key] == nil) then
+      data[key] = value
+    end
+  end
+  data.name = GSTATS.score_text(data.name, GSTATS.player_name())
+  data.resists = type(data.resists) == "table" and data.resists or {}
+  return data
+end
+
+function GSTATS.score_parse_number(value)
+  local number = tostring(value or ""):gsub(",", ""):match("[-+]?%d+")
+  return tonumber(number) or 0
+end
+
+function GSTATS.score_parse_pair(value)
+  local text = tostring(value or "")
+  local first, second = text:match("%[?%s*([-+]?[%d,]+)%s*/%s*([-+]?[%d,]+)")
+  if not first then first, second = text:match("([-+]?[%d,]+)%s+of%s+([-+]?[%d,]+)") end
+  return GSTATS.score_parse_number(first), GSTATS.score_parse_number(second)
+end
+
+function GSTATS.score_parse_lines(lines)
+  local data = GSTATS.score_data()
+  data.resists = type(data.resists) == "table" and data.resists or {}
+  local stat_map = {
+    strength = { "str", "maxstr" },
+    intelligence = { "int", "maxint" },
+    wisdom = { "wis", "maxwis" },
+    dexterity = { "dex", "maxdex" },
+    constitution = { "con", "maxcon" },
+    luck = { "luck", "maxluck" },
+  }
+  local pair_map = {
+    hit = { "hp", "maxhp" },
+    mana = { "mana", "maxmana" },
+    moves = { "moves", "maxmoves" },
+    weight = { "weight", "maxweight" },
+    items = { "items", "maxitems" },
+  }
+  local number_map = {
+    level = "level",
+    ["tot lvl"] = "total_level",
+    ["total level"] = "total_level",
+    practices = "pracs",
+    pracs = "pracs",
+    trains = "trains",
+    trivia = "trivia",
+    ["quest points"] = "qp",
+    ["quest time"] = "quest_time",
+    ["goals done"] = "goals_done",
+    gold = "gold",
+    ["to lvl"] = "tnl",
+    ["to level"] = "tnl",
+    hitroll = "hitroll",
+    damroll = "damroll",
+    wimpy = "wimpy",
+    age = "age",
+    hours = "hours",
+    align = "align",
+    alignment = "align",
+  }
+  local text_map = {
+    race = "race",
+    class = "class",
+    sub = "subclass",
+    subclass = "subclass",
+    gender = "gender",
+    status = "standing",
+  }
+  local resistance_map = { pierce = true, bash = true, slash = true }
+
+  for _, raw_line in ipairs(lines or {}) do
+    local visible = GSTATS.trim(raw_line)
+    if visible:match("^|.*|$") and not visible:find(":", 1, true) then
+      local candidate = GSTATS.trim(visible:gsub("|", ""))
+      if candidate ~= "" and not candidate:match("^[-+]+$") then data.name = candidate end
+    end
+
+    for cell in tostring(raw_line or ""):gmatch("([^|]+)") do
+      local clean = GSTATS.trim(cell)
+      local label, value = clean:match("^([^:]+):%s*(.-)%s*$")
+      if label then
+        local key = GSTATS.trim(label):lower():gsub("%s+", " ")
+        value = GSTATS.trim(value)
+        if stat_map[key] then
+          local current, maximum = GSTATS.score_parse_pair(value)
+          data[stat_map[key][1]], data[stat_map[key][2]] = current, maximum
+        elseif pair_map[key] then
+          local current, maximum = GSTATS.score_parse_pair(value)
+          data[pair_map[key][1]], data[pair_map[key][2]] = current, maximum
+        elseif number_map[key] then
+          data[number_map[key]] = GSTATS.score_parse_number(value)
+          if key == "trivia" then data.tp = data.trivia end
+        elseif text_map[key] then
+          data[text_map[key]] = value
+        elseif key == "hunger" or key == "thirst" then
+          data[key] = GSTATS.score_parse_number(value)
+          data[key .. "_state"] = GSTATS.trim(value:gsub("^[-+]?[%d,]+", ""))
+        elseif resistance_map[key] then
+          local pct = tonumber((value:match("([-+]?%d+%.?%d*)%%"))) or 0
+          local desc = GSTATS.trim(value:match("%((.-)%)") or "")
+          data.resists[key] = { pct = pct, desc = desc ~= "" and desc or "Unknown" }
+        end
+      end
+    end
+  end
+  data.name = GSTATS.score_text(data.name, GSTATS.player_name())
+  data.trivia = tonumber(data.trivia) or tonumber(data.tp) or 0
+  return data
+end
+
+function GSTATS.score_kill_capture()
+  local capture = GSTATS.capture.score
+  if not capture then return end
+  if capture.trigger then pcall(killTrigger, capture.trigger) end
+  if capture.timer then pcall(killTimer, capture.timer) end
+  capture.trigger, capture.timer = nil, nil
+end
+
+function GSTATS.score_capture_timeout()
+  local capture = GSTATS.capture.score
+  if not capture then return end
+  if capture.saw_final_border then
+    GSTATS.score_finish_capture()
+    return
+  end
+  local had_started = capture.started == true
+  GSTATS.score_kill_capture()
+  GSTATS.capture.score = nil
+  if had_started then
+    cecho("<ansiLightRed>g_character: score format was not recognized; showing the server score instead.<reset>\n")
+    send("score", false)
+  else
+    cecho("<ansiLightRed>g_character: timed out waiting for score output.<reset>\n")
+  end
+end
+
+function GSTATS.score_arm_capture_timeout(seconds)
+  local capture = GSTATS.capture.score
+  if not capture then return end
+  if capture.timer then pcall(killTimer, capture.timer) end
+  capture.timer = tempTimer(seconds or 2.5, GSTATS.score_capture_timeout)
+end
+
+function GSTATS.score_finish_capture()
+  local capture = GSTATS.capture.score
+  if not capture then return end
+  local lines = capture.lines or {}
+  GSTATS.score_kill_capture()
+  GSTATS.capture.score = nil
+  local parsed = GSTATS.score_parse_lines(lines)
+  GSTATS.state.last_score = parsed
+  GSTATS.save_state()
+  local render = function() GSTATS.render_score(parsed, GSTATS.state.score_mode) end
+  if type(tempTimer) == "function" then tempTimer(0, render) else render() end
+end
+
+function GSTATS.score_capture_line(raw_line)
+  local capture = GSTATS.capture.score
+  if not capture then return end
+  local raw = tostring(raw_line or "")
+  local plain_border = raw:match("^%+%-+%+$") ~= nil
+  if not capture.started then
+    if not plain_border then return end
+    capture.started = true
+    capture.lines = { raw }
+    pcall(deleteLine)
+    GSTATS.score_arm_capture_timeout(1.5)
+    return
+  end
+
+  if capture.saw_final_border then
+    local normalized = GSTATS.trim(raw):lower()
+    local affects_help = normalized:find("type 'aff' for affects", 1, true) == 1
+      and normalized:find("'attr' for stats only", 1, true)
+      and normalized:find("'whois' for other info", 1, true)
+    local resists_help = normalized:find("type 'resists' for detailed resistance stats", 1, true) == 1
+    if affects_help or resists_help then
+      capture.lines[#capture.lines + 1] = raw
+      pcall(deleteLine)
+      if resists_help then
+        GSTATS.score_finish_capture()
+      else
+        GSTATS.score_arm_capture_timeout(0.75)
+      end
+    else
+      GSTATS.score_finish_capture()
+    end
+    return
+  end
+
+  capture.lines[#capture.lines + 1] = raw
+  pcall(deleteLine)
+  if raw:lower():find("resistances%s*:") then capture.saw_resistances = true end
+  if capture.saw_resistances and plain_border and #capture.lines > 2 then
+    capture.saw_final_border = true
+    GSTATS.score_arm_capture_timeout(0.75)
+    return
+  end
+  GSTATS.score_arm_capture_timeout(1.5)
+end
+
+function GSTATS.score_request()
+  if GSTATS.capture.score then
+    GSTATS.score_kill_capture()
+    GSTATS.capture.score = nil
+  end
+  if type(tempRegexTrigger) ~= "function" or type(tempTimer) ~= "function" then
+    cecho("<ansiLightRed>g_character: temporary triggers are unavailable; showing the server score.<reset>\n")
+    send("score", false)
+    return
+  end
+
+  GSTATS.capture.score = { started = false, saw_resistances = false, saw_final_border = false, lines = {} }
+  GSTATS.capture.score.trigger = tempRegexTrigger("^(.*)$", function()
+    GSTATS.score_capture_line(matches[2] or line or "")
+  end)
+  if not GSTATS.capture.score.trigger then
+    GSTATS.capture.score = nil
+    cecho("<ansiLightRed>g_character: could not install the score capture trigger; showing the server score.<reset>\n")
+    send("score", false)
+    return
+  end
+  GSTATS.score_arm_capture_timeout(2.5)
+  send("score", false)
+end
+
+function GSTATS.score_alias(command)
+  local original = GSTATS.trim(command):lower()
+  if original ~= "sc" and original ~= "score" then original = "score" end
+  local mode = GSTATS.score_text(GSTATS.state.score_mode, "none"):lower()
+  if mode == "none" then
+    send(original)
+    return
+  end
+  GSTATS.score_request()
+end
+
+function GSTATS.set_score_mode(mode)
+  local selected = GSTATS.trim(mode):lower()
+  if not GSTATS.score_modes[selected] then
+    cecho("<ansiLightRed>Usage: <ansiLightWhite>gchar score none|tactical|vitals|sheet|minimal<reset>\n")
+    cecho(string.format("<ansiCyan>Current score mode: <ansiLightWhite>%s<reset>\n", GSTATS.score_text(GSTATS.state.score_mode, "none")))
+    return false
+  end
+  GSTATS.state.score_mode = selected
+  GSTATS.save_state()
+  cecho(string.format("<ansiCyan>g_character score mode set to: <ansiLightWhite>%s<reset>\n", selected))
+  return true
+end
+
 
 GSTATS.mastery_breakpoints = {
   { mastery = 0, pct = 0 },
@@ -789,6 +1984,7 @@ end
 
 function GSTATS.help()
   cecho("\n<cyan>g_character commands\n")
+  cecho("  <white>gchar score none|tactical|vitals|sheet|minimal<grey> - replace sc/score output\n")
   cecho("  <white>gstats help<grey>            - show this help\n")
   cecho("  <white>gstats show|hide<grey>       - toggle window visibility\n")
   cecho("  <white>gstats horizontal|vertical<grey> - set layout mode\n")
@@ -807,6 +2003,16 @@ function GSTATS.command(arg)
   GSTATS.ensure_ui()
   local cmd = (arg or ""):match("^%s*(.-)%s*$")
   if cmd == "" then return GSTATS.help() end
+
+  local score_mode = cmd:lower():match("^score%s+(%S+)%s*$")
+  if score_mode then
+    GSTATS.set_score_mode(score_mode)
+    return
+  elseif cmd:lower() == "score" then
+    cecho("<ansiLightWhite>Usage: <ansiLightCyan>gchar score none|tactical|vitals|sheet|minimal<reset>\n")
+    cecho(string.format("<ansiCyan>Current score mode: <ansiLightWhite>%s<reset>\n", GSTATS.score_text(GSTATS.state.score_mode, "none")))
+    return
+  end
 
   local costs_cmd, report_kind, report_from, report_to, report_channel = cmd:match("^(%a+)%s+(%a+)%s+(%d+)%s+(%d+)%s*(%S*)%s*$")
   if costs_cmd == "costs" and (report_kind == "mastery" or report_kind == "instinct") then
@@ -908,7 +2114,7 @@ if not GSTATS.initialized then
   GSTATS.initialized = true
   GSTATS.load_state()
   GSTATS.ensure_ui()
-  GSTATS.render_from_gmcp()
+  GSTATS.render_from_gmcp(true)
   registerAnonymousEventHandler("gmcp.char.base", "GSTATS.on_gmcp")
   registerAnonymousEventHandler("gmcp.char.status", "GSTATS.on_gmcp")
   registerAnonymousEventHandler("gmcp.char.vitals", "GSTATS.on_gmcp")

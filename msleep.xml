@@ -67,6 +67,7 @@
         <script><![CDATA[
 -- Ported by gizmmo
 local MSLEEP_SAVE_FILE = getMudletHomeDir() .. "/persistence/msleep_settings.lua"
+local MSLEEP_WAKE_DELAY = 4
 
 local function msleepSaveSettings()
   table.save(MSLEEP_SAVE_FILE, {
@@ -83,6 +84,7 @@ if not MSLEEP then
     avoidPk      = true,
     autoSleep    = false,
     wakeDeferred = false,
+    wakeTimerId  = nil,
     tickTimerId  = nil,
     tickHandlerId = nil,
   }
@@ -129,6 +131,37 @@ local function canSendSleep()
   return true
 end
 
+local function cancelWakeTimer()
+  if MSLEEP.wakeTimerId then
+    pcall(killTimer, MSLEEP.wakeTimerId)
+    MSLEEP.wakeTimerId = nil
+  end
+end
+
+local function finishAutoSleep()
+  MSLEEP.autoSleep = false
+  MSLEEP.wakeDeferred = false
+  cancelWakeTimer()
+end
+
+local function wakeFromTimer()
+  -- This is deliberately unconditional. GMCP state can be stale or the tick
+  -- event can be missed, but a wake sent after sleep is harmless if already up.
+  MSLEEP.wakeTimerId = nil
+  send("wake", false)
+  MSLEEP.autoSleep = false
+  MSLEEP.wakeDeferred = false
+end
+
+local function scheduleWakeTimer()
+  cancelWakeTimer()
+  MSLEEP.wakeTimerId = tempTimer(MSLEEP_WAKE_DELAY, function()
+    if MSLEEP and MSLEEP.wakeFromTimer then MSLEEP.wakeFromTimer() end
+  end)
+end
+
+MSLEEP.wakeFromTimer = wakeFromTimer
+
 local function tryWakeFromAutoSleep()
   if not MSLEEP.autoSleep then return end
 
@@ -142,14 +175,12 @@ local function tryWakeFromAutoSleep()
 
   if state == 9 or pos == "Sleeping" then
     send("wake", false)
-    MSLEEP.autoSleep = false
-    MSLEEP.wakeDeferred = false
+    finishAutoSleep()
     return
   end
 
-  -- If we're no longer sleeping (or sleep never landed), clear pending wake.
-  MSLEEP.autoSleep = false
-  MSLEEP.wakeDeferred = false
+  -- GMCP can lag behind the command/tick. Leave the fallback armed rather than
+  -- deciding that sleep never landed and losing the only pending wake-up.
 end
 
 local function inPkRoom()
@@ -238,6 +269,7 @@ function MSLEEP.processTickWindow()
   send("sleep", false)
   MSLEEP.autoSleep = true
   MSLEEP.wakeDeferred = false
+  scheduleWakeTimer()
 end
 
 function MSLEEP.schedulePretickWindow()
@@ -258,6 +290,10 @@ function MSLEEP.onServerTick()
 end
 
 function MSLEEP.bootstrap()
+  cancelWakeTimer()
+  MSLEEP.autoSleep = false
+  MSLEEP.wakeDeferred = false
+
   if MSLEEP.tickHandlerId then
     killAnonymousEventHandler(MSLEEP.tickHandlerId)
     MSLEEP.tickHandlerId = nil

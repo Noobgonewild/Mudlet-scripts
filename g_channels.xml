@@ -62,7 +62,8 @@ GCH.legacy_state_file = gch_persistence_dir() .. "/g_channels_state.lua"
 GCH.settings_file = gch_persistence_dir() .. "/g_channels_settings.json"
 GCH.db_file = gch_persistence_dir() .. "/g_channels.db"
 GCH.pending_file = gch_persistence_dir() .. "/g_channels_pending.jsonl"
-GCH.gchan_default_color = "36,120,200"
+GCH.legacy_gchan_default_color = "36,120,200"
+GCH.gchan_default_color = false
 GCH.defaults = {
   x = "70%",
   y = "0%",
@@ -104,21 +105,21 @@ GCH.channel_labels = {
   gchan = "gchan",
 }
 GCH.aard_colors = {
-  b = {0, 0, 170},
-  B = {85, 85, 255},
-  c = {0, 170, 170},
-  C = {85, 255, 255},
-  r = {170, 0, 0},
-  R = {255, 85, 85},
-  m = {170, 0, 170},
-  M = {255, 85, 255},
-  g = {0, 170, 0},
-  G = {85, 255, 85},
-  y = {170, 170, 0},
-  Y = {255, 255, 85},
-  w = {192, 192, 192},
-  W = {255, 255, 255},
-  D = {128, 128, 128},
+  b = "ansi_blue",
+  B = "ansi_light_blue",
+  c = "ansi_cyan",
+  C = "ansi_light_cyan",
+  r = "ansi_red",
+  R = "ansi_light_red",
+  m = "ansi_magenta",
+  M = "ansi_light_magenta",
+  g = "ansi_green",
+  G = "ansi_light_green",
+  y = "ansi_yellow",
+  Y = "ansi_light_yellow",
+  w = "ansi_white",
+  W = "white",
+  D = "ansi_light_black",
 }
 GCH.state = GCH.state or {}
 GCH.ui = GCH.ui or { tabs = {}, consoles = {} }
@@ -152,7 +153,9 @@ function GCH.merge_defaults()
   if GCH.state.display_size < 1 then GCH.state.display_size = 1 end
   if GCH.state.show_timestamp == nil then GCH.state.show_timestamp = true end
   if GCH.state.gag_channel_tags == nil then GCH.state.gag_channel_tags = true end
-  if type(GCH.state.gchan_color) ~= "string" or GCH.state.gchan_color == "" then
+  if GCH.state.gchan_color == GCH.legacy_gchan_default_color then
+    GCH.state.gchan_color = false
+  elseif GCH.state.gchan_color ~= false and (type(GCH.state.gchan_color) ~= "string" or GCH.state.gchan_color == "") then
     GCH.state.gchan_color = GCH.gchan_default_color
   end
 
@@ -652,10 +655,12 @@ function GCH.aard_code_to_decho(code)
   local key = value:match("^@([A-Za-z])$")
   if not key then return nil end
 
-  local rgb = GCH.aard_colors[key]
-  if not rgb then return nil end
+  local color_name = GCH.aard_colors[key]
+  if not color_name or type(cecho2decho) ~= "function" then return nil end
 
-  return string.format("<%d,%d,%d>", rgb[1], rgb[2], rgb[3])
+  local ok, value_decho = pcall(cecho2decho, string.format("<%s>sample<reset>", color_name))
+  if not ok or type(value_decho) ~= "string" then return nil end
+  return value_decho:match("^(.-)sample")
 end
 
 function GCH.color_value_to_decho(color_value)
@@ -694,12 +699,62 @@ function GCH.channel_label(channel_key)
   return GCH.channel_labels[channel_key] or tostring(channel_key or "")
 end
 
+function GCH.xterm_index_to_cecho(value)
+  local index = tonumber(value)
+  if not index or index ~= math.floor(index) or index < 0 or index > 255 then
+    return nil
+  end
+
+  local system_colors = {
+    "ansi_black", "ansi_red", "ansi_green", "ansi_yellow",
+    "ansi_blue", "ansi_magenta", "ansi_cyan", "ansi_white",
+    "ansi_light_black", "ansi_light_red", "ansi_light_green", "ansi_light_yellow",
+    "ansi_light_blue", "ansi_light_magenta", "ansi_light_cyan", "white",
+  }
+
+  if index < 16 then
+    return string.format("<%s>", system_colors[index + 1])
+  end
+
+  if index >= 232 then
+    local grey = index - 232
+    if grey < 8 then return "<ansi_black>" end
+    if grey < 16 then return "<ansi_light_black>" end
+    return "<white>"
+  end
+
+  do
+    local cube_index = index - 16
+    local blue = cube_index % 6
+    local green = math.floor(cube_index / 6) % 6
+    local red = math.floor(cube_index / 36)
+    local bright = math.max(red, green, blue) >= 3
+
+    if red > green and red > blue then return bright and "<ansi_light_red>" or "<ansi_red>" end
+    if green > red and green > blue then return bright and "<ansi_light_green>" or "<ansi_green>" end
+    if blue > red and blue > green then return bright and "<ansi_light_blue>" or "<ansi_blue>" end
+    if red == green and red > blue then return bright and "<ansi_light_yellow>" or "<ansi_yellow>" end
+    if red == blue and red > green then return bright and "<ansi_light_magenta>" or "<ansi_magenta>" end
+    if green == blue and green > red then return bright and "<ansi_light_cyan>" or "<ansi_cyan>" end
+    return bright and "<white>" or "<ansi_white>"
+  end
+end
+
 function GCH.expand_aard_codes_to_cecho(text)
-  return tostring(text or ""):gsub("@([A-Za-z])", function(code)
-    local rgb = GCH.aard_colors[code]
-    if not rgb then return "@" .. code end
-    return string.format("<%d,%d,%d>", rgb[1], rgb[2], rgb[3])
+  local escaped_at = "\1GCH_ESCAPED_AT\1"
+  local expanded = tostring(text or ""):gsub("@@", escaped_at)
+
+  expanded = expanded:gsub("@x(%d%d%d)", function(index)
+    return GCH.xterm_index_to_cecho(index) or ("@x" .. index)
   end)
+
+  expanded = expanded:gsub("@([A-Za-z])", function(code)
+    local color_name = GCH.aard_colors[code]
+    if not color_name then return "@" .. code end
+    return string.format("<%s>", color_name)
+  end)
+
+  return expanded:gsub(escaped_at, "@")
 end
 
 function GCH.has_color_markup(text)
@@ -709,9 +764,14 @@ end
 
 function GCH.message_markup_to_decho(text, fallback_color)
   local expanded = GCH.expand_aard_codes_to_cecho(text)
-  if fallback_color and fallback_color ~= "" and not GCH.has_color_markup(text) then
-    expanded = string.format("<%s>%s", tostring(fallback_color), expanded)
+  local prefix = "<reset>"
+  if fallback_color and fallback_color ~= "" then
+    local key = tostring(fallback_color):match("^@([A-Za-z])$")
+    local color_name = key and GCH.aard_colors[key]
+    prefix = color_name and string.format("<%s>", color_name)
+      or string.format("<%s>", tostring(fallback_color))
   end
+  expanded = prefix .. expanded
 
   if type(cecho2decho) == "function" then
     local ok, value = pcall(cecho2decho, expanded .. "<reset>")
@@ -762,13 +822,10 @@ function GCH.render_history_line(msg, ts, channel_key, rendered_decho)
 
   if rendered_decho and rendered_decho ~= "" then
     decho(prefix_decho .. rendered_decho .. "\n")
-  elseif channel_key == "gchan" and GCH.state.gchan_color and GCH.state.gchan_color ~= "" then
-    local forced = GCH.color_value_to_decho(GCH.state.gchan_color)
-    if forced then
-      decho(prefix_decho .. forced .. text .. "\n")
-    else
-      cecho(prefix_plain .. GCH.expand_aard_codes_to_cecho(text) .. "\n")
-    end
+  elseif channel_key == "gchan" then
+    local converted = GCH.message_markup_to_decho(text, GCH.state.gchan_color)
+    if converted then decho(prefix_decho .. converted .. "\n")
+    else echo(prefix_plain .. text .. "\n") end
   else
     echo(prefix_plain .. text .. "\n")
   end
@@ -1286,7 +1343,7 @@ function GCH.help()
   cecho("  <white>gcom gagtags on|off<grey>                  - hide/show only channel tags on tagged lines\n")
   cecho("  <white>gcom gchanecho on|off<grey>                - toggle outgoing gchan echo in main display\n")
   cecho("  <white>gcom sound on|off<grey>                    - toggle channel sounds for clan/group/say/spouse/tell\n")
-  cecho("  <white>gcom gchancolor <value><grey>              - set color used for outgoing gchan lines\n")
+  cecho("  <white>gcom gchancolor <value|default><grey>      - set or clear the outgoing gchan base color\n")
   cecho("  <white>gchan <text><grey>                        - send text to gchan and capture it in All/Gchan history\n")
 end
 
@@ -1453,12 +1510,12 @@ function GCH.command(arg)
   if gchan_color then
     gchan_color = tostring(gchan_color):match("^%s*(.-)%s*$")
     local normalized = GCH.normalize_color_value(gchan_color)
-    if normalized == nil or normalized == false then
-      return GCH.print_main("Usage: gcom gchancolor <value>")
+    if normalized == nil then
+      return GCH.print_main("Usage: gcom gchancolor <value|default>")
     end
     GCH.state.gchan_color = normalized
     GCH.save_settings()
-    return GCH.print_main("Gchan color set to " .. normalized)
+    return GCH.print_main(normalized == false and "Gchan base color cleared" or ("Gchan color set to " .. normalized))
   end
 
   GCH.help()

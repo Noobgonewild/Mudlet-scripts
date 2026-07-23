@@ -31,7 +31,7 @@
       <name>m_dulltracker_main</name>
       <packageName>m_dulltracker</packageName>
       <script><![CDATA[DULL = DULL or {}
-DULL.version = "1.2.1"
+DULL.version = "1.2.2"
 DULL.ids = DULL.ids or { triggers = {}, timers = {} }
 DULL.ids.triggers = DULL.ids.triggers or {}
 DULL.ids.handlers = DULL.ids.handlers or {}
@@ -111,6 +111,40 @@ DULL.defaults = {
   labelColor = "@D",
   blabelColor = "@C",
   debug = "n",
+}
+
+DULL.default_auto_reports = {
+  cp = "y",
+  quest = "y",
+  gq = "y",
+  dbl = "y",
+  lvl = "y",
+  pup = "y",
+  timed = "y",
+}
+
+DULL.report_activity_order = { "cp", "quest", "gq", "dbl", "lvl", "pup", "timed" }
+
+DULL.report_activity_labels = {
+  cp = "campaign",
+  quest = "quest",
+  gq = "gq",
+  dbl = "double",
+  lvl = "level",
+  pup = "pup",
+  timed = "timed",
+}
+
+DULL.report_activity_aliases = {
+  cp = "cp", campaign = "cp", campaigns = "cp",
+  q = "quest", quest = "quest", quests = "quest",
+  gq = "gq", gqs = "gq", globalquest = "gq", globalquests = "gq",
+  ["global-quest"] = "gq", ["global-quests"] = "gq",
+  dbl = "dbl", double = "dbl", doublexp = "dbl", ["double-xp"] = "dbl",
+  lvl = "lvl", level = "lvl", levels = "lvl",
+  pup = "pup", pups = "pup",
+  timed = "timed", timer = "timed",
+  all = "all",
 }
 
 DULL.default_gags = {
@@ -200,6 +234,11 @@ function DULL.merge_defaults()
   if DULL.settings.channel == "default" then DULL.settings.channel = "echo" end
   if DULL.settings.showinfo ~= nil then DULL.settings.showinfo = nil end
 
+  DULL.autoReports = type(DULL.autoReports) == "table" and DULL.autoReports or {}
+  for activity, default in pairs(DULL.default_auto_reports) do
+    DULL.autoReports[activity] = DULL.to_bool(DULL.autoReports[activity]) or default
+  end
+
   DULL.gags = type(DULL.gags) == "table" and DULL.gags or {}
   for mode, defaults in pairs(DULL.default_gags) do
     DULL.gags[mode] = type(DULL.gags[mode]) == "table" and DULL.gags[mode] or {}
@@ -235,6 +274,7 @@ function DULL.load_state()
 
   loaded = type(loaded) == "table" and loaded or {}
   DULL.settings = loaded.settings or {}
+  DULL.autoReports = loaded.autoReports or {}
   DULL.gags = loaded.gags or {}
   DULL.sessionData = loaded.sessionData or {}
   DULL.totalData = loaded.totalData or {}
@@ -253,6 +293,7 @@ function DULL.state_payload()
   end
   return {
     settings = DULL.settings,
+    autoReports = DULL.autoReports,
     gags = DULL.gags,
     sessionData = DULL.sessionData,
     totalData = DULL.totalData,
@@ -399,6 +440,17 @@ function DULL.valid_timer_name(timer)
   if timer == "double" then timer = "dbl" end
   if DULL.timers and DULL.timers[timer] then return timer end
   return nil
+end
+
+function DULL.normalize_report_activity(activity)
+  local key = DULL.trim(activity):lower()
+  return DULL.report_activity_aliases[key]
+end
+
+function DULL.should_auto_report(activity)
+  local key = DULL.normalize_report_activity(activity)
+  if not key or key == "all" then return false end
+  return DULL.settings.report == "y" and DULL.autoReports[key] ~= "n"
 end
 
 function DULL.parse_timer_history_command(cmd)
@@ -1024,7 +1076,7 @@ function DULL.report_timer(timer)
   DULL.lastReports = DULL.lastReports or {}
   DULL.lastReports[timer] = report
   DULL.insert_timer_history(row or {})
-  if DULL.settings.report == "y" then DULL.report(report) end
+  if DULL.should_auto_report(timer) then DULL.report(report) end
   if timer == "cp" then DULL.group_enabled.cp_capture = false end
   DULL.pending_timer_reports[timer] = false
 end
@@ -1038,7 +1090,7 @@ function DULL.double_start(info, m)
     if m[i] and m[i] ~= "" then mins = m[i] end
   end
   DULL.rates.xprDbl = { last = os.time(), total = 0, seconds = 0, rate = 0 }
-  if DULL.settings.report == "y" then
+  if DULL.should_auto_report("dbl") then
     DULL.fresh_line()
     DULL.report(DULL.disp_blbl("EXP: ") .. DULL.disp_val("DOUBLE EXP") .. DULL.disp_lbl(" for ") .. DULL.disp_val(mins) .. DULL.disp_lbl("m"))
   end
@@ -1569,6 +1621,51 @@ function DULL.set_setting(key, value)
   DULL.note(key .. " set to: " .. tostring(value))
 end
 
+function DULL.set_activity_report(activity, value)
+  local key = DULL.normalize_report_activity(activity)
+  if not key then
+    return DULL.warn("Unknown report activity. Use: campaign, quest, gq, double, level, pup, timed, or all.")
+  end
+
+  local enabled = DULL.to_bool(value)
+  if not enabled then return DULL.warn("Use y/n or on/off for activity reports.") end
+
+  if key == "all" then
+    for _, report_key in ipairs(DULL.report_activity_order) do
+      DULL.autoReports[report_key] = enabled
+    end
+    DULL.save_state_now()
+    return DULL.note("all activity reports set to: " .. DULL.bool_word(enabled))
+  end
+
+  DULL.autoReports[key] = enabled
+  DULL.save_state_now()
+  DULL.note(DULL.report_activity_labels[key] .. " reports set to: " .. DULL.bool_word(enabled))
+end
+
+function DULL.show_activity_report(activity)
+  local key = DULL.normalize_report_activity(activity)
+  if not key then
+    return DULL.warn("Unknown report activity. Use: campaign, quest, gq, double, level, pup, timed, or all.")
+  end
+  if key == "all" then return DULL.report_auto_report_settings() end
+  DULL.note(DULL.report_activity_labels[key] .. " reports are: " .. DULL.bool_word(DULL.autoReports[key]))
+end
+
+function DULL.report_auto_report_settings()
+  cecho("\n<white>DullTracker Automatic Reports<reset>\n")
+  cecho("<gray>----------------------------------------<reset>\n")
+  cecho(string.format("  <cyan>%-12s<reset> <light_grey>%s<reset>\n", "master", DULL.bool_word(DULL.settings.report)))
+  for _, key in ipairs(DULL.report_activity_order) do
+    cecho(string.format("  <cyan>%-12s<reset> <light_grey>%s<reset>\n",
+      DULL.report_activity_labels[key], DULL.bool_word(DULL.autoReports[key])))
+  end
+  if DULL.settings.report ~= "y" then
+    cecho("  <gray>Individual choices are saved but inactive while the master switch is off.<reset>\n")
+  end
+  cecho("<gray>----------------------------------------<reset>\n")
+end
+
 function DULL.set_mode(mode)
   if mode ~= "normal" and mode ~= "focused" then return DULL.warn("Mode must be normal or focused.") end
   DULL.settings.mode = mode
@@ -1915,7 +2012,10 @@ DULL.help_sections = {
     header = "Settings",
     rows = {
       { cmd = "dull channel <echo|gchan|gtell|...>", desc = "Set default report target. Default is echo." },
-      { cmd = "dull report y|n", desc = "Toggle automatic timer reports." },
+      { cmd = "dull report y|n", desc = "Master switch for all automatic activity reports." },
+      { cmd = "dull report <activity> on|off", desc = "Toggle campaign, quest, gq, double, level, pup, timed, or all reports." },
+      { cmd = "dull report <activity>", desc = "Show one activity's automatic-report setting." },
+      { cmd = "dull reports", desc = "Show the master switch and every activity report setting." },
       { cmd = "dull highlight y|n", desc = "Toggle highlight triggers." },
       { cmd = "dull mode normal|focused", desc = "Select the active gag profile." },
       { cmd = "dull session manual|auto", desc = "Manual keeps the current session until cleared; auto clears it daily at local midnight." },
@@ -2036,6 +2136,15 @@ function DULL.command(arg)
   if lower == "" or lower == "help" then return DULL.show_help("") end
   local help_topic = lower:match("^help%s+(.+)$")
   if help_topic then return DULL.show_help(help_topic) end
+
+  if lower == "reports" then return DULL.report_auto_report_settings() end
+  local report_activity, report_value = lower:match("^report%s+(%S+)%s+(%S+)$")
+  if report_activity then return DULL.set_activity_report(report_activity, report_value) end
+  report_activity = lower:match("^report%s+(%S+)$")
+  if report_activity then
+    if DULL.to_bool(report_activity) then return DULL.set_setting("report", report_activity) end
+    return DULL.show_activity_report(report_activity)
+  end
 
   local timer, hist_n = DULL.parse_timer_history_command(cmd)
   if timer and lower:match("^%S+%s+%-h") then

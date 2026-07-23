@@ -536,12 +536,12 @@ hspskillgain()</script>
  <script>-- ============================================================================
 -- Hadar_Spellup_Caster for Mudlet
 -- Ported from MUSHclient plugin by Hadar
--- Version: 1.16
+-- Version: 1.17
 -- Purpose: Spellup Script for Aardwolf MUD
 -- ============================================================================
 
 HSP = HSP or {}
-HSP.version = &quot;1.16&quot;
+HSP.version = &quot;1.17&quot;
 HSP.pluginName = &quot;Hadar_Spellup_Caster&quot;
 local function hsp_persistence_dir()
   local home = (type(getMudletHomeDir) == &quot;function&quot; and getMudletHomeDir() or &quot;.&quot;)
@@ -558,6 +558,7 @@ HSP.currentmana = -1
 HSP.slistCommandSent = false
 HSP.pluscount = 0
 HSP.pluscount2 = 0
+HSP.spellupAllPending = HSP.spellupAllPending or false
 HSP.dinvSubscriptionId = HSP.dinvSubscriptionId or nil
 Spellups = Spellups or {}
 
@@ -996,6 +997,7 @@ function injectVars()
   v[&quot;GL&quot;][&quot;seespells&quot;] = &quot;yes&quot;
   v[&quot;GL&quot;][&quot;failed&quot;] = 0
   v[&quot;GL&quot;][&quot;mudsidespellup&quot;] = 1
+  v[&quot;GL&quot;][&quot;spellupall&quot;] = &quot;no&quot;
   v[&quot;GL&quot;][&quot;died&quot;] = 0
   v[&quot;GL&quot;][&quot;SpellsDisabled&quot;] = &quot;no&quot;
   v[&quot;GL&quot;][&quot;DisabledReason&quot;] = &quot;not&quot;
@@ -1211,6 +1213,7 @@ function HSPmain()
 
   if first == &quot;testshow&quot; then testshow(rest)
   elseif first == &quot;debug&quot; then setdebug()
+  elseif first == &quot;toggle&quot; then hspToggle(rest)
   elseif first == &quot;disable&quot; then HSPDisable(rest)
   elseif first == &quot;noauto&quot; then noAutoList(rest)
   elseif first == &quot;reload&quot; then HSPreload()
@@ -1240,6 +1243,34 @@ function HSPmain()
   elseif first == &quot;eye&quot; then hspEyeStuff(rest)
   else HadarHelp(&quot;nadda&quot;)
   end
+end
+
+function HSP.useSpellupAll()
+  return Spellups[&quot;GL&quot;][&quot;spellupall&quot;] == &quot;yes&quot;
+end
+
+function hspToggle(str)
+  local option = tostring(str or &quot;&quot;):match(&quot;^%s*(%w+)&quot;)
+  option = option and string.lower(option) or &quot;&quot;
+
+  if option == &quot;spellup&quot; then
+    hspToggleSpellup()
+  else
+    hadarprint(&quot;Usage: @Ghsp toggle spellup@w&quot;, &quot;error&quot;)
+  end
+end
+
+function hspToggleSpellup()
+  if HSP.useSpellupAll() then
+    Spellups[&quot;GL&quot;][&quot;spellupall&quot;] = &quot;no&quot;
+    HSP.spellupAllPending = false
+    hadarprint(&quot;Expired spells will use the @Roriginal recast behavior@w&quot;, &quot;script&quot;)
+  else
+    Spellups[&quot;GL&quot;][&quot;spellupall&quot;] = &quot;yes&quot;
+    hadarprint(&quot;Expired spells will use @Gspellup all@w&quot;, &quot;script&quot;)
+  end
+
+  HSP.SaveState()
 end
 
 function HSU()
@@ -1472,6 +1503,7 @@ function affoff()
   local sn = tonumber(matches[2])
   local wraithcastable = false
   local wraithcounted = 0
+  local useSpellupAll = HSP.useSpellupAll()
 
   if Spellups[&quot;GL&quot;][&quot;disabled&quot;] == &quot;yes&quot; then
     Spellups[&quot;AF&quot;][&quot;list&quot;][sn] = nil
@@ -1480,6 +1512,7 @@ function affoff()
 
   if sn == 121 then
     Spellups[&quot;QS&quot;][sn] = Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;]
+    if useSpellupAll then HSP.spellupAllPending = true end
   end
 
   if sn == 180 then
@@ -1489,7 +1522,11 @@ function affoff()
       else
         local ctype = tonumber(Spellups[&quot;AS&quot;][&quot;list&quot;][v][&quot;type&quot;])
         Spellups[&quot;QS&quot;][v] = Spellups[&quot;AS&quot;][&quot;list&quot;][v][&quot;name&quot;]
-        cast_spells()
+        if useSpellupAll then
+          HSP.spellupAllPending = true
+        else
+          cast_spells()
+        end
       end
     end
   end
@@ -1508,6 +1545,13 @@ function affoff()
     if totalLevel &gt;= 121 then
       if sn == 71 then
         hadarprint(&quot;Sanc off and level &gt;= 121, and a priest! we are recasting party sanc!&quot;, &quot;debug&quot;)
+        if useSpellupAll then
+          Spellups[&quot;QS&quot;] = Spellups[&quot;QS&quot;] or {}
+          Spellups[&quot;QS&quot;][sn] = Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;]
+          HSP.spellupAllPending = true
+          cast_spells()
+          return
+        end
         local castline = &quot;cast &#x27;party sanctuary&#x27;&quot;
         if Spellups[&quot;GL&quot;][&quot;seespells&quot;] == &quot;yes&quot; then
           send(castline)
@@ -1534,6 +1578,7 @@ function affoff()
         if sn == 180 then
           Spellups[&quot;QS&quot;][sn] = Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;]
         end
+        if useSpellupAll then HSP.spellupAllPending = true end
         return
       end
     end
@@ -1542,6 +1587,7 @@ function affoff()
     end
     Spellups[&quot;QS&quot;][sn] = Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;]
     Spellups[&quot;NA&quot;][sn] = 1
+    if useSpellupAll then HSP.spellupAllPending = true end
     hadarprint(&quot;adding to queue (affoff): &quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;], &quot;debug&quot;)
   end
 
@@ -1641,6 +1687,27 @@ function cast_spells()
   end
   if Spellups[&quot;QS&quot;] == nil then
     hadarprint(&quot;QS == nil&quot;, &quot;debug&quot;)
+    return
+  end
+
+  if HSP.useSpellupAll() and HSP.spellupAllPending then
+    if next(Spellups[&quot;QS&quot;]) == nil then
+      HSP.spellupAllPending = false
+      return
+    end
+    if Spellups[&quot;GL&quot;][&quot;SpellsDisabled&quot;] == &quot;yes&quot; then
+      hadarprint(&quot;spellup all postponed while spells are disabled&quot;, &quot;debug&quot;)
+      return
+    end
+
+    hadarprint(&quot;an expired spell triggered spellup all&quot;, &quot;debug&quot;)
+    if Spellups[&quot;GL&quot;][&quot;seespells&quot;] == &quot;yes&quot; then
+      send(&quot;spellup all&quot;)
+    else
+      send(&quot;spellup all&quot;, false)
+    end
+    Spellups[&quot;QS&quot;] = {}
+    HSP.spellupAllPending = false
     return
   end
 
@@ -3037,6 +3104,7 @@ function HadarHelp(str)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                            EG. hsp report comm SpellTracker             &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                            EG. hsp report main off                      &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp seespells            &lt;light_steel_blue&gt;- &lt;orange&gt;Toggle seeing recasts                        &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp toggle spellup       &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Toggle original/spellup all recast behavior  &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp elementalfocus &lt;ele&gt; &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Change the element for elemental focus       &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp elementalward &lt;ele&gt;  &lt;light_steel_blue&gt;- &lt;orange&gt;Change the element for elemental ward        &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp gaiasfocus &lt;element&gt; &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Change the element for Gaias focus           &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)

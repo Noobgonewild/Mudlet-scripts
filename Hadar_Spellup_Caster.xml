@@ -749,6 +749,16 @@ function contains(tableToSearch, value)
   return false
 end
 
+function HSP.isNoAuto(sn)
+  local noAuto = Spellups[&quot;EX&quot;] and Spellups[&quot;EX&quot;][&quot;noAuto&quot;]
+  return contains(noAuto, tonumber(sn))
+end
+
+function HSP.hasNoAuto()
+  local noAuto = Spellups[&quot;EX&quot;] and Spellups[&quot;EX&quot;][&quot;noAuto&quot;]
+  return noAuto ~= nil and next(noAuto) ~= nil
+end
+
 function remove(tableToSearch, value)
   for i,v in ipairs(tableToSearch) do
     if (v == value) then
@@ -1012,6 +1022,7 @@ function injectVars()
   v[&quot;EX&quot;][&quot;tentimer&quot;] = {}
   v[&quot;EX&quot;][&quot;wraithform&quot;] = {}
   v[&quot;EX&quot;][&quot;cooldown&quot;] = {}
+  v[&quot;EX&quot;][&quot;noAuto&quot;] = {}
   v[&quot;EX&quot;][&quot;percentage&quot;] = 0
   v[&quot;EX&quot;][&quot;percentageStop&quot;] = 0
 
@@ -1264,7 +1275,7 @@ function hspToggleSpellup()
   if HSP.useSpellupAll() then
     Spellups[&quot;GL&quot;][&quot;spellupall&quot;] = &quot;no&quot;
     HSP.spellupAllPending = false
-    hadarprint(&quot;Expired spells will use the @Roriginal recast behavior@w&quot;, &quot;script&quot;)
+    hadarprint(&quot;Expired spells will use @Rindividual cast &lt;spell ID&gt; commands@w&quot;, &quot;script&quot;)
   else
     Spellups[&quot;GL&quot;][&quot;spellupall&quot;] = &quot;yes&quot;
     hadarprint(&quot;Expired spells will use @Gspellup all@w&quot;, &quot;script&quot;)
@@ -1505,8 +1516,16 @@ function affoff()
   local wraithcounted = 0
   local useSpellupAll = HSP.useSpellupAll()
 
+  Spellups[&quot;AF&quot;][&quot;list&quot;][sn] = nil
+
   if Spellups[&quot;GL&quot;][&quot;disabled&quot;] == &quot;yes&quot; then
-    Spellups[&quot;AF&quot;][&quot;list&quot;][sn] = nil
+    return
+  end
+
+  if HSP.isNoAuto(sn) then
+    Spellups[&quot;QS&quot;] = Spellups[&quot;QS&quot;] or {}
+    Spellups[&quot;QS&quot;][sn] = nil
+    hadarprint(Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot; is noauto, not queuing&quot;, &quot;debug&quot;)
     return
   end
 
@@ -1552,11 +1571,13 @@ function affoff()
           cast_spells()
           return
         end
-        local castline = &quot;cast &#x27;party sanctuary&#x27;&quot;
-        if Spellups[&quot;GL&quot;][&quot;seespells&quot;] == &quot;yes&quot; then
-          send(castline)
+        local partySanctuary = Spellups[&quot;AS&quot;][&quot;namelist&quot;][&quot;party_sanctuary&quot;]
+        local partySn = partySanctuary and tonumber(partySanctuary[&quot;skillnum&quot;])
+        if partySn and Spellups[&quot;AS&quot;][&quot;list&quot;][partySn] then
+          cast_this(partySn, tonumber(Spellups[&quot;AS&quot;][&quot;list&quot;][partySn][&quot;type&quot;]))
         else
-          send(castline, false)
+          hadarprint(&quot;Party sanctuary spell ID unavailable; casting sanctuary by ID instead&quot;, &quot;debug&quot;)
+          cast_this(sn, tonumber(Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;type&quot;]))
         end
         return
       end
@@ -1617,6 +1638,13 @@ function sfail()
 
   if Spellups[&quot;GL&quot;][&quot;disabled&quot;] == &quot;yes&quot; then return end
 
+  if HSP.isNoAuto(sn) then
+    Spellups[&quot;QS&quot;] = Spellups[&quot;QS&quot;] or {}
+    Spellups[&quot;QS&quot;][sn] = nil
+    hadarprint(&quot;Failed spell is noauto, not retrying: &quot; .. sn, &quot;debug&quot;)
+    return
+  end
+
   if table.find(sn, Spellups[&quot;AS&quot;][&quot;spellup&quot;]) == nil then
     hadarprint(&quot;That is not a spellup spell/skill, not registering&quot;, &quot;debug&quot;)
     return
@@ -1647,12 +1675,7 @@ function sfail()
   if fl == 1 or fl == 6 then
     hadarprint(&quot;FL 1 or 6!&quot;, &quot;debug&quot;)
     if sn == 414 then
-      local castline = &quot;cast &#x27;&quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot;&#x27;&quot;
-      if Spellups[&quot;GL&quot;][&quot;seespells&quot;] == &quot;yes&quot; then
-        send(castline)
-      else
-        send(castline, false)
-      end
+      cast_this(sn, tonumber(Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;type&quot;]))
       return
     end
     if sn == 121 then
@@ -1690,7 +1713,15 @@ function cast_spells()
     return
   end
 
-  if HSP.useSpellupAll() and HSP.spellupAllPending then
+
+  for sn in pairs(Spellups[&quot;QS&quot;]) do
+    if HSP.isNoAuto(sn) then
+      hadarprint(Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot; is noauto, removing&quot;, &quot;debug&quot;)
+      Spellups[&quot;QS&quot;][sn] = nil
+    end
+  end
+
+  if HSP.useSpellupAll() and HSP.spellupAllPending and not HSP.hasNoAuto() then
     if next(Spellups[&quot;QS&quot;]) == nil then
       HSP.spellupAllPending = false
       return
@@ -1711,11 +1742,17 @@ function cast_spells()
     return
   end
 
+
+  if HSP.spellupAllPending and HSP.hasNoAuto() then
+    hadarprint(&quot;noauto list is active; using per-spell casts instead of spellup all&quot;, &quot;debug&quot;)
+    HSP.spellupAllPending = false
+  end
+
   for i, v in pairs(Spellups[&quot;QS&quot;]) do
     local ctype = tonumber(Spellups[&quot;AS&quot;][&quot;list&quot;][i][&quot;type&quot;])
 
     if HSP.currentState ~= 8 then
-      if tonumber(Spellups[&quot;GL&quot;][&quot;mudsidespellup&quot;]) == 1 then
+      if HSP.useSpellupAll() and tonumber(Spellups[&quot;GL&quot;][&quot;mudsidespellup&quot;]) == 1 and not HSP.hasNoAuto() then
         if table.count(Spellups[&quot;QS&quot;]) &gt;= tonumber(Spellups[&quot;CG&quot;][&quot;spellstorecast&quot;]) then
           hadarprint(&quot;doing a mudside spellup&quot;, &quot;debug&quot;)
           if table.find(Spellups[&quot;EX&quot;][&quot;clanskill&quot;], Spellups[&quot;QS&quot;]) ~= nil then
@@ -1749,6 +1786,13 @@ end
 -- cast_this (adapted)
 -- ============================================================================
 function cast_this(sn, ctype)
+  if HSP.isNoAuto(sn) then
+    Spellups[&quot;QS&quot;] = Spellups[&quot;QS&quot;] or {}
+    Spellups[&quot;QS&quot;][sn] = nil
+    hadarprint(&quot;Blocked noauto cast: &quot; .. tostring(sn), &quot;debug&quot;)
+    return
+  end
+
   if Spellups[&quot;GL&quot;][&quot;SpellsDisabled&quot;] == &quot;yes&quot; then
     if ctype == 1 then return end
   end
@@ -1757,13 +1801,13 @@ function cast_this(sn, ctype)
   local castline = nil
 
   if sn == 526 then
-    castline = &quot;cast &#x27;&quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot;&#x27; &quot; .. Spellups[&quot;CG&quot;][&quot;elementfocus&quot;]
+    castline = &quot;cast &quot; .. sn .. &quot; &quot; .. Spellups[&quot;CG&quot;][&quot;elementfocus&quot;]
   elseif sn == 530 then
-    castline = &quot;cast &#x27;&quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot;&#x27; &quot; .. Spellups[&quot;CG&quot;][&quot;elementward&quot;]
+    castline = &quot;cast &quot; .. sn .. &quot; &quot; .. Spellups[&quot;CG&quot;][&quot;elementward&quot;]
   elseif sn == 477 then
-    castline = &quot;cast &#x27;&quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot;&#x27; &quot; .. Spellups[&quot;OE&quot;][&quot;Prophecy&quot;]
+    castline = &quot;cast &quot; .. sn .. &quot; &quot; .. Spellups[&quot;OE&quot;][&quot;Prophecy&quot;]
   elseif ctype == 1 then
-    castline = &quot;cast &#x27;&quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot;&#x27;&quot;
+    castline = &quot;cast &quot; .. sn
   elseif sn == 226 and ctype == 2 then
     castline = &quot;trace&quot;
   elseif ctype == 2 then
@@ -1924,15 +1968,19 @@ function aurasetbag(arg)
 end
 
 function noAutoList(sn)
-  sn = tonumber(sn) or string.lower(sn or &quot;&quot;)
+  local input = tostring(sn or &quot;&quot;):match(&quot;^%s*(.-)%s*$&quot;)
+  sn = tonumber(input) or string.lower(input):gsub(&quot;%s+&quot;, &quot;_&quot;)
   if type(sn) == &quot;number&quot; then
     if table.find(sn, Spellups[&quot;AS&quot;][&quot;list&quot;]) ~= nil then
       if contains(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], sn) then
         hadarprint(&quot;Removing &quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot; from the NOAUTO list&quot;, &quot;script&quot;)
         remove(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], sn)
+        HSP.SaveState()
       else
         hadarprint(&quot;Adding &quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot; to the NOAUTO list&quot;, &quot;script&quot;)
         table.insert(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], sn)
+        Spellups[&quot;QS&quot;][sn] = nil
+        HSP.SaveState()
       end
     else
       hadarprint(&quot;Please input a valid SN&quot;, &quot;error&quot;)
@@ -1942,13 +1990,17 @@ function noAutoList(sn)
     if contains(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], sname) then
       hadarprint(&quot;Removing &quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sname][&quot;name&quot;] .. &quot; from the NOAUTO list&quot;, &quot;script&quot;)
       remove(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], sname)
+      HSP.SaveState()
     else
       hadarprint(&quot;Adding &quot; .. Spellups[&quot;AS&quot;][&quot;list&quot;][sname][&quot;name&quot;] .. &quot; to the NOAUTO list&quot;, &quot;script&quot;)
       table.insert(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], sname)
+      Spellups[&quot;QS&quot;][sname] = nil
+      HSP.SaveState()
     end
   elseif sn == &quot;clear&quot; then
     Spellups[&quot;EX&quot;][&quot;noAuto&quot;] = {}
     hadarprint(&quot;Your list of no cast spells has been cleared.&quot;, &quot;script&quot;)
+    HSP.SaveState()
   else
     hadarprint(&quot;@W+@x086--------------@G[@CN@co @CA@cuto @CC@cast @CS@cpells@G]@x086-------------@W+@w&quot;)
     hadarprint(&quot;@W|      @CS@cpell @CN@cumber      @W|      @CS@cpell @Cn@came       @W|@w&quot;)
@@ -3104,7 +3156,7 @@ function HadarHelp(str)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                            EG. hsp report comm SpellTracker             &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                            EG. hsp report main off                      &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp seespells            &lt;light_steel_blue&gt;- &lt;orange&gt;Toggle seeing recasts                        &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
-    hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp toggle spellup       &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Toggle original/spellup all recast behavior  &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp toggle spellup       &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Toggle cast-by-ID/spellup all behavior       &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp elementalfocus &lt;ele&gt; &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Change the element for elemental focus       &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp elementalward &lt;ele&gt;  &lt;light_steel_blue&gt;- &lt;orange&gt;Change the element for elemental ward        &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp gaiasfocus &lt;element&gt; &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Change the element for Gaias focus           &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)

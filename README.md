@@ -41,5 +41,13 @@ Event reminder addon. It supports reminders on level, remort, tier, qp, tp, trai
 
 <img width="310" height="55" alt="2026-04-16 22_45_36-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/02a2de6f-652d-4457-b8ca-cc2b4baec017" />
 
+
+group monitor:
+
+<img width="382" height="462" alt="2026-07-26 19_23_30-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/853e7a79-00f7-4a57-ac07-4da5c432799b" />
+<img width="383" height="461" alt="2026-07-26 19_23_18-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/5fa27f9d-d507-47d6-9516-0d7f0c3072d0" />
+<img width="383" height="461" alt="2026-07-26 19_22_59-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/760b9ace-7b5a-4208-ae9c-bb3593781b87" />
+<img width="385" height="461" alt="2026-07-26 19_22_44-Aardwolf - Mudlet 4 20 1" src="https://github.com/user-attachments/assets/353cbd37-fe21-4d32-9821-9ffc32b8fccc" />
+
 As always, some of these might have bugs. Use at own risk!
 

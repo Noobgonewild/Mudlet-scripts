@@ -1,0 +1,1854 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>g_group_monitor</name>
+      <script></script>
+      <conditionLineDelta>0</conditionLineDelta>
+      <mStayOpen>0</mStayOpen>
+      <mCommand></mCommand>
+      <packageName>g_group_monitor</packageName>
+      <mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile>
+      <colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
+      <regexCodeList><string></string></regexCodeList>
+      <regexCodePropertyList><integer>0</integer></regexCodePropertyList>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>g_group_monitor_invite_named</name>
+        <script><![CDATA[if GGM and GGM.capture_named_invite then GGM.capture_named_invite(matches[2], matches[3]) end]]></script>
+        <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName>
+        <mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList><string>^([A-Za-z][A-Za-z0-9']*) has invited you to join group: (.*)\.$</string></regexCodeList>
+        <regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>g_group_monitor_invite_prompt</name>
+        <script><![CDATA[if GGM and GGM.capture_invite_prompt then GGM.capture_invite_prompt(matches[2], matches[3]) end]]></script>
+        <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName>
+        <mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList><string>^Type '([^']+)' or 'group decline ([^']+)' to accept or decline\.$</string></regexCodeList>
+        <regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>g_group_monitor_invite_cancelled</name>
+        <script><![CDATA[if GGM and GGM.cancel_invite then GGM.cancel_invite(matches[2]) end]]></script>
+        <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName>
+        <mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^([A-Za-z][A-Za-z0-9']*) has cancelled your invitation to join group: .+\.$</string>
+          <string>^You have declined the group invitation from ([A-Za-z][A-Za-z0-9']*)\.$</string>
+          <string>^You have no invitation outstanding from ([A-Za-z][A-Za-z0-9']*)\.$</string>
+          <string>^Your group invite from ([A-Za-z][A-Za-z0-9']*) is cancelled because the group has been disbanded\.$</string>
+          <string>^Your group invitation from ([A-Za-z][A-Za-z0-9']*) is cancelled because .+\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList><integer>1</integer><integer>1</integer><integer>1</integer><integer>1</integer><integer>1</integer></regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>g_group_monitor_joined</name>
+        <script><![CDATA[if GGM and GGM.on_joined_group then GGM.on_joined_group(matches[2]) end]]></script>
+        <conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName></packageName>
+        <mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList><string>^You have joined the group: (.*?)$</string></regexCodeList>
+        <regexCodePropertyList><integer>1</integer></regexCodePropertyList>
+      </Trigger>
+    </TriggerGroup>
+  </TriggerPackage>
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>g_group_monitor</name>
+      <script><![CDATA[]]></script><command></command><packageName>g_group_monitor</packageName><regex></regex>
+
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_command</name><script><![CDATA[if GGM and GGM.command then GGM.command(matches[2] or "") end]]></script><command></command><packageName></packageName><regex>^gmon(?:\s+(.*))?$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_yes_shortcut</name><script><![CDATA[if GGM and GGM.invite_shortcut then GGM.invite_shortcut(matches[1], tonumber(matches[2]), false) end]]></script><command></command><packageName></packageName><regex>^(?i:yes)([1-5])$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_no_shortcut</name><script><![CDATA[if GGM and GGM.invite_shortcut then GGM.invite_shortcut(matches[1], tonumber(matches[2]), true) end]]></script><command></command><packageName></packageName><regex>^(?i:no)([1-5])$</regex></Alias>
+
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_on</name><script><![CDATA[if GGM then GGM.command("show") end]]></script><command></command><packageName></packageName><regex>^groupon$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_off</name><script><![CDATA[if GGM then GGM.command("hide") end]]></script><command></command><packageName></packageName><regex>^groupoff$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_mode</name><script><![CDATA[if GGM then GGM.command(GGM.state.mode == "epic" and "mode detailed" or "mode epic") end]]></script><command></command><packageName></packageName><regex>^groupmode$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_compact</name><script><![CDATA[if GGM then GGM.command(GGM.state.mode == "compact" and "mode detailed" or "mode compact") end]]></script><command></command><packageName></packageName><regex>^groupcompact$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_room</name><script><![CDATA[if GGM then GGM.command("room toggle") end]]></script><command></command><packageName></packageName><regex>^grouproom$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_setroom</name><script><![CDATA[if GGM then GGM.command("room snapshot") end]]></script><command></command><packageName></packageName><regex>^groupsetroom$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_setall</name><script><![CDATA[if GGM then GGM.command("member show all") end]]></script><command></command><packageName></packageName><regex>^groupsetall$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_setnone</name><script><![CDATA[if GGM then GGM.command("member hide all") end]]></script><command></command><packageName></packageName><regex>^groupsetnone$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_showp</name><script><![CDATA[if GGM then GGM.command("member show " .. (matches[2] or "")) end]]></script><command></command><packageName></packageName><regex>^showp\s+(.+)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_hidep</name><script><![CDATA[if GGM then GGM.command("member hide " .. (matches[2] or "")) end]]></script><command></command><packageName></packageName><regex>^hidep\s+(.+)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_order_list</name><script><![CDATA[if GGM then GGM.command("order list") end]]></script><command></command><packageName></packageName><regex>^grp order$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_order_set</name><script><![CDATA[if GGM then GGM.command("order set " .. (matches[2] or "") .. " " .. (matches[3] or "")) end]]></script><command></command><packageName></packageName><regex>^grp order\s+(\d+)\s+(.+)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_order_top</name><script><![CDATA[if GGM then GGM.command("order top " .. (matches[2] or "")) end]]></script><command></command><packageName></packageName><regex>^grp top\s+(.+)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>g_group_monitor_legacy_order_bottom</name><script><![CDATA[if GGM then GGM.command("order bottom " .. (matches[2] or "")) end]]></script><command></command><packageName></packageName><regex>^grp bottom\s+(.+)$</regex></Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>g_group_monitor</name>
+      <script></script>
+      <packageName>g_group_monitor</packageName>
+      <Script isActive="yes" isFolder="no">
+        <name>g_group_monitor_main</name>
+        <packageName>g_group_monitor</packageName>
+        <script><![CDATA[
+if type(GGM) == "table" and type(GGM.shutdown) == "function" then
+  pcall(GGM.shutdown, true, true)
+end
+
+GGM = {
+  version = "1.3.0",
+  schema = 1,
+  ui = {},
+  handlers = {},
+  timers = {},
+  invites = {},
+  invite_serial = 0,
+  group = nil,
+  self_name = nil,
+  connected = true,
+  last_update = 0,
+  actual_mode = "detailed",
+  drag = { active = false },
+  visible_layout = {},
+  last_hp_band = {},
+  last_alert_at = {},
+}
+
+GGM.defaults = {
+  schema = 1,
+  x = "70%",
+  y = "2%",
+  width = "29%",
+  height = "62%",
+  visible = true,
+  font_size = 9,
+  mode = "auto",
+  show_self = true,
+  show_hp = true,
+  show_mana = true,
+  show_moves = true,
+  show_quest = true,
+  show_tnl = true,
+  room_filter = "all",
+  snapshot_names = {},
+  hidden_members = {},
+  manual_order = {},
+  sort_mode = "server",
+  quest_last = false,
+  room_first = false,
+  gauge_style = "gradient",
+  number_style = "both",
+  overlay_numbers = true,
+  legacy_shortcuts = true,
+  debug_enabled = false,
+  invite_ttl = 900,
+  colors = {
+    background = "#101216",
+    panel = "#181b21",
+    panel_remote = "#121419",
+    border = "#4a4f59",
+    text = "#e6e6e6",
+    muted = "#8b9099",
+    health = "#28b463",
+    health_dark = "#145a32",
+    mana = "#3498db",
+    mana_dark = "#174a6e",
+    moves = "#20c7c9",
+    moves_dark = "#145c5d",
+    evil = "#ff5c5c",
+    good = "#64d8ff",
+    neutral = "#e6e6e6",
+    invite = "#24466d",
+  },
+  thresholds = {
+    { enabled = true, percent = 40, color = "#f0a500" },
+    { enabled = true, percent = 20, color = "#e53935" },
+  },
+  alert_enabled = false,
+  alert_cooldown = 15,
+  alert_sound = "",
+}
+
+local function trim(s)
+  return tostring(s or ""):match("^%s*(.-)%s*$")
+end
+
+local unpack_fn = table.unpack or unpack
+
+local function lower(s)
+  return trim(s):lower()
+end
+
+local function clamp(n, lo, hi)
+  n = tonumber(n) or lo
+  if n < lo then return lo end
+  if n > hi then return hi end
+  return n
+end
+
+local function bool_value(value, current)
+  value = lower(value)
+  if value == "on" or value == "yes" or value == "true" or value == "1" then return true end
+  if value == "off" or value == "no" or value == "false" or value == "0" then return false end
+  if value == "toggle" or value == "" then return not current end
+  return nil
+end
+
+local function deep_copy(value)
+  if type(value) ~= "table" then return value end
+  local out = {}
+  for k, v in pairs(value) do out[deep_copy(k)] = deep_copy(v) end
+  return out
+end
+
+local function merge_defaults(target, defaults)
+  if type(target) ~= "table" then target = {} end
+  for k, v in pairs(defaults) do
+    if target[k] == nil then
+      target[k] = deep_copy(v)
+    elseif type(v) == "table" then
+      if type(target[k]) == "table" then target[k] = merge_defaults(target[k], v)
+      else target[k] = deep_copy(v) end
+    end
+  end
+  return target
+end
+
+local function valid_hex(value)
+  value = trim(value)
+  if value:match("^#%x%x%x%x%x%x$") then return value:lower() end
+  if value:match("^%x%x%x%x%x%x$") then return "#" .. value:lower() end
+  return nil
+end
+
+local friendly_colors = {
+  black="#000000", white="#ffffff", gray="#808080", grey="#808080",
+  lightgray="#d3d3d3", lightgrey="#d3d3d3", darkgray="#404040", darkgrey="#404040",
+  red="#e53935", darkred="#800000", lightred="#ff6666", firebrick="#b22222",
+  tomato="#ff6347", coral="#ff7f50", brown="#a52a2a", tan="#d2b48c",
+  green="#28b463", darkgreen="#145a32", lightgreen="#66ff66", forestgreen="#228b22",
+  lime="#7fff00", limegreen="#32cd32", seagreen="#2e8b57", springgreen="#00ff7f",
+  blue="#3498db", darkblue="#174a6e", lightblue="#64b5f6", navy="#000080",
+  steelblue="#4682b4", skyblue="#87ceeb", royalblue="#4169e1",
+  cyan="#20c7c9", darkcyan="#008080", lightcyan="#66ffff", teal="#008080", turquoise="#40e0d0",
+  yellow="#f1c40f", lightyellow="#ffffe0", orange="#f39c12", darkorange="#ff8c00", gold="#ffd700",
+  purple="#9b59b6", mediumpurple="#9370db", magenta="#e056fd", violet="#ee82ee",
+  pink="#ff69b4", deeppink="#ff1493",
+}
+
+local aard_colors = {
+  ["@r"]="#800000", ["@R"]="#ff5555", ["@g"]="#008000", ["@G"]="#55ff55",
+  ["@b"]="#000080", ["@B"]="#5555ff", ["@c"]="#008080", ["@C"]="#55ffff",
+  ["@m"]="#800080", ["@M"]="#ff55ff", ["@y"]="#808000", ["@Y"]="#ffff55",
+  ["@w"]="#c0c0c0", ["@W"]="#ffffff", ["@D"]="#808080",
+}
+
+local function resolve_color(value)
+  value = trim(value)
+  local direct = valid_hex(value)
+  if direct then return direct end
+  if aard_colors[value] then return aard_colors[value] end
+  local key = lower(value):gsub("[%s_%-]", "")
+  if friendly_colors[key] then return friendly_colors[key] end
+  if Geyser and Geyser.Color and type(Geyser.Color.parse) == "function" then
+    local ok, red, green, blue = pcall(Geyser.Color.parse, value)
+    if ok and tonumber(red) and tonumber(green) and tonumber(blue) then
+      return string.format("#%02x%02x%02x", math.floor(clamp(red, 0, 255)), math.floor(clamp(green, 0, 255)), math.floor(clamp(blue, 0, 255)))
+    end
+  end
+  return nil
+end
+
+local color_list_groups = {
+  { "Reds and warm colors", { "red", "dark_red", "light_red", "firebrick", "tomato", "coral", "orange", "dark_orange", "gold", "yellow", "light_yellow" } },
+  { "Greens", { "green", "dark_green", "light_green", "forest_green", "lime", "lime_green", "sea_green", "spring_green" } },
+  { "Blues and cyans", { "blue", "dark_blue", "light_blue", "navy", "steel_blue", "sky_blue", "royal_blue", "cyan", "dark_cyan", "light_cyan", "teal", "turquoise" } },
+  { "Purples and pinks", { "purple", "medium_purple", "magenta", "violet", "pink", "deep_pink" } },
+  { "Neutrals", { "white", "light_gray", "gray", "dark_gray", "black", "brown", "tan" } },
+}
+
+local function html_escape(value)
+  local text = tostring(value or "")
+  text = text:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+  text = text:gsub('"', "&quot;"):gsub("'", "&#39;")
+  return text
+end
+
+local function strip_aard_colors(value)
+  local text = tostring(value or "")
+  text = text:gsub("\27%[[0-9;]*[mK]", "")
+  text = text:gsub("@x%d%d%d", ""):gsub("@z%d%d%d", "")
+  text = text:gsub("@@", "\1")
+  text = text:gsub("@[A-Za-z]", "")
+  text = text:gsub("\1", "@")
+  return text
+end
+
+local function number(value, fallback)
+  local n = tonumber(value)
+  if n == nil then return fallback or 0 end
+  return n
+end
+
+local function format_number(value)
+  local n = number(value, 0)
+  local absn = math.abs(n)
+  if absn < 100000 then return string.format("%.0f", n) end
+  local amount, unit
+  if absn < 1000000 then amount, unit = n / 1000, "k"
+  elseif absn < 1000000000 then amount, unit = n / 1000000, "m"
+  elseif absn < 1000000000000 then amount, unit = n / 1000000000, "b"
+  else amount, unit = n / 1000000000000, "t" end
+  if math.abs(amount) < 10 then return string.format("%.1f%s", amount, unit) end
+  return string.format("%.0f%s", amount, unit)
+end
+
+local function truncate(text, maximum)
+  text = tostring(text or "")
+  maximum = math.max(1, math.floor(tonumber(maximum) or #text))
+  if #text <= maximum then return text end
+  if maximum <= 2 then return text:sub(1, maximum) end
+  return text:sub(1, maximum - 1) .. "…"
+end
+
+local function persistence_dir()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+GGM.state_file = persistence_dir() .. "/g_group_monitor_state.lua"
+GGM.state_json_file = persistence_dir() .. "/g_group_monitor_state.json"
+
+function GGM.print(message, color)
+  local text = tostring(message or "")
+  if type(cecho) == "function" then
+    cecho(string.format("<%s>[GGM] <reset>%s\n", color or "cyan", text))
+  elseif type(echo) == "function" then
+    echo("[GGM] " .. text .. "\n")
+  end
+end
+
+function GGM.print_color_list()
+  GGM.print("Available color names (each name is shown in that color):")
+  if type(decho) ~= "function" then
+    for _, group in ipairs(color_list_groups) do GGM.print("  " .. table.concat(group[2], ", ")) end
+    GGM.print("Aardwolf @ colors and #RRGGBB values are also accepted. See: gmon help colors")
+    return
+  end
+
+  for _, group in ipairs(color_list_groups) do
+    for index, name in ipairs(group[2]) do
+      local color = resolve_color(name) or "#ffffff"
+      local red = tonumber(color:sub(2, 3), 16) or 255
+      local green = tonumber(color:sub(4, 5), 16) or 255
+      local blue = tonumber(color:sub(6, 7), 16) or 255
+      local prefix = name == "black" and "<0,0,0:210,210,210>" or string.format("<%d,%d,%d:0,0,0>", red, green, blue)
+      decho(prefix .. string.format("%-16s", name))
+      if index % 4 == 0 or index == #group[2] then echo("\n") else echo("  ") end
+    end
+  end
+  GGM.print("Use one with: gmon color hp dark_green")
+  GGM.print("Aardwolf @ colors and #RRGGBB values are also accepted. See: gmon help colors")
+end
+
+function GGM.debug(message)
+  if GGM.state and GGM.state.debug_enabled then GGM.print("DEBUG: " .. tostring(message), "yellow") end
+end
+
+function GGM.load_state()
+  GGM.state = {}
+  local loaded = false
+  if type(table.load) == "function" then
+    local loaded_into = {}
+    local ok, loaded_a, loaded_b = pcall(table.load, GGM.state_file, loaded_into)
+    if ok then
+      if next(loaded_into) ~= nil then GGM.state, loaded = loaded_into, true
+      elseif type(loaded_a) == "table" then GGM.state, loaded = loaded_a, true
+      elseif loaded_a == true and type(loaded_b) == "table" then GGM.state, loaded = loaded_b, true end
+    end
+  end
+  if not loaded and type(yajl) == "table" and type(yajl.to_value) == "function" then
+    local file = io.open(GGM.state_json_file, "r")
+    if file then
+      local raw = file:read("*a")
+      file:close()
+      local ok, loaded = pcall(yajl.to_value, raw)
+      if ok and type(loaded) == "table" then GGM.state = loaded end
+    end
+  end
+  GGM.state = merge_defaults(GGM.state, GGM.defaults)
+  for _, key in ipairs({
+    "visible", "show_self", "show_hp", "show_mana", "show_moves", "show_quest", "show_tnl",
+    "quest_last", "room_first", "overlay_numbers", "legacy_shortcuts", "debug_enabled", "alert_enabled",
+  }) do
+    if type(GGM.state[key]) ~= "boolean" then GGM.state[key] = GGM.defaults[key] end
+  end
+  if not ({ auto=true, detailed=true, compact=true, epic=true })[GGM.state.mode] then GGM.state.mode = "auto" end
+  if not ({ server=true, manual=true, hppct=true, missing=true, name=true, level=true })[GGM.state.sort_mode] then GGM.state.sort_mode = "server" end
+  if not ({ all=true, same=true, snapshot=true })[GGM.state.room_filter] then GGM.state.room_filter = "all" end
+  if not ({ none=true, flat=true, gradient=true })[GGM.state.gauge_style] then GGM.state.gauge_style = "gradient" end
+  if not ({ current=true, currentmax=true, percent=true, both=true })[GGM.state.number_style] then GGM.state.number_style = "both" end
+  GGM.state.font_size = clamp(GGM.state.font_size, 7, 24)
+  GGM.state.invite_ttl = clamp(GGM.state.invite_ttl, 30, 3600)
+  GGM.state.alert_cooldown = clamp(GGM.state.alert_cooldown, 1, 300)
+  for key, default_color in pairs(GGM.defaults.colors) do
+    GGM.state.colors[key] = valid_hex(GGM.state.colors[key]) or default_color
+  end
+  for _, threshold in ipairs(GGM.state.thresholds) do
+    threshold.percent = clamp(threshold.percent, 1, 100)
+    threshold.color = valid_hex(threshold.color) or "#e53935"
+  end
+end
+
+function GGM.capture_geometry()
+  local c = GGM.ui and GGM.ui.container
+  if not c then return end
+  if type(c.get_x) == "function" then local ok, v = pcall(c.get_x, c); if ok and v ~= nil then GGM.state.x = v end end
+  if type(c.get_y) == "function" then local ok, v = pcall(c.get_y, c); if ok and v ~= nil then GGM.state.y = v end end
+  if type(c.get_width) == "function" then local ok, v = pcall(c.get_width, c); if ok and v ~= nil then GGM.state.width = v end end
+  if type(c.get_height) == "function" then local ok, v = pcall(c.get_height, c); if ok and v ~= nil then GGM.state.height = v end end
+end
+
+function GGM.save_state()
+  if not GGM.state then return false end
+  GGM.capture_geometry()
+  if type(table.save) == "function" then
+    local ok, result = pcall(table.save, GGM.state_file, GGM.state)
+    if ok and result ~= false then GGM.state_dirty = false; GGM.last_save_ok = true; return true end
+  end
+  if type(yajl) == "table" and type(yajl.to_string) == "function" then
+    local ok, payload = pcall(yajl.to_string, GGM.state)
+    if ok and payload then
+      local file = io.open(GGM.state_json_file, "w")
+      if file then file:write(payload); file:close(); GGM.state_dirty = false; GGM.last_save_ok = true; return true end
+    end
+  end
+  GGM.last_save_ok = false
+  return false
+end
+
+function GGM.schedule_save(delay)
+  GGM.state_dirty = true
+  if GGM.timers.save then return end
+  if type(tempTimer) ~= "function" then GGM.save_state(); return end
+  GGM.timers.save = tempTimer(delay or 0.75, function()
+    GGM.timers.save = nil
+    if GGM.state_dirty then GGM.save_state() end
+  end)
+end
+
+local function kill_timer(id)
+  if id and type(killTimer) == "function" then pcall(killTimer, id) end
+end
+
+local function destroy_object(object)
+  if not object then return end
+  if type(object.hide) == "function" then pcall(object.hide, object) end
+  if type(object.delete) == "function" then pcall(object.delete, object) end
+end
+
+function GGM.destroy_ui()
+  if not GGM.ui then return end
+  for _, row in ipairs(GGM.ui.members or {}) do
+    for _, object in pairs(row) do destroy_object(object) end
+  end
+  for _, row in ipairs(GGM.ui.invites or {}) do
+    for _, object in pairs(row) do destroy_object(object) end
+  end
+  destroy_object(GGM.ui.empty)
+  destroy_object(GGM.ui.subheader)
+  destroy_object(GGM.ui.header)
+  destroy_object(GGM.ui.container)
+  GGM.ui = {}
+end
+
+function GGM.shutdown(save, destroy)
+  if save and GGM.state then pcall(GGM.save_state) end
+  for _, id in pairs(GGM.handlers or {}) do
+    if id and type(killAnonymousEventHandler) == "function" then pcall(killAnonymousEventHandler, id) end
+  end
+  for _, id in pairs(GGM.timers or {}) do kill_timer(id) end
+  for _, invite in ipairs(GGM.invites or {}) do kill_timer(invite.timer) end
+  GGM.handlers = {}
+  GGM.timers = {}
+  if destroy then GGM.destroy_ui()
+  elseif GGM.ui and GGM.ui.container and type(GGM.ui.container.hide) == "function" then pcall(GGM.ui.container.hide, GGM.ui.container) end
+end
+
+local function label_style(background, border, color, extra)
+  return string.format(
+    "background-color: %s; border: 1px solid %s; color: %s; padding: 1px; font-size: %dpt; %s",
+    background or "transparent", border or "transparent", color or "#ffffff", tonumber(GGM.state and GGM.state.font_size) or 9, extra or ""
+  )
+end
+
+local function set_label(label, text, color, align)
+  if not label then return end
+  if color and type(label.setFgColor) == "function" then pcall(label.setFgColor, label, color) end
+  if type(label.echo) == "function" then pcall(label.echo, label, html_escape(text), color, align or "l") end
+end
+
+local function move_resize(object, x, y, width, height)
+  if not object then return end
+  if type(object.move) == "function" then pcall(object.move, object, x, y) end
+  if type(object.resize) == "function" then pcall(object.resize, object, math.max(1, width), math.max(1, height)) end
+end
+
+function GGM.hook_container_resize()
+  local c = GGM.ui.container
+  if not c or c._ggm_resize_hooked then return end
+  c._ggm_resize_hooked = true
+  if type(c.resize) == "function" then
+    local original = c.resize
+    c.resize = function(self, ...)
+      local results = { original(self, ...) }
+      GGM.schedule_render(0.05)
+      GGM.schedule_save(0.35)
+      return unpack_fn(results)
+    end
+  end
+  if type(c.move) == "function" then
+    local original = c.move
+    c.move = function(self, ...)
+      local results = { original(self, ...) }
+      GGM.schedule_save(0.35)
+      return unpack_fn(results)
+    end
+  end
+end
+
+function GGM.ensure_ui()
+  if not Geyser then GGM.print("Geyser is unavailable; the monitor UI cannot be created.", "red"); return false end
+  if GGM.ui.container then return true end
+
+  local container
+  if Adjustable and Adjustable.Container and type(Adjustable.Container.new) == "function" then
+    local ok, result = pcall(function()
+      return Adjustable.Container:new({
+        name = "GGMContainer",
+        x = GGM.state.x, y = GGM.state.y,
+        width = GGM.state.width, height = GGM.state.height,
+        autoLoad = false, autoSave = false,
+        padding = 0,
+        adjLabelstyle = "border: 1px solid #4a4f59; background-color: #101216;",
+        buttonstyle = "",
+        lockStyle = "border: 0px;",
+        titleText = "",
+        titleTxtColor = "white",
+      })
+    end)
+    if ok then container = result end
+  end
+  if not container then
+    container = Geyser.Container:new({ name="GGMContainer", x=GGM.state.x, y=GGM.state.y, width=GGM.state.width, height=GGM.state.height })
+    if container.enableDrag then pcall(container.enableDrag, container) end
+  end
+  GGM.ui.container = container
+  if type(container.setPadding) == "function" then pcall(container.setPadding, container, 0) end
+
+  GGM.ui.header = Geyser.Label:new({ name="GGMHeader", x=0, y=0, width="100%", height=25 }, container)
+  GGM.ui.subheader = Geyser.Label:new({ name="GGMSubheader", x=0, y=25, width="100%", height=23 }, container)
+  GGM.ui.empty = Geyser.Label:new({ name="GGMEmpty", x=6, y=54, width="100%-12px", height="100%-60px" }, container)
+  GGM.ui.members = {}
+  GGM.ui.invites = {}
+  GGM.ui.header:setStyleSheet(label_style(GGM.state.colors.panel, GGM.state.colors.border, GGM.state.colors.text, "font-weight: bold;"))
+  GGM.ui.subheader:setStyleSheet(label_style(GGM.state.colors.background, GGM.state.colors.border, GGM.state.colors.muted, ""))
+  GGM.ui.empty:setStyleSheet(label_style(GGM.state.colors.background, "transparent", GGM.state.colors.muted, ""))
+  GGM.hook_container_resize()
+
+  if type(container.newCustomItem) == "function" then
+    pcall(container.newCustomItem, container, "Cycle layout", function() GGM.command("mode cycle") end)
+    pcall(container.newCustomItem, container, "Toggle same-room filter", function() GGM.command("room toggle") end)
+    pcall(container.newCustomItem, container, "Toggle self", function() GGM.command("self toggle") end)
+    pcall(container.newCustomItem, container, "Cycle gauge style", function() GGM.cycle_gauge_style() end)
+    pcall(container.newCustomItem, container, "Cycle number style", function() GGM.cycle_number_style() end)
+    pcall(container.newCustomItem, container, "Toggle quest info", function() GGM.command("quest toggle") end)
+    pcall(container.newCustomItem, container, "Toggle TNL", function() GGM.command("tnl toggle") end)
+    pcall(container.newCustomItem, container, "Toggle HP alerts", function() GGM.command("alert toggle") end)
+    pcall(container.newCustomItem, container, "Show all members", function() GGM.command("member show all") end)
+    pcall(container.newCustomItem, container, "Bring to front", function() GGM.bring_to_front() end)
+    pcall(container.newCustomItem, container, "Send to back", function() GGM.send_to_back() end)
+    pcall(container.newCustomItem, container, "Reset layout", function() GGM.command("reset layout") end)
+    pcall(container.newCustomItem, container, "Color help", function() GGM.help("colors") end)
+    pcall(container.newCustomItem, container, "Group monitor help", function() GGM.help() end)
+  end
+  if GGM.state.visible then container:show() else container:hide() end
+  return true
+end
+
+function GGM.apply_visibility(deferred)
+  local container = GGM.ui and GGM.ui.container
+  if not container then return false end
+  if GGM.state.visible then
+    if type(container.show) == "function" then pcall(container.show, container) end
+  elseif type(container.hide) == "function" then
+    pcall(container.hide, container)
+  end
+
+  kill_timer(GGM.timers.visibility)
+  GGM.timers.visibility = nil
+  if deferred and GGM.state.visible and type(tempTimer) == "function" then
+    GGM.timers.visibility = tempTimer(0.15, function()
+      GGM.timers.visibility = nil
+      local current = GGM.ui and GGM.ui.container
+      if GGM.state and GGM.state.visible and current and type(current.show) == "function" then pcall(current.show, current) end
+    end)
+  end
+  return true
+end
+
+function GGM.make_member_row(index)
+  local parent = GGM.ui.container
+  local prefix = "GGMMember" .. index
+  local row = {}
+  row.container = Geyser.Container:new({ name=prefix, x=0, y=0, width=100, height=50 }, parent)
+  row.bg = Geyser.Label:new({ name=prefix.."Bg", x=0, y=0, width="100%", height="100%" }, row.container)
+  row.name = Geyser.Label:new({ name=prefix.."Name", x=3, y=2, width="60%", height=20 }, row.container)
+  row.meta = Geyser.Label:new({ name=prefix.."Meta", x="60%", y=2, width="40%-3px", height=20 }, row.container)
+  row.hp = Geyser.Gauge:new({ name=prefix.."HP", x=3, y=24, width="100%-6px", height=16 }, row.container)
+  row.mana = Geyser.Gauge:new({ name=prefix.."Mana", x=3, y=42, width="100%-6px", height=16 }, row.container)
+  row.moves = Geyser.Gauge:new({ name=prefix.."Moves", x=3, y=60, width="100%-6px", height=16 }, row.container)
+  row.hp_value = Geyser.Label:new({ name=prefix.."HPValue", x=3, y=24, width="100%-6px", height=16 }, row.container)
+  row.mana_value = Geyser.Label:new({ name=prefix.."ManaValue", x=3, y=42, width="100%-6px", height=16 }, row.container)
+  row.moves_value = Geyser.Label:new({ name=prefix.."MovesValue", x=3, y=60, width="100%-6px", height=16 }, row.container)
+  row.hp.strict, row.mana.strict, row.moves.strict = true, true, true
+  row.drag_handles = {
+    row.bg, row.name, row.meta,
+    row.hp and row.hp.text, row.mana and row.mana.text, row.moves and row.moves.text,
+    row.hp_value, row.mana_value, row.moves_value,
+  }
+  for _, handle in ipairs(row.drag_handles) do
+    if handle and type(handle.setCursor) == "function" then pcall(handle.setCursor, handle, "OpenHand") end
+    if handle and type(handle.setToolTip) == "function" then pcall(handle.setToolTip, handle, "Drag to reorder this character") end
+  end
+  row.bg:setStyleSheet(label_style(GGM.state.colors.panel, GGM.state.colors.border, GGM.state.colors.text, "border-radius: 2px;"))
+  row.name:setStyleSheet(label_style("transparent", "transparent", GGM.state.colors.text, "font-weight: bold;"))
+  row.meta:setStyleSheet(label_style("transparent", "transparent", GGM.state.colors.muted, ""))
+  GGM.ui.members[index] = row
+  return row
+end
+
+function GGM.make_invite_row(index)
+  local parent = GGM.ui.container
+  local prefix = "GGMInvite" .. index
+  local row = {}
+  row.container = Geyser.Container:new({ name=prefix, x=0, y=0, width=100, height=26 }, parent)
+  row.bg = Geyser.Label:new({ name=prefix.."Bg", x=0, y=0, width="100%", height="100%" }, row.container)
+  row.text = Geyser.Label:new({ name=prefix.."Text", x=4, y=2, width="100%-132px", height=22 }, row.container)
+  row.accept = Geyser.Label:new({ name=prefix.."Accept", x="100%-126px", y=2, width=60, height=22 }, row.container)
+  row.decline = Geyser.Label:new({ name=prefix.."Decline", x="100%-63px", y=2, width=59, height=22 }, row.container)
+  row.bg:setStyleSheet(label_style(GGM.state.colors.invite, GGM.state.colors.border, GGM.state.colors.text, "border-radius: 2px;"))
+  row.text:setStyleSheet(label_style("transparent", "transparent", GGM.state.colors.text, ""))
+  row.accept:setStyleSheet(label_style("#176b37", "#36a866", "#ffffff", "font-weight: bold;"))
+  row.decline:setStyleSheet(label_style("#762c2c", "#b84c4c", "#ffffff", "font-weight: bold;"))
+  GGM.ui.invites[index] = row
+  return row
+end
+
+function GGM.ui_size()
+  local c = GGM.ui.container
+  local width, height = 480, 620
+  if c and type(c.get_width) == "function" then local ok, v = pcall(c.get_width, c); if ok then width = tonumber(v) or width end end
+  if c and type(c.get_height) == "function" then local ok, v = pcall(c.get_height, c); if ok then height = tonumber(v) or height end end
+  return math.max(180, width), math.max(160, height)
+end
+
+function GGM.current_self_name()
+  local candidates = {
+    gmcp and gmcp.char and gmcp.char.base and gmcp.char.base.name,
+    gmcp and gmcp.char and gmcp.char.status and gmcp.char.status.name,
+    gmcp and gmcp.Char and gmcp.Char.Base and gmcp.Char.Base.name,
+    gmcp and gmcp.Char and gmcp.Char.Status and gmcp.Char.Status.name,
+  }
+  for _, name in ipairs(candidates) do if name and tostring(name) ~= "" then return tostring(name) end end
+  return GGM.self_name
+end
+
+function GGM.normalize_group(raw)
+  if type(raw) ~= "table" then return nil end
+  local groupname = tostring(raw.groupname or raw.name or "")
+  if groupname == "" then return nil end
+  local normalized = {
+    groupname = strip_aard_colors(groupname),
+    leader = tostring(raw.leader or ""),
+    status = tostring(raw.status or ""),
+    exp = number(raw.exp, 0),
+    kills = number(raw.kills, 0),
+    created = tostring(raw.created or ""),
+    reason = tostring(raw.reason or ""),
+    members = {},
+  }
+  local order_changed = false
+  if type(raw.members) == "table" then
+    for index, source in ipairs(raw.members) do
+      if type(source) == "table" and source.name then
+        local info = type(source.info) == "table" and source.info or {}
+        local member = {
+          name = tostring(source.name),
+          server_index = index,
+          hp = number(info.hp, 0), mhp = number(info.mhp, 0),
+          mana = number(info.mn, 0), mmana = number(info.mmn, 0),
+          moves = number(info.mv, 0), mmoves = number(info.mmv, 0),
+          align = number(info.align, 0), tnl = number(info.tnl, 0),
+          qt = number(info.qt, 0), qs = number(info.qs, 0),
+          level = number(info.lvl, 0), here = number(info.here, 0) == 1,
+        }
+        normalized.members[#normalized.members + 1] = member
+        if GGM.state.manual_order[member.name] == nil then GGM.state.manual_order[member.name], order_changed = index, true end
+      end
+    end
+  end
+  if order_changed then GGM.schedule_save(0.2) end
+  return normalized
+end
+
+function GGM.hp_percent(member)
+  if not member or number(member.mhp, 0) <= 0 then return 0 end
+  return clamp(100 * number(member.hp, 0) / number(member.mhp, 1), 0, 100)
+end
+
+function GGM.hp_band(member)
+  local pct = GGM.hp_percent(member)
+  local band, color = 0, GGM.state.colors.health
+  for index, threshold in ipairs(GGM.state.thresholds) do
+    if threshold.enabled and pct < threshold.percent and index >= band then
+      band, color = index, threshold.color
+    end
+  end
+  return band, color
+end
+
+function GGM.evaluate_alerts(group)
+  if not group then GGM.last_hp_band = {}; return end
+  local now = os.time()
+  local seen = {}
+  for _, member in ipairs(group.members) do
+    seen[member.name] = true
+    local band = GGM.hp_band(member)
+    local previous = GGM.last_hp_band[member.name]
+    GGM.last_hp_band[member.name] = band
+    if GGM.state.alert_enabled and previous ~= nil and band > previous and band > 0 then
+      local last = GGM.last_alert_at[member.name] or 0
+      if now - last >= GGM.state.alert_cooldown then
+        GGM.last_alert_at[member.name] = now
+        GGM.print(string.format("%s HP is at %.0f%%", member.name, GGM.hp_percent(member)), "red")
+        if GGM.state.alert_sound ~= "" and type(playSoundFile) == "function" then pcall(playSoundFile, GGM.state.alert_sound) end
+      end
+    end
+  end
+  for name in pairs(GGM.last_hp_band) do if not seen[name] then GGM.last_hp_band[name] = nil end end
+end
+
+function GGM.on_group_gmcp()
+  local raw = gmcp and (gmcp.group or gmcp.Group)
+  GGM.debug("group GMCP event")
+  local was_grouped = GGM.group ~= nil
+  local normalized = GGM.normalize_group(raw)
+  GGM.evaluate_alerts(normalized)
+  GGM.group = normalized
+  if normalized and not was_grouped and #GGM.invites > 0 then GGM.clear_invites() end
+  GGM.self_name = GGM.current_self_name()
+  GGM.last_update = os.time()
+  GGM.schedule_render()
+end
+
+function GGM.on_char_gmcp()
+  GGM.self_name = GGM.current_self_name()
+  GGM.schedule_render()
+end
+
+function GGM.enable_group_gmcp()
+  if type(sendGMCP) ~= "function" then return end
+  pcall(sendGMCP, "group on")
+  if type(tempTimer) == "function" then
+    GGM.timers.request = tempTimer(0.6, function()
+      GGM.timers.request = nil
+      pcall(sendGMCP, "request group")
+    end)
+  else
+    pcall(sendGMCP, "request group")
+  end
+end
+
+function GGM.on_connect()
+  GGM.connected = true
+  GGM.group = nil
+  GGM.last_update = 0
+  GGM.enable_group_gmcp()
+  GGM.schedule_render()
+end
+
+function GGM.on_disconnect()
+  GGM.connected = false
+  GGM.group = nil
+  GGM.last_update = 0
+  GGM.schedule_render()
+end
+
+function GGM.on_protocol_enabled(_, protocol)
+  if tostring(protocol or ""):upper() == "GMCP" then GGM.enable_group_gmcp() end
+end
+
+function GGM.on_resize()
+  GGM.schedule_render(0.05)
+end
+
+function GGM.on_container_reposition_finish(_, container_name, width, height, x, y)
+  if tostring(container_name or "") ~= "GGMContainer" then return end
+  if tonumber(x) then GGM.state.x = tonumber(x) end
+  if tonumber(y) then GGM.state.y = tonumber(y) end
+  if tonumber(width) then GGM.state.width = tonumber(width) end
+  if tonumber(height) then GGM.state.height = tonumber(height) end
+  GGM.save_state()
+  GGM.schedule_render(0.02)
+end
+
+function GGM.quest_text(member)
+  if not GGM.state.show_quest and not GGM.state.show_tnl then return "" end
+  local parts = {}
+  if GGM.state.show_quest then
+    if member.qs == 0 then parts[#parts+1] = "READY"
+    elseif member.qs == 1 then parts[#parts+1] = "Q:" .. format_number(member.qt)
+    elseif member.qs == 2 then parts[#parts+1] = "CD:" .. format_number(member.qt)
+    elseif member.qs == 3 then parts[#parts+1] = "MOB"
+    else parts[#parts+1] = "Q:?" end
+  end
+  if GGM.state.show_tnl then parts[#parts+1] = "TNL:" .. format_number(member.tnl) end
+  return table.concat(parts, " ")
+end
+
+function GGM.format_vital(current, maximum)
+  current, maximum = number(current, 0), number(maximum, 0)
+  local pct = maximum > 0 and clamp(100 * current / maximum, 0, 999) or 0
+  local style = GGM.state.number_style
+  if style == "current" then return format_number(current) end
+  if style == "currentmax" then return format_number(current) .. "/" .. format_number(maximum) end
+  if style == "percent" then return string.format("%.0f%%", pct) end
+  return string.format("%s/%s (%.0f%%)", format_number(current), format_number(maximum), pct)
+end
+
+function GGM.format_percent(current, maximum)
+  current, maximum = number(current, 0), number(maximum, 0)
+  local pct = maximum > 0 and clamp(100 * current / maximum, 0, 999) or 0
+  return string.format("%.0f%%", pct)
+end
+
+function GGM.find_member(query)
+  query = lower(query)
+  if query == "" or not GGM.group then return nil, "No member supplied." end
+  local exact, matches_found = nil, {}
+  for _, member in ipairs(GGM.group.members) do
+    local name = member.name:lower()
+    if name == query then exact = member break end
+    if name:find(query, 1, true) then matches_found[#matches_found+1] = member end
+  end
+  if exact then return exact end
+  if #matches_found == 1 then return matches_found[1] end
+  if #matches_found > 1 then
+    local names = {}; for _, member in ipairs(matches_found) do names[#names+1] = member.name end
+    return nil, "Ambiguous member: " .. table.concat(names, ", ")
+  end
+  return nil, "Member not found: " .. query
+end
+
+function GGM.filtered_members()
+  local out, self_name = {}, lower(GGM.self_name or GGM.current_self_name() or "")
+  if not GGM.group then return out end
+  for _, member in ipairs(GGM.group.members) do
+    local key = member.name:lower()
+    local include = true
+    if not GGM.state.show_self and key == self_name then include = false end
+    if GGM.state.hidden_members[key] then include = false end
+    if GGM.state.room_filter == "same" and not member.here then include = false end
+    if GGM.state.room_filter == "snapshot" and not GGM.state.snapshot_names[key] and key ~= self_name then include = false end
+    if include then out[#out+1] = member end
+  end
+
+  table.sort(out, function(a, b)
+    if GGM.state.quest_last and (a.qs == 1) ~= (b.qs == 1) then return a.qs ~= 1 end
+    if GGM.state.room_first and a.here ~= b.here then return a.here end
+    local mode = GGM.state.sort_mode
+    if mode == "manual" then
+      local av, bv = number(GGM.state.manual_order[a.name], 99999), number(GGM.state.manual_order[b.name], 99999)
+      if av ~= bv then return av < bv end
+    elseif mode == "hppct" then
+      local av, bv = GGM.hp_percent(a), GGM.hp_percent(b)
+      if av ~= bv then return av < bv end
+    elseif mode == "missing" then
+      local av, bv = a.mhp-a.hp, b.mhp-b.hp
+      if av ~= bv then return av > bv end
+    elseif mode == "name" then
+      local av, bv = a.name:lower(), b.name:lower()
+      if av ~= bv then return av < bv end
+    elseif mode == "level" then
+      if a.level ~= b.level then return a.level > b.level end
+    end
+    return a.server_index < b.server_index
+  end)
+  return out
+end
+
+function GGM.choose_mode(member_count, width, height)
+  if GGM.state.mode ~= "auto" then return GGM.state.mode end
+  local available = math.max(80, height - 54 - math.min(#GGM.invites, 3) * 28)
+  local detailed_capacity = math.max(1, math.floor(width / 280)) * math.max(1, math.floor(available / 82))
+  local compact_capacity = math.max(1, math.floor(width / 225)) * math.max(1, math.floor(available / 38))
+  if member_count <= detailed_capacity then return "detailed" end
+  if member_count <= compact_capacity then return "compact" end
+  return "epic"
+end
+
+function GGM.alignment_color(member)
+  if member.align <= -875 then return GGM.state.colors.evil end
+  if member.align >= 875 then return GGM.state.colors.good end
+  return GGM.state.colors.neutral
+end
+
+local function font_character_width()
+  local character_width = math.max(4, GGM.state.font_size * 0.62)
+  if type(calcFontSize) == "function" then
+    local ok, width = pcall(calcFontSize, GGM.state.font_size)
+    if ok and tonumber(width) then character_width = tonumber(width) end
+  end
+  return character_width
+end
+
+local function label_text_fits(label, text, available_width)
+  available_width = math.max(1, number(available_width, 1))
+  local suggested
+  if label and type(label.getSizeHint) == "function" then
+    local ok, width = pcall(label.getSizeHint, label)
+    if ok then suggested = tonumber(width) end
+  end
+  if not suggested and label and label.name and type(getLabelSizeHint) == "function" then
+    local ok, width = pcall(getLabelSizeHint, label.name)
+    if ok then suggested = tonumber(width) end
+  end
+  if suggested and suggested > 0 then return suggested <= available_width - 6 end
+
+  local character_width = font_character_width()
+  return (#tostring(text or "") * character_width * 1.08 + 8) <= available_width
+end
+
+local function set_adaptive_label(label, full_text, compact_text, color, align, available_width)
+  set_label(label, full_text, color, align)
+  if compact_text and compact_text ~= full_text and not label_text_fits(label, full_text, available_width) then
+    set_label(label, compact_text, color, align)
+    return compact_text
+  end
+  return full_text
+end
+
+function GGM.apply_gauge(gauge, value_label, current, maximum, color, text, x, y, width, height, visible, dark_color, compact_text)
+  if not visible then gauge:hide(); value_label:hide(); return end
+  local style = GGM.state.gauge_style
+  if style == "none" then
+    gauge:hide(); value_label:show()
+    move_resize(value_label, x, y, width, height)
+    value_label:setStyleSheet(label_style("#0d0f12", GGM.state.colors.border, color, "font-weight: bold;"))
+    set_adaptive_label(value_label, text, compact_text, color, "c", width)
+    return
+  end
+
+  gauge:show()
+  local gauge_width = width
+  if not GGM.state.overlay_numbers then gauge_width = math.max(30, math.floor(width * 0.64)) end
+  move_resize(gauge, x, y, gauge_width, height)
+  local max_value = number(maximum, 0)
+  local current_value = number(current, 0)
+  if max_value <= 0 then max_value, current_value = 1, 0 end
+  current_value = clamp(current_value, 0, max_value)
+  if gauge.front and gauge.front.setStyleSheet then
+    local background = color
+    if style == "gradient" then background = "qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 " .. color .. ",stop:1 " .. (dark_color or "#111111") .. ")" end
+    gauge.front:setStyleSheet("background-color: " .. background .. "; border: 0px; border-radius: 2px;")
+  end
+  if gauge.back and gauge.back.setStyleSheet then gauge.back:setStyleSheet("background-color: #08090b; border: 1px solid " .. GGM.state.colors.border .. "; border-radius: 2px;") end
+  if gauge.text and gauge.text.setStyleSheet then gauge.text:setStyleSheet(string.format("background-color: transparent; color: #ffffff; font-weight: bold; font-size: %dpt;", GGM.state.font_size)) end
+  gauge:setValue(current_value, max_value, GGM.state.overlay_numbers and text or "")
+
+  if GGM.state.overlay_numbers then
+    if compact_text and compact_text ~= text and not label_text_fits(gauge.text, text, gauge_width) then
+      gauge:setValue(current_value, max_value, compact_text)
+    end
+    value_label:hide()
+  else
+    value_label:show()
+    local value_width = width - gauge_width - 3
+    move_resize(value_label, x + gauge_width + 3, y, value_width, height)
+    value_label:setStyleSheet(label_style("transparent", "transparent", GGM.state.colors.text, ""))
+    set_adaptive_label(value_label, text, compact_text, GGM.state.colors.text, "c", value_width)
+  end
+end
+
+function GGM.render_member(row, member, mode, x, y, width, height)
+  row.container:show()
+  move_resize(row.container, x, y, width, height)
+  GGM.bind_member_drag(row, member)
+  local band, hp_color = GGM.hp_band(member)
+  local background = member.here and GGM.state.colors.panel or GGM.state.colors.panel_remote
+  if band > 0 then background = band == 2 and "#381719" or "#3b3015" end
+  row.base_bg_style = label_style(background, GGM.state.colors.border, GGM.state.colors.text, "border-radius: 2px;")
+  local row_style = row.base_bg_style
+  if GGM.drag and GGM.drag.active and lower(GGM.drag.name) == lower(member.name) then
+    row_style = row_style .. " border: 2px solid " .. GGM.state.colors.good .. ";"
+  end
+  row.bg:setStyleSheet(row_style)
+  row.name:setStyleSheet(label_style("transparent", "transparent", GGM.alignment_color(member), "font-weight: bold;"))
+  row.meta:setStyleSheet(label_style("transparent", "transparent", member.here and GGM.state.colors.text or GGM.state.colors.muted, ""))
+  local max_chars = math.max(6, math.floor(width / math.max(5, GGM.state.font_size * 0.62)))
+  local name_text = "L" .. tostring(member.level) .. " " .. truncate(member.name, math.floor(max_chars * 0.48))
+  local meta_text = GGM.quest_text(member)
+  if not member.here then meta_text = (meta_text ~= "" and meta_text .. " " or "") .. "AWAY" end
+
+  if mode == "detailed" then
+    move_resize(row.name, 3, 2, math.floor(width * 0.48), 20)
+    move_resize(row.meta, math.floor(width * 0.48), 2, math.floor(width * 0.52)-3, 20)
+    set_label(row.name, name_text, GGM.alignment_color(member), "l")
+    set_label(row.meta, truncate(meta_text, math.floor(max_chars * 0.50)), member.here and GGM.state.colors.text or GGM.state.colors.muted, "r")
+    local bar_y, bar_h, bar_w = 24, 16, width - 6
+    GGM.apply_gauge(row.hp, row.hp_value, member.hp, member.mhp, hp_color, "HP "..GGM.format_vital(member.hp, member.mhp), 3, bar_y, bar_w, bar_h, GGM.state.show_hp, band > 0 and hp_color or GGM.state.colors.health_dark, GGM.format_percent(member.hp, member.mhp))
+    if GGM.state.show_hp then bar_y = bar_y + 18 end
+    GGM.apply_gauge(row.mana, row.mana_value, member.mana, member.mmana, GGM.state.colors.mana, "MN "..GGM.format_vital(member.mana, member.mmana), 3, bar_y, bar_w, bar_h, GGM.state.show_mana, GGM.state.colors.mana_dark)
+    if GGM.state.show_mana then bar_y = bar_y + 18 end
+    GGM.apply_gauge(row.moves, row.moves_value, member.moves, member.mmoves, GGM.state.colors.moves, "MV "..GGM.format_vital(member.moves, member.mmoves), 3, bar_y, bar_w, bar_h, GGM.state.show_moves, GGM.state.colors.moves_dark)
+  elseif mode == "compact" then
+    local inner_width = math.max(30, width - 6)
+    local character_width = font_character_width()
+    local name_width = clamp(math.floor(#name_text * character_width + 12), math.floor(inner_width * 0.25), math.floor(inner_width * 0.38))
+    local hp_width = math.max(78, math.floor(inner_width * 0.40))
+    local meta_width = inner_width - name_width - hp_width
+    if meta_width < 30 then
+      name_width = math.floor(inner_width * 0.34)
+      meta_width = math.max(24, math.floor(inner_width * 0.18))
+      hp_width = inner_width - name_width - meta_width
+    end
+    local meta_x = 3 + name_width
+    local hp_x = meta_x + meta_width
+    move_resize(row.name, 3, 2, name_width, height-4)
+    move_resize(row.meta, meta_x, 2, meta_width, height-4)
+    set_label(row.name, truncate(name_text, math.max(6, math.floor(name_width / character_width) - 1)), GGM.alignment_color(member), "l")
+    set_label(row.meta, truncate(meta_text, math.max(3, math.floor(meta_width / character_width) - 1)), member.here and GGM.state.colors.text or GGM.state.colors.muted, "c")
+    GGM.apply_gauge(row.hp, row.hp_value, member.hp, member.mhp, hp_color, GGM.format_vital(member.hp, member.mhp), hp_x, 3, hp_width, height-6, GGM.state.show_hp, band > 0 and hp_color or GGM.state.colors.health_dark, GGM.format_percent(member.hp, member.mhp))
+    row.mana:hide(); row.mana_value:hide(); row.moves:hide(); row.moves_value:hide()
+  else
+    move_resize(row.name, 3, 2, math.floor(width * 0.44), 24)
+    move_resize(row.meta, 3, 26, math.floor(width * 0.44), height-28)
+    set_label(row.name, name_text, GGM.alignment_color(member), "l")
+    local missing = math.max(0, member.mhp-member.hp)
+    local epic_meta = (missing > 0 and "-"..format_number(missing) or "FULL") .. (member.here and "" or " AWAY")
+    set_label(row.meta, epic_meta, band > 0 and hp_color or GGM.state.colors.muted, "l")
+    local right_x, right_w = math.floor(width * 0.44), math.floor(width * 0.56)-3
+    GGM.apply_gauge(row.hp, row.hp_value, member.hp, member.mhp, hp_color, GGM.format_vital(member.hp, member.mhp), right_x, 3, right_w, 26, GGM.state.show_hp, band > 0 and hp_color or GGM.state.colors.health_dark, GGM.format_percent(member.hp, member.mhp))
+    local half = math.floor(right_w / 2)
+    GGM.apply_gauge(row.mana, row.mana_value, member.mana, member.mmana, GGM.state.colors.mana, "MN "..format_number(member.mana), right_x, 31, half-2, height-34, GGM.state.show_mana, GGM.state.colors.mana_dark)
+    GGM.apply_gauge(row.moves, row.moves_value, member.moves, member.mmoves, GGM.state.colors.moves, "MV "..format_number(member.moves), right_x+half, 31, right_w-half, height-34, GGM.state.show_moves, GGM.state.colors.moves_dark)
+  end
+end
+
+function GGM.render_invites(width, top, grouped)
+  local visible = math.min(#GGM.invites, grouped and 3 or 5)
+  local row_h = 27
+  for index = 1, visible do
+    local invite = GGM.invites[index]
+    local row = GGM.ui.invites[index] or GGM.make_invite_row(index)
+    row.container:show()
+    row.bg:setStyleSheet(label_style(GGM.state.colors.invite, GGM.state.colors.border, GGM.state.colors.text, "border-radius: 2px;"))
+    row.text:setStyleSheet(label_style("transparent", "transparent", GGM.state.colors.text, ""))
+    row.accept:setStyleSheet(label_style("#176b37", "#36a866", "#ffffff", "font-weight: bold;"))
+    row.decline:setStyleSheet(label_style("#762c2c", "#b84c4c", "#ffffff", "font-weight: bold;"))
+    move_resize(row.container, 3, top + (index-1)*row_h, width-6, row_h-1)
+    local left = math.max(0, invite.expires_at - os.time())
+    local group_text = invite.group ~= "" and (" → " .. invite.group) or ""
+    set_label(row.text, string.format("[%d] %s%s (%ds)", index, invite.inviter, group_text, left), GGM.state.colors.text, "l")
+    set_label(row.accept, "Accept", "#ffffff", "c")
+    set_label(row.decline, "Decline", "#ffffff", "c")
+    row.accept:setClickCallback("GGM.accept_invite", "id:" .. invite.id)
+    row.decline:setClickCallback("GGM.decline_invite", "id:" .. invite.id)
+  end
+  for index = visible + 1, #GGM.ui.invites do GGM.ui.invites[index].container:hide() end
+  return visible * row_h
+end
+
+function GGM.render()
+  GGM.timers.render = nil
+  if not GGM.ensure_ui() then return end
+  GGM.visible_layout = {}
+  local width, height = GGM.ui_size()
+  local grouped = GGM.group ~= nil
+  local stale = grouped and GGM.last_update > 0 and os.time() - GGM.last_update > 10
+  local members = GGM.filtered_members()
+  local mode = GGM.choose_mode(#members, width, height)
+  GGM.actual_mode = mode
+  GGM.ui.header:setStyleSheet(label_style(GGM.state.colors.panel, GGM.state.colors.border, GGM.state.colors.text, "font-weight: bold;"))
+  GGM.ui.subheader:setStyleSheet(label_style(GGM.state.colors.background, GGM.state.colors.border, GGM.state.colors.muted, ""))
+  GGM.ui.empty:setStyleSheet(label_style(GGM.state.colors.background, "transparent", GGM.state.colors.muted, ""))
+
+  local title
+  if grouped then
+    title = string.format("%s  •  Leader: %s  •  %s%s", GGM.group.groupname, GGM.group.leader, GGM.group.status, stale and "  •  STALE" or "")
+  elseif not GGM.connected then title = "Group Monitor  •  Disconnected"
+  else title = "Group Monitor  •  No group" end
+  local sub
+  if grouped then
+    sub = string.format("XP %s  •  Kills %s  •  %d/%d shown  •  %s", format_number(GGM.group.exp), format_number(GGM.group.kills), #members, #GGM.group.members, mode)
+  else
+    sub = #GGM.invites > 0 and string.format("%d pending invitation%s", #GGM.invites, #GGM.invites == 1 and "" or "s") or "Waiting for Aardwolf group GMCP data"
+  end
+  set_label(GGM.ui.header, truncate(title, math.max(20, math.floor(width / 7))), GGM.state.colors.text, "l")
+  set_label(GGM.ui.subheader, sub, stale and GGM.state.thresholds[2].color or GGM.state.colors.muted, "l")
+  move_resize(GGM.ui.header, 0, 0, width, 25)
+  move_resize(GGM.ui.subheader, 0, 25, width, 23)
+
+  local top = 50
+  top = top + GGM.render_invites(width, top, grouped)
+  if #GGM.invites > (grouped and 3 or 5) then
+    set_label(GGM.ui.subheader, sub .. string.format("  •  +%d hidden invites", #GGM.invites-(grouped and 3 or 5)), GGM.state.colors.muted, "l")
+  end
+
+  if not grouped or #members == 0 then
+    for _, row in ipairs(GGM.ui.members) do row.container:hide() end
+    GGM.ui.empty:show()
+    move_resize(GGM.ui.empty, 6, top+6, width-12, math.max(30, height-top-12))
+    local message
+    if not grouped then
+      if #GGM.invites > 0 then message = "Choose Accept or Decline above, or use gmon accept <number>."
+      elseif not GGM.connected then message = "Disconnected. Group data will resume after reconnecting."
+      else message = "Create or join a group. The monitor updates automatically from GMCP." end
+    else message = "No members match the current filters. Use: gmon member show all" end
+    set_label(GGM.ui.empty, message, GGM.state.colors.muted, "c")
+    return
+  end
+  GGM.ui.empty:hide()
+
+  local available_h = math.max(30, height - top - 3)
+  local row_h = mode == "detailed" and (30 + (GGM.state.show_hp and 18 or 0) + (GGM.state.show_mana and 18 or 0) + (GGM.state.show_moves and 18 or 0)) or (mode == "compact" and 38 or 56)
+  row_h = math.max(34, row_h)
+  local rows_per_column = math.max(1, math.floor(available_h / (row_h + 3)))
+  local columns = math.max(1, math.ceil(#members / rows_per_column))
+  local column_width = width / columns
+  for index, member in ipairs(members) do
+    local row = GGM.ui.members[index] or GGM.make_member_row(index)
+    local column = math.floor((index-1) / rows_per_column)
+    local row_index = (index-1) % rows_per_column
+    local x = math.floor(column * column_width) + 2
+    local y = top + row_index * (row_h + 3)
+    local row_width = math.floor(column_width) - 4
+    GGM.visible_layout[lower(member.name)] = {
+      name = member.name, row = row, index = index,
+      x = x, y = y, width = row_width, height = row_h,
+    }
+    GGM.render_member(row, member, mode, x, y, row_width, row_h)
+  end
+  for index = #members + 1, #GGM.ui.members do GGM.ui.members[index].container:hide() end
+end
+
+function GGM.schedule_render(delay)
+  if GGM.timers.render then return end
+  if type(tempTimer) ~= "function" then GGM.render(); return end
+  GGM.timers.render = tempTimer(delay or 0.04, function() GGM.render() end)
+end
+
+function GGM.stale_tick()
+  GGM.timers.stale = nil
+  GGM.schedule_render()
+  if type(tempTimer) == "function" then GGM.timers.stale = tempTimer(5, function() GGM.stale_tick() end) end
+end
+
+function GGM.resolve_invite(reference)
+  if type(reference) == "string" and reference:match("^id:%d+$") then
+    local id = tonumber(reference:match("%d+"))
+    for index, invite in ipairs(GGM.invites) do if invite.id == id then return invite, index end end
+    return nil
+  end
+  local index = tonumber(reference)
+  if index then return GGM.invites[index], index end
+  local query = lower(reference)
+  for i, invite in ipairs(GGM.invites) do if invite.inviter:lower() == query then return invite, i end end
+  return nil
+end
+
+function GGM.remove_invite(reference, quiet)
+  local invite, index = GGM.resolve_invite(reference)
+  if not invite then return false end
+  kill_timer(invite.timer)
+  table.remove(GGM.invites, index)
+  if not quiet then GGM.print("Removed invitation from " .. invite.inviter .. ".") end
+  GGM.schedule_render()
+  return true
+end
+
+function GGM.expire_invite(id)
+  local invite = GGM.resolve_invite("id:" .. tostring(id))
+  if invite then
+    GGM.print("Invitation from " .. invite.inviter .. " expired.", "yellow")
+    GGM.remove_invite("id:" .. tostring(id), true)
+  end
+end
+
+function GGM.add_invite(inviter, group_name, accept_command, decline_command)
+  inviter = trim(inviter)
+  if inviter == "" then return end
+  group_name = trim(group_name)
+  local safe_name = inviter:match("^[A-Za-z][A-Za-z0-9']*$") and inviter or inviter:gsub("[^A-Za-z0-9']", "")
+  if safe_name == "" then return end
+  local canonical_accept = trim(accept_command)
+  if not canonical_accept:match("^group accept [A-Za-z][A-Za-z0-9']*$") then canonical_accept = "group accept " .. safe_name end
+  local canonical_decline = trim(decline_command)
+  if not canonical_decline:match("^group decline [A-Za-z][A-Za-z0-9']*$") then canonical_decline = "group decline " .. safe_name end
+
+  for _, existing in ipairs(GGM.invites) do
+    if existing.inviter:lower() == safe_name:lower() then
+      kill_timer(existing.timer)
+      existing.group = group_name ~= "" and group_name or existing.group
+      existing.accept_command = canonical_accept
+      existing.decline_command = canonical_decline
+      existing.received_at = os.time()
+      existing.expires_at = existing.received_at + GGM.state.invite_ttl
+      if type(tempTimer) == "function" then existing.timer = tempTimer(GGM.state.invite_ttl, function() GGM.expire_invite(existing.id) end) end
+      GGM.print("Updated invitation from " .. safe_name .. ". Type gmon accept " .. tostring(_) .. ".")
+      GGM.schedule_render()
+      return
+    end
+  end
+
+  GGM.invite_serial = GGM.invite_serial + 1
+  local invite = {
+    id = GGM.invite_serial, inviter = safe_name, group = group_name,
+    accept_command = canonical_accept, decline_command = canonical_decline,
+    received_at = os.time(), expires_at = os.time() + GGM.state.invite_ttl,
+  }
+  if type(tempTimer) == "function" then invite.timer = tempTimer(GGM.state.invite_ttl, function() GGM.expire_invite(invite.id) end) end
+  GGM.invites[#GGM.invites+1] = invite
+  local index = #GGM.invites
+  GGM.print(string.format("Invitation from %s%s. Use yes%d, no%d, or gmon invites.", safe_name, group_name ~= "" and (" to "..group_name) or "", index, index), "yellow")
+  GGM.schedule_render()
+end
+
+function GGM.capture_named_invite(inviter, group_name)
+  GGM.add_invite(inviter, strip_aard_colors(group_name), "group accept "..trim(inviter), "group decline "..trim(inviter))
+end
+
+function GGM.capture_invite_prompt(accept_command, inviter)
+  GGM.add_invite(inviter, "", accept_command, "group decline "..trim(inviter))
+end
+
+function GGM.cancel_invite(inviter)
+  local invite = GGM.resolve_invite(inviter)
+  if invite then GGM.print("Invitation from " .. invite.inviter .. " was cancelled.", "yellow"); GGM.remove_invite(inviter, true) end
+end
+
+function GGM.clear_invites()
+  for _, invite in ipairs(GGM.invites) do kill_timer(invite.timer) end
+  GGM.invites = {}
+  GGM.schedule_render()
+end
+
+function GGM.on_joined_group()
+  GGM.clear_invites()
+  if type(sendGMCP) == "function" then pcall(sendGMCP, "request group") end
+end
+
+function GGM.accept_invite(reference)
+  local invite = GGM.resolve_invite(reference)
+  if not invite then GGM.print("Invitation not found. Use: gmon invites", "red"); return end
+  if os.time() >= invite.expires_at then GGM.expire_invite(invite.id); return end
+  if type(send) == "function" then send(invite.accept_command) end
+  GGM.print("Accepting invitation from " .. invite.inviter .. ".")
+  GGM.remove_invite("id:"..invite.id, true)
+end
+
+function GGM.decline_invite(reference)
+  local invite = GGM.resolve_invite(reference)
+  if not invite then GGM.print("Invitation not found. Use: gmon invites", "red"); return end
+  if type(send) == "function" then send(invite.decline_command) end
+  GGM.print("Declining invitation from " .. invite.inviter .. ".")
+  GGM.remove_invite("id:"..invite.id, true)
+end
+
+function GGM.invite_shortcut(original, reference, decline)
+  local invite = GGM.resolve_invite(reference)
+  if GGM.state.legacy_shortcuts and invite then
+    if decline then GGM.decline_invite(reference) else GGM.accept_invite(reference) end
+    return
+  end
+  if type(send) == "function" then send(tostring(original or "")) end
+end
+
+function GGM.list_invites()
+  if #GGM.invites == 0 then GGM.print("No pending invitations."); return end
+  GGM.print("Pending invitations:")
+  for index, invite in ipairs(GGM.invites) do
+    GGM.print(string.format("  %d. %-14s %-20s %ds remaining", index, invite.inviter, invite.group, math.max(0, invite.expires_at-os.time())))
+  end
+end
+
+function GGM.apply_state_change(message)
+  if message then GGM.print(message) end
+  GGM.save_state()
+  GGM.schedule_render()
+end
+
+function GGM.member_visibility(action, query)
+  query = trim(query)
+  if lower(query) == "all" then
+    GGM.state.hidden_members = {}
+    if action == "hide" and GGM.group then
+      local self_name = lower(GGM.self_name or "")
+      for _, member in ipairs(GGM.group.members) do if member.name:lower() ~= self_name then GGM.state.hidden_members[member.name:lower()] = true end end
+    end
+    GGM.apply_state_change(action == "hide" and "All other members hidden." or "All members shown.")
+    return
+  end
+  local member, err = GGM.find_member(query)
+  if not member then GGM.print(err, "red"); return end
+  GGM.state.hidden_members[member.name:lower()] = action == "hide" and true or nil
+  GGM.apply_state_change(member.name .. (action == "hide" and " hidden." or " shown."))
+end
+
+function GGM.snapshot_room()
+  GGM.state.snapshot_names = {}
+  if GGM.group then for _, member in ipairs(GGM.group.members) do if member.here then GGM.state.snapshot_names[member.name:lower()] = true end end end
+  GGM.state.room_filter = "snapshot"
+  GGM.apply_state_change("Showing the members who are in the room now.")
+end
+
+function GGM.order_names()
+  local names = {}
+  if GGM.group then for _, member in ipairs(GGM.group.members) do names[#names+1] = member.name end end
+  table.sort(names, function(a,b)
+    local av, bv = number(GGM.state.manual_order[a], 99999), number(GGM.state.manual_order[b], 99999)
+    if av ~= bv then return av < bv end
+    return a:lower() < b:lower()
+  end)
+  return names
+end
+
+function GGM.reindex_order(names)
+  for index, name in ipairs(names) do GGM.state.manual_order[name] = index end
+end
+
+local function mouse_event_has_left(event)
+  if type(event) ~= "table" then return true end
+  local button = lower(event.button or "")
+  if button:find("left", 1, true) then return true end
+  if type(event.buttons) == "table" then
+    for key, value in pairs(event.buttons) do
+      if lower(key):find("left", 1, true) or lower(value):find("left", 1, true) then return true end
+    end
+  end
+  return false
+end
+
+local function set_row_drag_cursor(row, cursor)
+  for _, handle in ipairs(row and row.drag_handles or {}) do
+    if handle and type(handle.setCursor) == "function" then pcall(handle.setCursor, handle, cursor) end
+  end
+end
+
+function GGM.bind_member_drag(row, member)
+  if not row or not member then return end
+  row.member_name = member.name
+  for _, handle in ipairs(row.drag_handles or {}) do
+    if handle and type(handle.setClickCallback) == "function" then
+      pcall(handle.setClickCallback, handle, "GGM.member_drag_start", member.name)
+    end
+    if handle and type(handle.setMoveCallback) == "function" then
+      pcall(handle.setMoveCallback, handle, "GGM.member_drag_over", member.name)
+    end
+    if handle and type(handle.setReleaseCallback) == "function" then
+      pcall(handle.setReleaseCallback, handle, "GGM.member_drag_end", member.name)
+    end
+  end
+end
+
+function GGM.seed_manual_order_from_view()
+  local names, seen = {}, {}
+  for _, member in ipairs(GGM.filtered_members()) do
+    names[#names + 1] = member.name
+    seen[lower(member.name)] = true
+  end
+  if GGM.group then
+    for _, member in ipairs(GGM.group.members) do
+      if not seen[lower(member.name)] then names[#names + 1] = member.name end
+    end
+  end
+  GGM.state.manual_order = {}
+  GGM.reindex_order(names)
+  GGM.state.sort_mode = "manual"
+  GGM.state.quest_last = false
+  GGM.state.room_first = false
+end
+
+function GGM.member_drag_reorder(target_name)
+  local dragged_name = GGM.drag and GGM.drag.name
+  if not dragged_name or lower(dragged_name) == lower(target_name) then return false end
+  if GGM.drag.needs_manual_seed then
+    GGM.seed_manual_order_from_view()
+    GGM.drag.needs_manual_seed = false
+  end
+  local names = GGM.order_names()
+  local old_index, target_index
+  for index, name in ipairs(names) do
+    if lower(name) == lower(dragged_name) then old_index = index end
+    if lower(name) == lower(target_name) then target_index = index end
+  end
+  if not old_index or not target_index or old_index == target_index then return false end
+
+  table.remove(names, old_index)
+  table.insert(names, target_index, dragged_name)
+  GGM.reindex_order(names)
+  GGM.state.sort_mode = "manual"
+  GGM.drag.moved = true
+  GGM.schedule_render(0.01)
+  return true
+end
+
+function GGM.member_drag_start(member_name, event)
+  if not mouse_event_has_left(event) then return end
+  if not GGM.group then return end
+  if GGM.drag and GGM.drag.active then GGM.member_drag_cancel() end
+  local layout = GGM.visible_layout and GGM.visible_layout[lower(member_name)]
+  if not layout then return end
+  GGM.drag = {
+    active = true,
+    name = member_name,
+    target_name = member_name,
+    moved = false,
+    needs_manual_seed = GGM.state.sort_mode ~= "manual" or GGM.state.quest_last or GGM.state.room_first,
+    row = layout.row,
+    origin_x = layout.x,
+    origin_y = layout.y,
+    width = layout.width,
+    height = layout.height,
+    start_global_x = type(event) == "table" and tonumber(event.globalX) or nil,
+    start_global_y = type(event) == "table" and tonumber(event.globalY) or nil,
+    dx = 0,
+    dy = 0,
+  }
+  kill_timer(GGM.timers.drag)
+  if type(tempTimer) == "function" then
+    GGM.timers.drag = tempTimer(20, function()
+      GGM.timers.drag = nil
+      GGM.member_drag_cancel()
+    end)
+  end
+  set_row_drag_cursor(layout.row, "ClosedHand")
+  if layout.row.bg and type(layout.row.bg.setStyleSheet) == "function" then
+    layout.row.bg:setStyleSheet((layout.row.base_bg_style or "") .. " border: 2px solid " .. GGM.state.colors.good .. ";")
+  end
+  if layout.row.container and type(layout.row.container.raise) == "function" then pcall(layout.row.container.raise, layout.row.container) end
+end
+
+function GGM.member_drag_over(target_name, event)
+  if not GGM.drag or not GGM.drag.active then return end
+  if type(event) ~= "table" then return end
+  local drag = GGM.drag
+  local global_x, global_y = tonumber(event.globalX), tonumber(event.globalY)
+  if not global_x or not global_y or not drag.start_global_x or not drag.start_global_y then return end
+  drag.dx, drag.dy = global_x - drag.start_global_x, global_y - drag.start_global_y
+
+  if drag.row and drag.row.container then
+    move_resize(drag.row.container, drag.origin_x + drag.dx, drag.origin_y + drag.dy, drag.width, drag.height)
+    if type(drag.row.container.raise) == "function" then pcall(drag.row.container.raise, drag.row.container) end
+  end
+
+  local cursor_x = drag.origin_x + drag.width / 2 + drag.dx
+  local cursor_y = drag.origin_y + drag.height / 2 + drag.dy
+  local closest_name, closest_distance
+  for _, candidate in pairs(GGM.visible_layout or {}) do
+    local candidate_x = candidate.x + candidate.width / 2
+    local candidate_y = candidate.y + candidate.height / 2
+    local distance = (cursor_x - candidate_x) ^ 2 + (cursor_y - candidate_y) ^ 2
+    if not closest_distance or distance < closest_distance then
+      closest_name, closest_distance = candidate.name, distance
+    end
+  end
+  if closest_name then drag.target_name = closest_name end
+end
+
+function GGM.member_drag_cancel()
+  if not GGM.drag or not GGM.drag.active then return end
+  local drag = GGM.drag
+  kill_timer(GGM.timers.drag)
+  GGM.timers.drag = nil
+  if drag.row and drag.row.container then move_resize(drag.row.container, drag.origin_x, drag.origin_y, drag.width, drag.height) end
+  if drag.row and drag.row.bg and drag.row.base_bg_style then drag.row.bg:setStyleSheet(drag.row.base_bg_style) end
+  for _, row in ipairs(GGM.ui.members or {}) do set_row_drag_cursor(row, "OpenHand") end
+  GGM.drag = { active = false }
+  GGM.schedule_render(0.01)
+end
+
+function GGM.member_drag_end(target_name, event)
+  if not GGM.drag or not GGM.drag.active then return end
+  local drag = GGM.drag
+  kill_timer(GGM.timers.drag)
+  GGM.timers.drag = nil
+  if drag.row and drag.row.container then move_resize(drag.row.container, drag.origin_x, drag.origin_y, drag.width, drag.height) end
+  if drag.target_name and lower(drag.target_name) ~= lower(drag.name) then GGM.member_drag_reorder(drag.target_name) end
+  local moved = GGM.drag.moved
+  if drag.row and drag.row.bg and drag.row.base_bg_style then drag.row.bg:setStyleSheet(drag.row.base_bg_style) end
+  for _, row in ipairs(GGM.ui.members or {}) do set_row_drag_cursor(row, "OpenHand") end
+  GGM.drag = { active = false }
+  if moved then GGM.save_state() end
+  GGM.schedule_render(0.01)
+end
+
+function GGM.move_order(query, position)
+  local member, err = GGM.find_member(query)
+  if not member then GGM.print(err, "red"); return end
+  local names = GGM.order_names()
+  local old
+  for index, name in ipairs(names) do if name == member.name then old = index; table.remove(names, index); break end end
+  if not old then return end
+  position = clamp(position, 1, #names+1)
+  table.insert(names, position, member.name)
+  GGM.reindex_order(names)
+  GGM.state.sort_mode = "manual"
+  GGM.apply_state_change(string.format("%s moved from %d to %d.", member.name, old, position))
+end
+
+function GGM.list_order()
+  local names = GGM.order_names()
+  if #names == 0 then GGM.print("No group members to order."); return end
+  GGM.print("Manual member order:")
+  for index, name in ipairs(names) do GGM.print(string.format("  %2d. %s", index, name)) end
+end
+
+function GGM.apply_geometry()
+  local c = GGM.ui and GGM.ui.container
+  if not c then return end
+  if c.move then pcall(c.move, c, GGM.state.x, GGM.state.y) end
+  if c.resize then pcall(c.resize, c, GGM.state.width, GGM.state.height) end
+  if GGM.state.visible and c.show then pcall(c.show, c) elseif c.hide then pcall(c.hide, c) end
+end
+
+function GGM.cycle_mode()
+  local modes = { "auto", "detailed", "compact", "epic" }
+  local index = 1
+  for i, mode in ipairs(modes) do if GGM.state.mode == mode then index = i break end end
+  GGM.state.mode = modes[index % #modes + 1]
+  GGM.apply_state_change("Layout mode: " .. GGM.state.mode)
+end
+
+function GGM.cycle_gauge_style()
+  local styles = { "gradient", "flat", "none" }
+  local index = 1
+  for i, style in ipairs(styles) do if GGM.state.gauge_style == style then index = i break end end
+  GGM.state.gauge_style = styles[index % #styles + 1]
+  GGM.apply_state_change("Gauge style: " .. GGM.state.gauge_style)
+end
+
+function GGM.cycle_number_style()
+  local styles = { "both", "currentmax", "current", "percent" }
+  local index = 1
+  for i, style in ipairs(styles) do if GGM.state.number_style == style then index = i break end end
+  GGM.state.number_style = styles[index % #styles + 1]
+  GGM.apply_state_change("Number style: " .. GGM.state.number_style)
+end
+
+function GGM.bring_to_front()
+  local c = GGM.ui and GGM.ui.container
+  if not c then return end
+  if type(c.raiseAll) == "function" then pcall(c.raiseAll, c)
+  elseif type(c.raise) == "function" then pcall(c.raise, c) end
+end
+
+function GGM.send_to_back()
+  local c = GGM.ui and GGM.ui.container
+  if not c then return end
+  if type(c.lowerAll) == "function" then pcall(c.lowerAll, c)
+  elseif type(c.lower) == "function" then pcall(c.lower, c) end
+end
+
+function GGM.status()
+  local total = GGM.group and #GGM.group.members or 0
+  local visible = #GGM.filtered_members()
+  GGM.print(string.format("v%s | mode %s (%s) | members %d/%d | invites %d", GGM.version, GGM.state.mode, GGM.actual_mode, visible, total, #GGM.invites))
+  GGM.print(string.format("room %s | sort %s | gauges %s | numbers %s | alerts %s", GGM.state.room_filter, GGM.state.sort_mode, GGM.state.gauge_style, GGM.state.number_style, GGM.state.alert_enabled and "on" or "off"))
+end
+
+function GGM.help(topic)
+  topic = lower(topic)
+  if topic == "" then
+    GGM.print("Group Monitor v" .. GGM.version .. " - quick help")
+    GGM.print("  Drag a character card up or down to save a manual order.")
+    GGM.print("  gmon show / hide       - show or hide the monitor")
+    GGM.print("  gmon mode auto         - automatically fit the cards to the window")
+    GGM.print("  gmon room toggle       - switch between everyone and same-room members")
+    GGM.print("  gmon status            - show the current monitor settings")
+    GGM.print("More help: gmon help display | sorting | filters | colors | alerts | invites | advanced")
+    return
+  end
+
+  if topic == "display" or topic == "layout" then
+    GGM.print("Display and layout:")
+    GGM.print("  gmon mode auto|detailed|compact|epic - choose automatic or fixed card layout")
+    GGM.print("  gmon bar hp|mana|moves on|off - show or hide a resource bar")
+    GGM.print("  gmon quest on|off / tnl on|off - show or hide quest and TNL text")
+    GGM.print("  gmon gauge none|flat|gradient - choose the bar appearance")
+    GGM.print("  gmon numbers current|currentmax|percent|both - choose numbers shown on bars")
+    GGM.print("  gmon overlay on|off - put numbers inside the bar or beside it")
+    GGM.print("  gmon font 7-24 - change monitor text size")
+    return
+  end
+
+  if topic == "sorting" or topic == "sort" or topic == "order" then
+    GGM.print("Sorting and manual order:")
+    GGM.print("  Drag a card onto another card. Dragging down places it after; dragging up places it before.")
+    GGM.print("  gmon sort server - use the order supplied by Aardwolf")
+    GGM.print("  gmon sort hppct - lowest HP percentage first; missing - most missing HP first")
+    GGM.print("  gmon sort name / level - alphabetical or highest level first")
+    GGM.print("  gmon order list - print the saved manual order")
+    GGM.print("  gmon order top <name> / bottom <name> / set <position> <name> - keyboard alternatives")
+    return
+  end
+
+  if topic == "filters" or topic == "filter" or topic == "members" then
+    GGM.print("Member filters:")
+    GGM.print("  gmon self on|off - include or hide your own card")
+    GGM.print("  gmon room all|same - show the full group or only members in your room")
+    GGM.print("  gmon room snapshot - remember and show the members currently in your room")
+    GGM.print("  gmon member hide <name> / show <name> - hide or restore one member")
+    GGM.print("  gmon member show all - clear hidden-member choices")
+    return
+  end
+
+  if topic == "colors" or topic == "colours" or topic == "color" or topic == "colour" then
+    GGM.print("Colors (no hex knowledge required):")
+    GGM.print("  gmon color list - display selectable color names in their actual colors")
+    GGM.print("  gmon color hp green - main HP color; use hp2 for its dark gradient end")
+    GGM.print("  Targets: hp, hp2, mana, mana2, moves, moves2, evil, good")
+    GGM.print("  Names: red, green, blue, cyan, yellow, orange, gold, purple, pink, white, gray, and dark/light forms")
+    GGM.print("  Aardwolf codes also work: @r/@R, @g/@G, @b/@B, @c/@C, @m/@M, @y/@Y, @w/@W, @D")
+    GGM.print("  Hex remains available for exact colors: #RRGGBB")
+    GGM.print("  Example: gmon threshold 1 40 orange - orange HP below 40 percent")
+    return
+  end
+
+  if topic == "alerts" or topic == "alert" or topic == "thresholds" then
+    GGM.print("Low-HP thresholds and alerts:")
+    GGM.print("  gmon threshold 1 <percent> [color] - first warning level")
+    GGM.print("  gmon threshold 2 <percent> [color] - critical warning level")
+    GGM.print("  gmon threshold 1|2 on|off - enable or disable a level")
+    GGM.print("  gmon alert on|off - print an alert when someone crosses a threshold")
+    GGM.print("  gmon alert cooldown <seconds> - prevent repeated alerts")
+    GGM.print("  gmon alert sound <file path|off> - optional alert sound")
+    return
+  end
+
+  if topic == "invites" or topic == "invite" then
+    GGM.print("Group invitations:")
+    GGM.print("  Invitations appear above the cards with clickable Accept and Decline buttons.")
+    GGM.print("  gmon invites - list pending invitations")
+    GGM.print("  gmon accept <number|name> / decline <number|name> - keyboard alternatives")
+    GGM.print("  yes1..yes5 and no1..no5 act on matching invites; gmon shortcuts off disables them")
+    return
+  end
+
+  if topic == "advanced" then
+    GGM.print("Advanced and recovery commands:")
+    GGM.print("  gmon front / back - change the monitor's window stacking order")
+    GGM.print("  gmon refresh - request fresh group GMCP data; save - save settings now")
+    GGM.print("  gmon reset layout - restore window size and location")
+    GGM.print("  gmon reset filters - clear filters and ordering; settings - restore visual defaults")
+    GGM.print("  gmon reset all - restore every default")
+    return
+  end
+
+  GGM.print("Unknown help topic: " .. topic, "yellow")
+  GGM.print("Choose: display, sorting, filters, colors, alerts, invites, or advanced")
+end
+
+function GGM.command(raw)
+  raw = trim(raw)
+  local cmd = lower(raw)
+  if cmd == "" or cmd == "help" then GGM.help(); return end
+  if cmd:sub(1, 5) == "help " then GGM.help(raw:sub(6)); return end
+  if cmd == "status" then GGM.status(); return end
+  if cmd == "color list" or cmd == "colour list" or cmd == "colors list" or cmd == "colours list" then GGM.print_color_list(); return end
+  if cmd == "show" then GGM.state.visible=true; GGM.ensure_ui(); GGM.apply_visibility(); GGM.save_state(); return end
+  if cmd == "hide" then GGM.state.visible=false; if GGM.ui.container then GGM.ui.container:hide() end; GGM.save_state(); return end
+  if cmd == "toggle" then if GGM.state.visible then GGM.command("hide") else GGM.command("show") end; return end
+  if cmd == "refresh" then GGM.enable_group_gmcp(); GGM.print("Requested fresh group data."); return end
+  if cmd == "save" then
+    if GGM.save_state() then GGM.print("All settings saved to " .. GGM.state_file .. ".")
+    else GGM.print("Settings could not be saved. Check the Mudlet error console and profile folder permissions.", "red") end
+    return
+  end
+  if cmd == "front" then GGM.bring_to_front(); return end
+  if cmd == "back" then GGM.send_to_back(); return end
+  if cmd == "invites" then GGM.list_invites(); return end
+  if cmd == "debug on" then GGM.state.debug_enabled=true; GGM.apply_state_change("Debug enabled."); return end
+  if cmd == "debug off" then GGM.state.debug_enabled=false; GGM.apply_state_change("Debug disabled."); return end
+
+  local value = raw:match("^%s*[Mm][Oo][Dd][Ee]%s+(.+)$")
+  if value then
+    value = lower(value)
+    if value == "cycle" then GGM.cycle_mode(); return end
+    if ({auto=true,detailed=true,compact=true,epic=true})[value] then GGM.state.mode=value; GGM.apply_state_change("Layout mode: "..value); return end
+  end
+
+  value = raw:match("^%s*[Ss][Ee][Ll][Ff]%s+(.+)$")
+  if value then
+    local result = bool_value(value, GGM.state.show_self)
+    if result ~= nil then GGM.state.show_self=result; GGM.apply_state_change("Show self: "..(result and "on" or "off")); return end
+  end
+
+  value = raw:match("^%s*[Rr][Oo][Oo][Mm]%s+(.+)$")
+  if value then
+    value = lower(value)
+    if value == "snapshot" then GGM.snapshot_room(); return end
+    if value == "toggle" then value = GGM.state.room_filter == "same" and "all" or "same" end
+    if value == "all" or value == "same" then GGM.state.room_filter=value; GGM.apply_state_change("Room filter: "..value); return end
+  end
+
+  local action, member_query = raw:match("^%s*[Mm][Ee][Mm][Bb][Ee][Rr]%s+(%S+)%s+(.+)$")
+  if action and member_query then
+    action = lower(action)
+    if action == "show" or action == "hide" then GGM.member_visibility(action, member_query); return end
+  end
+
+  local sort_name, sort_value = raw:match("^%s*[Ss][Oo][Rr][Tt]%s+(%S+)%s*(.*)$")
+  if sort_name then
+    sort_name, sort_value = lower(sort_name), lower(sort_value)
+    if ({server=true,manual=true,hppct=true,missing=true,name=true,level=true})[sort_name] and sort_value == "" then
+      GGM.state.sort_mode=sort_name; GGM.apply_state_change("Sort mode: "..sort_name); return
+    end
+    if sort_name == "questlast" or sort_name == "roomfirst" then
+      local key = sort_name == "questlast" and "quest_last" or "room_first"
+      local result = bool_value(sort_value, GGM.state[key])
+      if result ~= nil then GGM.state[key]=result; GGM.apply_state_change(sort_name..": "..(result and "on" or "off")); return end
+    end
+  end
+
+  if cmd == "order list" then GGM.list_order(); return end
+  local position, query = raw:match("^%s*[Oo][Rr][Dd][Ee][Rr]%s+[Ss][Ee][Tt]%s+(%d+)%s+(.+)$")
+  if position then GGM.move_order(query, tonumber(position)); return end
+  query = raw:match("^%s*[Oo][Rr][Dd][Ee][Rr]%s+[Tt][Oo][Pp]%s+(.+)$")
+  if query then GGM.move_order(query, 1); return end
+  query = raw:match("^%s*[Oo][Rr][Dd][Ee][Rr]%s+[Bb][Oo][Tt][Tt][Oo][Mm]%s+(.+)$")
+  if query then GGM.move_order(query, #(GGM.order_names())); return end
+
+  local bar, switch = raw:match("^%s*[Bb][Aa][Rr]%s+(%S+)%s+(%S+)%s*$")
+  if bar then
+    bar, switch = lower(bar), lower(switch)
+    local keys = { hp="show_hp", health="show_hp", mana="show_mana", mn="show_mana", moves="show_moves", mv="show_moves" }
+    local key = keys[bar]
+    if key then local result=bool_value(switch,GGM.state[key]); if result~=nil then GGM.state[key]=result; GGM.apply_state_change(bar.." bar: "..(result and "on" or "off")); return end end
+  end
+
+  local simple, simple_value = raw:match("^%s*(%S+)%s+(%S+)%s*$")
+  if simple then
+    simple, simple_value = lower(simple), lower(simple_value)
+    if simple == "quest" or simple == "tnl" or simple == "overlay" or simple == "alert" or simple == "shortcuts" then
+      local key = ({quest="show_quest",tnl="show_tnl",overlay="overlay_numbers",alert="alert_enabled",shortcuts="legacy_shortcuts"})[simple]
+      local result = bool_value(simple_value, GGM.state[key])
+      if result ~= nil then GGM.state[key]=result; GGM.apply_state_change(simple..": "..(result and "on" or "off")); return end
+    end
+    if simple == "gauge" and ({none=true,flat=true,gradient=true})[simple_value] then GGM.state.gauge_style=simple_value; GGM.apply_state_change("Gauge style: "..simple_value); return end
+    if simple == "numbers" and ({current=true,currentmax=true,percent=true,both=true})[simple_value] then GGM.state.number_style=simple_value; GGM.apply_state_change("Number style: "..simple_value); return end
+    if simple == "font" and tonumber(simple_value) then GGM.state.font_size=clamp(simple_value,7,24); GGM.apply_state_change("Font size: "..GGM.state.font_size); return end
+  end
+
+  local color_key, color_value = raw:match("^%s*[Cc][Oo][Ll][Oo][Rr]%s+(%S+)%s+(%S+)%s*$")
+  if color_key then
+    local key_map = { hp="health", health="health", hp2="health_dark", healthdark="health_dark", mana="mana", mana2="mana_dark", manadark="mana_dark", moves="moves", moves2="moves_dark", movesdark="moves_dark", evil="evil", good="good" }
+    local key, color = key_map[lower(color_key)], resolve_color(color_value)
+    if key and color then GGM.state.colors[key]=color; GGM.apply_state_change(key.." color: "..color); return end
+    if not key then GGM.print("Unknown color target. Use hp, hp2, mana, mana2, moves, moves2, evil, or good.", "red")
+    else GGM.print("Unknown color '"..color_value.."'. Try green, orange, @G, or #28b463. See: gmon help colors", "red") end
+    return
+  end
+
+  local threshold_index, threshold_arg, threshold_color = raw:match("^%s*[Tt][Hh][Rr][Ee][Ss][Hh][Oo][Ll][Dd]%s+([12])%s+(%S+)%s*(%S*)%s*$")
+  if threshold_index then
+    local threshold = GGM.state.thresholds[tonumber(threshold_index)]
+    local switch_value = lower(threshold_arg)
+    if switch_value == "on" or switch_value == "off" then
+      threshold.enabled = switch_value == "on"
+      GGM.apply_state_change("Threshold "..threshold_index..": "..switch_value); return
+    end
+    local pct_text = (threshold_arg or ""):gsub("%%", "")
+    local pct = tonumber(pct_text)
+    local color = threshold_color ~= "" and resolve_color(threshold_color) or threshold.color
+    if pct and pct >= 1 and pct <= 100 and color then
+      threshold.percent, threshold.color, threshold.enabled = math.floor(pct), color, true
+      GGM.apply_state_change(string.format("Threshold %s: %d%% %s", threshold_index, threshold.percent, threshold.color)); return
+    end
+    if pct and threshold_color ~= "" and not color then
+      GGM.print("Unknown threshold color '"..threshold_color.."'. Try red, orange, @R, or #e53935.", "red"); return
+    end
+  end
+
+  local invite_action, invite_ref = raw:match("^%s*(%S+)%s+(.+)$")
+  if invite_action then
+    invite_action = lower(invite_action)
+    if invite_action == "accept" then GGM.accept_invite(tonumber(invite_ref) or trim(invite_ref)); return end
+    if invite_action == "decline" then GGM.decline_invite(tonumber(invite_ref) or trim(invite_ref)); return end
+  end
+
+  local cooldown = raw:match("^%s*[Aa][Ll][Ee][Rr][Tt]%s+[Cc][Oo][Oo][Ll][Dd][Oo][Ww][Nn]%s+(%d+)%s*$")
+  if cooldown then GGM.state.alert_cooldown=clamp(cooldown,1,300); GGM.apply_state_change("Alert cooldown: "..GGM.state.alert_cooldown.."s"); return end
+  local sound = raw:match("^%s*[Aa][Ll][Ee][Rr][Tt]%s+[Ss][Oo][Uu][Nn][Dd]%s+(.+)$")
+  if sound then GGM.state.alert_sound=lower(sound)=="off" and "" or trim(sound); GGM.apply_state_change(GGM.state.alert_sound=="" and "Alert sound disabled." or "Alert sound set."); return end
+
+  local reset = raw:match("^%s*[Rr][Ee][Ss][Ee][Tt]%s+(%S+)%s*$")
+  if reset then
+    reset = lower(reset)
+    if reset == "layout" then
+      for _, key in ipairs({"x","y","width","height","visible","font_size","mode"}) do GGM.state[key]=deep_copy(GGM.defaults[key]) end
+      GGM.apply_geometry(); GGM.apply_state_change("Layout reset."); return
+    elseif reset == "filters" then
+      for _, key in ipairs({"show_self","room_filter","snapshot_names","hidden_members","sort_mode","quest_last","room_first","manual_order"}) do GGM.state[key]=deep_copy(GGM.defaults[key]) end
+      GGM.apply_state_change("Filters and ordering reset."); return
+    elseif reset == "settings" then
+      for _, key in ipairs({"show_hp","show_mana","show_moves","show_quest","show_tnl","gauge_style","number_style","overlay_numbers","legacy_shortcuts","debug_enabled","colors","thresholds","alert_enabled","alert_cooldown","alert_sound"}) do GGM.state[key]=deep_copy(GGM.defaults[key]) end
+      GGM.apply_state_change("Visual settings reset."); return
+    elseif reset == "all" then
+      GGM.state=deep_copy(GGM.defaults); GGM.apply_geometry(); GGM.apply_state_change("All settings reset."); return
+    end
+  end
+
+  GGM.print("Unknown or incomplete command. Use: gmon help", "red")
+end
+
+function GGM.register_handlers()
+  if type(registerAnonymousEventHandler) ~= "function" then return end
+  GGM.handlers.group_lower = registerAnonymousEventHandler("gmcp.group", "GGM.on_group_gmcp")
+  GGM.handlers.group_upper = registerAnonymousEventHandler("gmcp.Group", "GGM.on_group_gmcp")
+  GGM.handlers.char_base_lower = registerAnonymousEventHandler("gmcp.char.base", "GGM.on_char_gmcp")
+  GGM.handlers.char_base_upper = registerAnonymousEventHandler("gmcp.Char.Base", "GGM.on_char_gmcp")
+  GGM.handlers.connect = registerAnonymousEventHandler("sysConnectionEvent", "GGM.on_connect")
+  GGM.handlers.disconnect = registerAnonymousEventHandler("sysDisconnectionEvent", "GGM.on_disconnect")
+  GGM.handlers.protocol = registerAnonymousEventHandler("sysProtocolEnabled", "GGM.on_protocol_enabled")
+  GGM.handlers.resize = registerAnonymousEventHandler("sysWindowResizeEvent", "GGM.on_resize")
+  GGM.handlers.reposition = registerAnonymousEventHandler("AdjustableContainerRepositionFinish", "GGM.on_container_reposition_finish")
+  GGM.handlers.exit = registerAnonymousEventHandler("sysExitEvent", "GGM.save_state")
+end
+
+function GGM.init()
+  GGM.load_state()
+  GGM.self_name = GGM.current_self_name()
+  GGM.ensure_ui()
+  GGM.apply_visibility(true)
+  GGM.register_handlers()
+  GGM.enable_group_gmcp()
+  local raw = gmcp and (gmcp.group or gmcp.Group)
+  if type(raw) == "table" then GGM.group=GGM.normalize_group(raw); if GGM.group then GGM.last_update=os.time(); GGM.evaluate_alerts(GGM.group) end end
+  GGM.schedule_render()
+  GGM.stale_tick()
+end
+
+GGM.init()
+]]></script>
+        <eventHandlerList/>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

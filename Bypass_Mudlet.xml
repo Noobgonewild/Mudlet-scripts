@@ -238,7 +238,7 @@ local function commands_for_level(level, slots)
     return { "deathtrap dungeon", "zyian" }
   elseif level >= 140 and level <= 149 then
     if slots == 4 then
-      return { "cougarian", "cataclysm", "masquerade", "ftii" }
+      return { "cougarian", "cataclysm", "sahuagin", "ftii" }
     end
     return { "cougarian", "cataclysm" }
   elseif level >= 150 and level <= 174 then

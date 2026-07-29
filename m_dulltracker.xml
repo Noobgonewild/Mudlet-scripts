@@ -31,7 +31,7 @@
       <name>m_dulltracker_main</name>
       <packageName>m_dulltracker</packageName>
       <script><![CDATA[DULL = DULL or {}
-DULL.version = "1.2.2"
+DULL.version = "1.2.3"
 DULL.ids = DULL.ids or { triggers = {}, timers = {} }
 DULL.ids.triggers = DULL.ids.triggers or {}
 DULL.ids.handlers = DULL.ids.handlers or {}
@@ -52,6 +52,21 @@ end
 
 function DULL.fresh_line()
   cecho("\n")
+end
+
+function DULL.play_sound(sound_file)
+  if type(playSoundFile) ~= "function" then return false end
+
+  local relative_path = "sounds/" .. tostring(sound_file or "")
+  local sound_path = relative_path
+  if type(getMudletHomeDir) == "function" then
+    local home = getMudletHomeDir()
+    if home and home ~= "" then sound_path = home .. "/" .. relative_path end
+  end
+
+  local ok = pcall(playSoundFile, { name = sound_path, volume = 100 })
+  if ok then return true end
+  return pcall(playSoundFile, sound_path, 100)
 end
 
 function DULL.to_bool(value)
@@ -1090,6 +1105,7 @@ function DULL.double_start(info, m)
     if m[i] and m[i] ~= "" then mins = m[i] end
   end
   DULL.rates.xprDbl = { last = os.time(), total = 0, seconds = 0, rate = 0 }
+  DULL.play_sound("double_exp.wav")
   if DULL.should_auto_report("dbl") then
     DULL.fresh_line()
     DULL.report(DULL.disp_blbl("EXP: ") .. DULL.disp_val("DOUBLE EXP") .. DULL.disp_lbl(" for ") .. DULL.disp_val(mins) .. DULL.disp_lbl("m"))

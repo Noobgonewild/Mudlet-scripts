@@ -563,73 +563,15 @@ HSP.dinvSubscriptionId = HSP.dinvSubscriptionId or nil
 Spellups = Spellups or {}
 
 -- ============================================================================
--- Xterm 256-color to RGB lookup (for cecho)
+-- Xterm colors used by this package, mapped to Mudlet color names.
+-- Keep these as named colors from Colors.txt: numeric RGB cecho tags are not
+-- rendered consistently by every Mudlet output path.
 -- ============================================================================
 HSP.xterm256 = {
-  [0]=&quot;0,0,0&quot;,[1]=&quot;128,0,0&quot;,[2]=&quot;0,128,0&quot;,[3]=&quot;128,128,0&quot;,
-  [4]=&quot;0,0,128&quot;,[5]=&quot;128,0,128&quot;,[6]=&quot;0,128,128&quot;,[7]=&quot;192,192,192&quot;,
-  [8]=&quot;128,128,128&quot;,[9]=&quot;255,0,0&quot;,[10]=&quot;0,255,0&quot;,[11]=&quot;255,255,0&quot;,
-  [12]=&quot;0,0,255&quot;,[13]=&quot;255,0,255&quot;,[14]=&quot;0,255,255&quot;,[15]=&quot;255,255,255&quot;,
-  [16]=&quot;0,0,0&quot;,[17]=&quot;0,0,95&quot;,[18]=&quot;0,0,135&quot;,[19]=&quot;0,0,175&quot;,
-  [20]=&quot;0,0,215&quot;,[21]=&quot;0,0,255&quot;,[22]=&quot;0,95,0&quot;,[23]=&quot;0,95,95&quot;,
-  [24]=&quot;0,95,135&quot;,[25]=&quot;0,95,175&quot;,[26]=&quot;0,95,215&quot;,[27]=&quot;0,95,255&quot;,
-  [28]=&quot;0,135,0&quot;,[29]=&quot;0,135,95&quot;,[30]=&quot;0,135,135&quot;,[31]=&quot;0,135,175&quot;,
-  [32]=&quot;0,135,215&quot;,[33]=&quot;0,135,255&quot;,[34]=&quot;0,175,0&quot;,[35]=&quot;0,175,95&quot;,
-  [36]=&quot;0,175,135&quot;,[37]=&quot;0,175,175&quot;,[38]=&quot;0,175,215&quot;,[39]=&quot;0,175,255&quot;,
-  [40]=&quot;0,215,0&quot;,[41]=&quot;0,215,95&quot;,[42]=&quot;0,215,135&quot;,[43]=&quot;0,215,175&quot;,
-  [44]=&quot;0,215,215&quot;,[45]=&quot;0,215,255&quot;,[46]=&quot;0,255,0&quot;,[47]=&quot;0,255,95&quot;,
-  [48]=&quot;0,255,135&quot;,[49]=&quot;0,255,175&quot;,[50]=&quot;0,255,215&quot;,[51]=&quot;0,255,255&quot;,
-  [52]=&quot;95,0,0&quot;,[53]=&quot;95,0,95&quot;,[54]=&quot;95,0,135&quot;,[55]=&quot;95,0,175&quot;,
-  [56]=&quot;95,0,215&quot;,[57]=&quot;95,0,255&quot;,[58]=&quot;95,95,0&quot;,[59]=&quot;95,95,95&quot;,
-  [60]=&quot;95,95,135&quot;,[61]=&quot;95,95,175&quot;,[62]=&quot;95,95,215&quot;,[63]=&quot;95,95,255&quot;,
-  [64]=&quot;95,135,0&quot;,[65]=&quot;95,135,95&quot;,[66]=&quot;95,135,135&quot;,[67]=&quot;95,135,175&quot;,
-  [68]=&quot;95,135,215&quot;,[69]=&quot;95,135,255&quot;,[70]=&quot;95,175,0&quot;,[71]=&quot;95,175,95&quot;,
-  [72]=&quot;95,175,135&quot;,[73]=&quot;95,175,175&quot;,[74]=&quot;95,175,215&quot;,[75]=&quot;95,175,255&quot;,
-  [76]=&quot;95,215,0&quot;,[77]=&quot;95,215,95&quot;,[78]=&quot;95,215,135&quot;,[79]=&quot;95,215,175&quot;,
-  [80]=&quot;95,215,215&quot;,[81]=&quot;95,215,255&quot;,[82]=&quot;95,255,0&quot;,[83]=&quot;95,255,95&quot;,
-  [84]=&quot;95,255,135&quot;,[85]=&quot;95,255,175&quot;,[86]=&quot;95,255,215&quot;,[87]=&quot;95,255,255&quot;,
-  [88]=&quot;135,0,0&quot;,[89]=&quot;135,0,95&quot;,[90]=&quot;135,0,135&quot;,[91]=&quot;135,0,175&quot;,
-  [92]=&quot;135,0,215&quot;,[93]=&quot;135,0,255&quot;,[94]=&quot;135,95,0&quot;,[95]=&quot;135,95,95&quot;,
-  [96]=&quot;135,95,135&quot;,[97]=&quot;135,95,175&quot;,[98]=&quot;135,95,215&quot;,[99]=&quot;135,95,255&quot;,
-  [100]=&quot;135,135,0&quot;,[101]=&quot;135,135,95&quot;,[102]=&quot;135,135,135&quot;,[103]=&quot;135,135,175&quot;,
-  [104]=&quot;135,135,215&quot;,[105]=&quot;135,135,255&quot;,[106]=&quot;135,175,0&quot;,[107]=&quot;135,175,95&quot;,
-  [108]=&quot;135,175,135&quot;,[109]=&quot;135,175,175&quot;,[110]=&quot;135,175,215&quot;,[111]=&quot;135,175,255&quot;,
-  [112]=&quot;135,215,0&quot;,[113]=&quot;135,215,95&quot;,[114]=&quot;135,215,135&quot;,[115]=&quot;135,215,175&quot;,
-  [116]=&quot;135,215,215&quot;,[117]=&quot;135,215,255&quot;,[118]=&quot;135,255,0&quot;,[119]=&quot;135,255,95&quot;,
-  [120]=&quot;135,255,135&quot;,[121]=&quot;135,255,175&quot;,[122]=&quot;135,255,215&quot;,[123]=&quot;135,255,255&quot;,
-  [124]=&quot;175,0,0&quot;,[125]=&quot;175,0,95&quot;,[126]=&quot;175,0,135&quot;,[127]=&quot;175,0,175&quot;,
-  [128]=&quot;175,0,215&quot;,[129]=&quot;175,0,255&quot;,[130]=&quot;175,95,0&quot;,[131]=&quot;175,95,95&quot;,
-  [132]=&quot;175,95,135&quot;,[133]=&quot;175,95,175&quot;,[134]=&quot;175,95,215&quot;,[135]=&quot;175,95,255&quot;,
-  [136]=&quot;175,135,0&quot;,[137]=&quot;175,135,95&quot;,[138]=&quot;175,135,135&quot;,[139]=&quot;175,135,175&quot;,
-  [140]=&quot;175,135,215&quot;,[141]=&quot;175,135,255&quot;,[142]=&quot;175,175,0&quot;,[143]=&quot;175,175,95&quot;,
-  [144]=&quot;175,175,135&quot;,[145]=&quot;175,175,175&quot;,[146]=&quot;175,175,215&quot;,[147]=&quot;175,175,255&quot;,
-  [148]=&quot;175,215,0&quot;,[149]=&quot;175,215,95&quot;,[150]=&quot;175,215,135&quot;,[151]=&quot;175,215,175&quot;,
-  [152]=&quot;175,215,215&quot;,[153]=&quot;175,215,255&quot;,[154]=&quot;175,255,0&quot;,[155]=&quot;175,255,95&quot;,
-  [156]=&quot;175,255,135&quot;,[157]=&quot;175,255,175&quot;,[158]=&quot;175,255,215&quot;,[159]=&quot;175,255,255&quot;,
-  [160]=&quot;215,0,0&quot;,[161]=&quot;215,0,95&quot;,[162]=&quot;215,0,135&quot;,[163]=&quot;215,0,175&quot;,
-  [164]=&quot;215,0,215&quot;,[165]=&quot;215,0,255&quot;,[166]=&quot;215,95,0&quot;,[167]=&quot;215,95,95&quot;,
-  [168]=&quot;215,95,135&quot;,[169]=&quot;215,95,175&quot;,[170]=&quot;215,95,215&quot;,[171]=&quot;215,95,255&quot;,
-  [172]=&quot;215,135,0&quot;,[173]=&quot;215,135,95&quot;,[174]=&quot;215,135,135&quot;,[175]=&quot;215,135,175&quot;,
-  [176]=&quot;215,135,215&quot;,[177]=&quot;215,135,255&quot;,[178]=&quot;215,175,0&quot;,[179]=&quot;215,175,95&quot;,
-  [180]=&quot;215,175,135&quot;,[181]=&quot;215,175,175&quot;,[182]=&quot;215,175,215&quot;,[183]=&quot;215,175,255&quot;,
-  [184]=&quot;215,215,0&quot;,[185]=&quot;215,215,95&quot;,[186]=&quot;215,215,135&quot;,[187]=&quot;215,215,175&quot;,
-  [188]=&quot;215,215,215&quot;,[189]=&quot;215,215,255&quot;,[190]=&quot;215,255,0&quot;,[191]=&quot;215,255,95&quot;,
-  [192]=&quot;215,255,135&quot;,[193]=&quot;215,255,175&quot;,[194]=&quot;215,255,215&quot;,[195]=&quot;215,255,255&quot;,
-  [196]=&quot;255,0,0&quot;,[197]=&quot;255,0,95&quot;,[198]=&quot;255,0,135&quot;,[199]=&quot;255,0,175&quot;,
-  [200]=&quot;255,0,215&quot;,[201]=&quot;255,0,255&quot;,[202]=&quot;255,95,0&quot;,[203]=&quot;255,95,95&quot;,
-  [204]=&quot;255,95,135&quot;,[205]=&quot;255,95,175&quot;,[206]=&quot;255,95,215&quot;,[207]=&quot;255,95,255&quot;,
-  [208]=&quot;255,135,0&quot;,[209]=&quot;255,135,95&quot;,[210]=&quot;255,135,135&quot;,[211]=&quot;255,135,175&quot;,
-  [212]=&quot;255,135,215&quot;,[213]=&quot;255,135,255&quot;,[214]=&quot;255,175,0&quot;,[215]=&quot;255,175,95&quot;,
-  [216]=&quot;255,175,135&quot;,[217]=&quot;255,175,175&quot;,[218]=&quot;255,175,215&quot;,[219]=&quot;255,175,255&quot;,
-  [220]=&quot;255,215,0&quot;,[221]=&quot;255,215,95&quot;,[222]=&quot;255,215,135&quot;,[223]=&quot;255,215,175&quot;,
-  [224]=&quot;255,215,215&quot;,[225]=&quot;255,215,255&quot;,[226]=&quot;255,255,0&quot;,[227]=&quot;255,255,95&quot;,
-  [228]=&quot;255,255,135&quot;,[229]=&quot;255,255,175&quot;,[230]=&quot;255,255,215&quot;,[231]=&quot;255,255,255&quot;,
-  [232]=&quot;8,8,8&quot;,[233]=&quot;18,18,18&quot;,[234]=&quot;28,28,28&quot;,[235]=&quot;38,38,38&quot;,
-  [236]=&quot;48,48,48&quot;,[237]=&quot;58,58,58&quot;,[238]=&quot;68,68,68&quot;,[239]=&quot;78,78,78&quot;,
-  [240]=&quot;88,88,88&quot;,[241]=&quot;98,98,98&quot;,[242]=&quot;108,108,108&quot;,[243]=&quot;118,118,118&quot;,
-  [244]=&quot;128,128,128&quot;,[245]=&quot;138,138,138&quot;,[246]=&quot;148,148,148&quot;,[247]=&quot;158,158,158&quot;,
-  [248]=&quot;168,168,168&quot;,[249]=&quot;178,178,178&quot;,[250]=&quot;188,188,188&quot;,[251]=&quot;198,198,198&quot;,
-  [252]=&quot;208,208,208&quot;,[253]=&quot;218,218,218&quot;,[254]=&quot;228,228,228&quot;,[255]=&quot;238,238,238&quot;,
+  [86] = &quot;medium_turquoise&quot;,
+  [130] = &quot;sienna&quot;,
+  [227] = &quot;light_yellow&quot;,
+  [240] = &quot;dim_gray&quot;,
 }
 
 -- ============================================================================
@@ -656,20 +598,15 @@ function HSP.ColoursToMudlet(str)
     [&quot;@W&quot;] = &quot;&lt;white&gt;&quot;,
     [&quot;@D&quot;] = &quot;&lt;ansiLightBlack&gt;&quot;,
   }
-  -- First handle xterm @x### and @X### codes
+  -- First handle the xterm codes used by this package. Unknown codes fall
+  -- back to Mudlet's named white rather than emitting a numeric RGB tag.
   str = str:gsub(&quot;@[xX](%d%d%d)&quot;, function(num)
     local n = tonumber(num)
-    if HSP.xterm256[n] then
-      return &quot;&lt;&quot; .. HSP.xterm256[n] .. &quot;&gt;&quot;
-    end
-    return &quot;&quot;
+    return &quot;&lt;&quot; .. (HSP.xterm256[n] or &quot;ansiWhite&quot;) .. &quot;&gt;&quot;
   end)
   str = str:gsub(&quot;@[xX](%d%d)&quot;, function(num)
     local n = tonumber(num)
-    if HSP.xterm256[n] then
-      return &quot;&lt;&quot; .. HSP.xterm256[n] .. &quot;&gt;&quot;
-    end
-    return &quot;&quot;
+    return &quot;&lt;&quot; .. (HSP.xterm256[n] or &quot;ansiWhite&quot;) .. &quot;&gt;&quot;
   end)
   -- Then handle basic color codes
   for code, replacement in pairs(colorMap) do
@@ -701,7 +638,7 @@ function hadarprint(str, level)
   elseif level == &quot;helpfile&quot; or level == &quot;helpfile2&quot; then
     cecho(str .. &quot;\n&quot;)
   elseif level == &quot;noclan&quot; then
-    cecho(&quot;&lt;ansiLightGreen&gt;[&lt;255,175,0&gt;hsp &lt;ansiLightYellow&gt;NO CLAN&lt;ansiLightGreen&gt;]&lt;white&gt;:&lt;ansiWhite&gt;&quot; .. HSP.ColoursToMudlet(str) .. &quot;&lt;reset&gt;\n&quot;)
+    cecho(&quot;&lt;ansiLightGreen&gt;[&lt;orange&gt;hsp &lt;ansiLightYellow&gt;NO CLAN&lt;ansiLightGreen&gt;]&lt;white&gt;:&lt;ansiWhite&gt;&quot; .. HSP.ColoursToMudlet(str) .. &quot;&lt;reset&gt;\n&quot;)
   else
     cecho(HSP.ColoursToMudlet(str) .. &quot;&lt;reset&gt;\n&quot;)
   end
@@ -2002,12 +1939,12 @@ function noAutoList(sn)
     hadarprint(&quot;Your list of no cast spells has been cleared.&quot;, &quot;script&quot;)
     HSP.SaveState()
   else
-    hadarprint(&quot;@W+@x086--------------@G[@CN@co @CA@cuto @CC@cast @CS@cpells@G]@x086-------------@W+@w&quot;)
-    hadarprint(&quot;@W|      @CS@cpell @CN@cumber      @W|      @CS@cpell @Cn@came       @W|@w&quot;)
-    hadarprint(&quot;@W+@x086------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;+--------------@G[@CN@co @CA@cuto @CC@cast @CS@cpells@G]&lt;medium_turquoise&gt;-------------+@w&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;|      @CS@cpell @CN@cumber      &lt;medium_turquoise&gt;|      @CS@cpell @Cn@came       &lt;medium_turquoise&gt;|@w&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;+------------------------------------------------+@w&quot;)
     if Spellups[&quot;EX&quot;][&quot;noAuto&quot;][1] == nil then
-      hadarprint(&quot;@W|@c      No Spells are set to not autocast         @W|@w&quot;)
-      hadarprint(&quot;@W|@c      to set a spell use hsp noauto &lt;number&gt;    @W|@w&quot;)
+      hadarprint(&quot;&lt;medium_turquoise&gt;|@c      No Spells are set to not autocast         &lt;medium_turquoise&gt;|@w&quot;)
+      hadarprint(&quot;&lt;medium_turquoise&gt;|@c      to set a spell use hsp noauto &lt;number&gt;    &lt;medium_turquoise&gt;|@w&quot;)
     end
     for i, v in pairs(Spellups[&quot;EX&quot;][&quot;noAuto&quot;]) do
       local numbersize = 24 - string.len(tostring(v))
@@ -2018,9 +1955,9 @@ function noAutoList(sn)
       local wordpad1 = math.ceil(wordsize / 2)
       local wordpad2 = math.floor(wordsize / 2)
       local showword = string.rep(&quot; &quot;, wordpad1) .. Spellups[&quot;AS&quot;][&quot;list&quot;][tonumber(v)][&quot;name&quot;] .. string.rep(&quot; &quot;, wordpad2)
-      hadarprint(&quot;@W|@c&quot; .. shownumber .. &quot;@W|@c&quot; .. showword .. &quot;@W|@w&quot;)
+      hadarprint(&quot;&lt;medium_turquoise&gt;|@c&quot; .. shownumber .. &quot;&lt;medium_turquoise&gt;|@c&quot; .. showword .. &quot;&lt;medium_turquoise&gt;|@w&quot;)
     end
-    hadarprint(&quot;@W+@x086------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;+------------------------------------------------+@w&quot;)
   end
 end
 
@@ -2505,11 +2442,11 @@ function hspsettotem(str)
       configAutocastString = &quot;         @Rfalse@W         &quot;
     end
     if Spellups[&quot;TG&quot;][&quot;totemcast&quot;] == &quot;owl&quot; then
-      configAutoCastType = &quot;          @x227owl@W          &quot;
+      configAutoCastType = &quot;          &lt;light_yellow&gt;owl@W          &quot;
     elseif Spellups[&quot;TG&quot;][&quot;totemcast&quot;] == &quot;ent&quot; then
-      configAutoCastType = &quot;          @X130ent@W          &quot;
+      configAutoCastType = &quot;          &lt;sienna&gt;ent@W          &quot;
     elseif Spellups[&quot;TG&quot;][&quot;totemcast&quot;] == &quot;bear&quot; then
-      configAutoCastType = &quot;         @x240bear@W          &quot;
+      configAutoCastType = &quot;         &lt;dim_gray&gt;bear@W          &quot;
     else
       configAutoCastType = &quot;         @RNone@W          &quot;
     end
@@ -2533,13 +2470,13 @@ function hspsettotem(str)
     local totemdeadbear = interp(Spellups[&quot;TB&quot;][&quot;TotemDown&quot;], {logo = Spellups[&quot;MS&quot;][&quot;logo&quot;], type = &quot;Bear&quot;})
     local totemdeadent = interp(Spellups[&quot;TE&quot;][&quot;TotemDown&quot;], {logo = Spellups[&quot;MS&quot;][&quot;logo&quot;], type = &quot;Ent&quot;})
 
-    hadarprint(&quot;@W+@x086--------------------@G[@CT@cotems@G]@x086-------------------@W+@w&quot;, &quot;helpfile&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;--------------------@G[@CT@cotems@G]&lt;medium_turquoise&gt;-------------------@W+@w&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;@W|         @CO@cption        @W|        @CC@config         @W|@w&quot;, &quot;helpfile&quot;)
-    hadarprint(&quot;@W+@x086-----------------------------------------------@W+@w&quot;, &quot;helpfile&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;-----------------------------------------------@W+@w&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;@W|        @CA@cuto@CC@cast       @W|&quot; .. configAutocastString .. &quot;|@w&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;@W|     @CA@cuto@CC@cast @CT@cype     @W|&quot; .. configAutoCastType .. &quot;|@w&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;@W|       @CC@comm @CL@cog        @W|&quot; .. configCommLog .. &quot;|@w&quot;, &quot;helpfile&quot;)
-    hadarprint(&quot;@W+@x086-----------------------------------------------@W+@w&quot;, &quot;helpfile&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;-----------------------------------------------@W+@w&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&quot;)
     hadarprint(&quot;@CT@cotem @CM@cessages@W:@w&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;@W-----------------------------------------------@w&quot;, &quot;helpfile&quot;)
@@ -2708,9 +2645,9 @@ function hspdotimerexception(str)
     end
   else
     -- Show timer list
-    hadarprint(&quot;@W+@x086---------@G[@CT@cimers @CE@cxceptions@G]@x086--------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;---------@G[@CT@cimers @CE@cxceptions@G]&lt;medium_turquoise&gt;--------@W+@w&quot;)
     hadarprint(&quot;@W|   @CS@cpell @CN@cumber  @W|   @CS@cpell @Cn@came   @W|  @CT@cimers  @W|@w&quot;)
-    hadarprint(&quot;@W+@x086--------------------------------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;--------------------------------------------------------------------------@W+@w&quot;)
     if Spellups[&quot;EX&quot;][&quot;Timer&quot;][1] == nil then
       hadarprint(&quot;@W|@c     No Spells are set to have a timer        @W|@w&quot;)
     end
@@ -2726,7 +2663,7 @@ function hspdotimerexception(str)
       end
       hadarprint(&quot;@W|@c  &quot; .. v .. &quot;  @W|@c  &quot; .. nm .. &quot;  @W|@c  &quot; .. ts .. &quot;  @W|@w&quot;)
     end
-    hadarprint(&quot;@W+@x086--------------------------------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;--------------------------------------------------------------------------@W+@w&quot;)
   end
 end
 
@@ -2796,9 +2733,9 @@ function hspsetcombat(str)
       table.insert(Spellups[&quot;EX&quot;][&quot;exceptions&quot;], sn)
     end
   else
-    hadarprint(&quot;@W+@x086---------------@G[@CC@combat @CE@cxceptions@G]@x086--------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;---------------@G[@CC@combat @CE@cxceptions@G]&lt;medium_turquoise&gt;--------------@W+@w&quot;)
     hadarprint(&quot;@W|      @CS@cpell @CN@cumber      @W|      @CS@cpell @Cn@came       @W|@w&quot;)
-    hadarprint(&quot;@W+@x086------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;------------------------------------------------@W+@w&quot;)
     if Spellups[&quot;EX&quot;][&quot;exceptions&quot;][1] == nil then
       hadarprint(&quot;@W|@c     No Spells are set to cast in combat       @W|@w&quot;)
     end
@@ -2806,7 +2743,7 @@ function hspsetcombat(str)
       local nm = Spellups[&quot;AS&quot;][&quot;list&quot;][tonumber(v)] and Spellups[&quot;AS&quot;][&quot;list&quot;][tonumber(v)][&quot;name&quot;] or &quot;?&quot;
       hadarprint(&quot;@W|@c  &quot; .. v .. &quot;  @W|@c  &quot; .. nm .. &quot;  @W|@w&quot;)
     end
-    hadarprint(&quot;@W+@x086------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;------------------------------------------------@W+@w&quot;)
   end
 end
 
@@ -2838,9 +2775,9 @@ function hspsetwraith(str)
       table.insert(Spellups[&quot;EX&quot;][&quot;wraithform&quot;], sn)
     end
   else
-    hadarprint(&quot;@W+@x086---------------@G[@CW@craith @CE@cxceptions@G]@x086--------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;---------------@G[@CW@craith @CE@cxceptions@G]&lt;medium_turquoise&gt;--------------@W+@w&quot;)
     hadarprint(&quot;@W|      @CS@cpell @CN@cumber      @W|      @CS@cpell @Cn@came       @W|@w&quot;)
-    hadarprint(&quot;@W+@x086------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;------------------------------------------------@W+@w&quot;)
     if Spellups[&quot;EX&quot;][&quot;wraithform&quot;][1] == nil then
       hadarprint(&quot;@W|@c  No Spells are set to cast before wraith form  @W|@w&quot;)
     end
@@ -2848,7 +2785,7 @@ function hspsetwraith(str)
       local nm = Spellups[&quot;AS&quot;][&quot;list&quot;][tonumber(v)] and Spellups[&quot;AS&quot;][&quot;list&quot;][tonumber(v)][&quot;name&quot;] or &quot;?&quot;
       hadarprint(&quot;@W|@c  &quot; .. v .. &quot;  @W|@c  &quot; .. nm .. &quot;  @W|@w&quot;)
     end
-    hadarprint(&quot;@W+@x086------------------------------------------------@W+@w&quot;)
+    hadarprint(&quot;@W+&lt;medium_turquoise&gt;------------------------------------------------@W+@w&quot;)
   end
 end
 

@@ -1,0 +1,1046 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <TriggerPackage>
+    <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGColor="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+      <name>m_aarchaeology</name><script></script><conditionLineDelta>0</conditionLineDelta><mStayOpen>0</mStayOpen><mCommand></mCommand><packageName>m_aarchaeology</packageName><mFgColor></mFgColor><mBgColor></mBgColor><mSoundFile></mSoundFile><colorTriggerFgColor></colorTriggerFgColor><colorTriggerBgColor></colorTriggerBgColor><regexCodeList><string></string></regexCodeList><regexCodePropertyList><integer>0</integer></regexCodePropertyList>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_professor</name><script>m_aarchaeology_TR_Professor(matches)</script><command></command><packageName></packageName><regexCodeList><string>^(?:\(T(?:ranslucent)?\) ?)?(?:\(W(?:hite Aura)?\) )?\s?Andolor's very own \(Aarchaeology\) Professor is here, studying\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_pamphlet</name><script>m_aarchaeology_TR_Pamphlet(matches)</script><command></command><packageName></packageName><regexCodeList><string>^(?:\(\s*(\d+)\)\s*)?\s*(?:\(K\)\s*)?(?:\(M(?:agic)?\)\s*)?(?:\(G(?:low)?\)\s*)?(?:\(H(?:um)?\)\s*)?\(Aarchaeology\) Collectable Pamphlet #(\d+) \(1\)$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_piece</name><script>m_aarchaeology_TR_Piece(matches)</script><command></command><packageName></packageName><regexCodeList><string>^(?:\(\s*(\d+)\)\s*)?.*?\(Aarchaeology\) ([A-Za-z0-9' -]+) \(1\)$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_market</name><script>m_aarchaeology_TR_Market(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Market: (?:.+ has (?:proxy )?bid [\d,]+ gold on|Bid of [\d,]+ gold on|.+ is selling) \(Aarchaeology\) (.+) \(Level 1, Num \d+\).?(?: Auction is for Gold\.)?$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_auction</name><script>m_aarchaeology_TR_Auction(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Auction: (?:.+ has placed a bid for [\d,]+ gold on|.+ is auctioning) \(Aarchaeology\) (.+) \(Level 1, Num \d+\).(?: Current bid is [\d,]+.)?$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_lbid</name><script>m_aarchaeology_TR_LBid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ (\d+) \(Aarchaeology\) (.+?)\s+1\s+(?:\*| )?G\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_bid</name><script>m_aarchaeology_TR_Bid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^([\d ]+) - .+\(Aarchaeology\) (.+?)\s+1\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_market_list</name><script>m_aarchaeology_TR_MarketList(matches)</script><command></command><packageName></packageName><regexCodeList><string>^\s*(\d+)\s+\(Aarchaeology\)\s+(.+?)\s+1\s+\*?\s*(Gold|Qp|QP)\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_cant_look</name><script>m_aarchaeology_TR_CantLook(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You dream about being able to look\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_done</name><script>m_aarchaeology_TR_Done(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Looked in Aarch Bags!$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+    </TriggerGroup>
+  </TriggerPackage>
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes"><name>m_aarchaeology</name><script></script><command></command><packageName>m_aarchaeology</packageName><regex></regex>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_report</name><script>m_aarchaeology_Alias_Report(matches)</script><command></command><packageName></packageName><regex>^a?arch repo?r?t?$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_cost</name><script>m_aarchaeology_Alias_Cost(matches)</script><command></command><packageName></packageName><regex>^a?arch cost$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_multiplier</name><script>m_aarchaeology_Alias_Multiplier(matches)</script><command></command><packageName></packageName><regex>^a?arch (?:cost )?(?:multiplier|multiplicator)(?: (\d+(?:\.\d+)?))?$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_help</name><script>m_aarchaeology_Alias_Help(matches)</script><command></command><packageName></packageName><regex>^a?arch help$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_bag_set</name><script>m_aarchaeology_Alias_Bag(matches)</script><command></command><packageName></packageName><regex>^a?arch bag (.+)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_bag_show</name><script>m_aarchaeology_Alias_Bag(matches)</script><command></command><packageName></packageName><regex>^a?arch bag$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_sound_toggle</name><script>m_aarchaeology_Alias_SoundToggle(matches)</script><command></command><packageName></packageName><regex>^a?arch sounds? (on|off)$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_sound_show</name><script>m_aarchaeology_Alias_SoundShow(matches)</script><command></command><packageName></packageName><regex>^a?arch sounds?$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_sound_test</name><script>m_aarchaeology_Alias_SoundTest(matches)</script><command></command><packageName></packageName><regex>^a?arch sound test$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_sound_file</name><script>m_aarchaeology_Alias_SoundFile(matches)</script><command></command><packageName></packageName><regex>^a?arch sound (?!on$|off$|test$)(.+)$</regex></Alias>
+    </AliasGroup>
+  </AliasPackage>
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes"><name>m_aarchaeology</name><script></script><packageName>m_aarchaeology</packageName>
+      <Script isActive="yes" isFolder="no"><name>m_aarchaeology_main</name><script><![CDATA[
+-- Mudlet port of Endymion's Aarchaeology 2 MUSHclient plugin.
+m_aarchaeology = m_aarchaeology or {}
+local A = m_aarchaeology
+
+A.version = "1.3.0"
+A.default_settings = {
+  bags = "'collection satchel'",
+  sounds = "on",
+  sound_file = "C:\\Windows\\Media\\Cityscape\\Windows Feed Discovered.wav",
+  fallback_multiplier = 5,
+}
+
+A.pieces = {
+  "Johnny's Appleseed",
+  "An Ancient Skull",
+  "A Golden Truffle",
+  "An Ancient Game Token",
+  "Neptune's Retired Staff",
+  "Percival's Retired Crown",
+  "Photo of an F1 Tornado",
+  "A Ring of Thandeld",
+  "Petrified Volcano Ash",
+  "An Old Coyote's Tooth",
+  "Dorothy's Lost Earring",
+  "A Golden Cross",
+  "Skeleton of a Goblin",
+  "A Rusted Coin",
+  "A Rusted Trumpet",
+  "A Coffin Lid",
+  "A Wedding Ring",
+  "A Dinosaur Bone",
+  "A Dragon's Tooth",
+  "Unknown Element",
+  "A Destroyed Mosaic",
+  "A Silver Cross",
+  "Lost Binoculars",
+  "Pirate's Hat",
+  "A Rusted Cleaver",
+  "Wilted Rose",
+  "Casino Chip",
+  "Torn Visitor's Pass",
+  "Ten-year-old Textbook",
+  "Ivory Tusks",
+  "An Oasis",
+  "Skeleton of a Monkey",
+  "An Ancient Stalactite",
+  "Shoes of a Gnome",
+  "A Torn Peace Agreement",
+  "Chunk of an Iceberg",
+  "Wings of a Harpy",
+  "Petrified Tree Branch",
+  "A Golden Leaf",
+  "Writings of a Dream",
+  "An Old Rope",
+  "A Broken Twig",
+  "Brick from a Castle",
+  "A Rusted Belt Buckle",
+  "A Biblical Textbook",
+  "Frozen Flames",
+  "Fox Tooth",
+  "Picture of a Forest",
+  "Moon in a Bottle",
+  "Rotting Reed",
+}
+
+A.values = {
+  "10k", "10k", "10k", "10k", "10k",
+  "50k", "50k", "50k", "50k", "50k",
+  "100k", "100k", "100k", "100k", "100k",
+  "250k", "250k", "250k", "250k", "250k",
+  "500k", "500k", "500k", "500k", "500k",
+  "750k", "750k", "750k", "750k", "750k",
+  "1mil", "1mil", "1mil", "1mil", "1mil",
+  "2mil", "2mil", "2mil", "2mil", "2mil", "2mil",
+  "5mil", "5mil", "5mil",
+  "10mil", "10mil",
+  "TP", "TP", "TP", "TP",
+}
+
+local function trim(value)
+  return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function normalize(value)
+  local text = tostring(value or "")
+  text = text:gsub("@.", "")
+  text = text:gsub("<[^>]+>", "")
+  text = text:gsub("%([Aa]archaeology%)", "")
+  text = text:gsub("%.%.%.$", "")
+  text = text:gsub("%s+", " ")
+  text = trim(text):lower()
+  if text == "chunk of an iceburg" then text = "chunk of an iceberg" end
+  return text
+end
+
+local function clone_defaults()
+  return {
+    bags = A.default_settings.bags,
+    sounds = A.default_settings.sounds,
+    sound_file = A.default_settings.sound_file,
+    fallback_multiplier = A.default_settings.fallback_multiplier,
+  }
+end
+
+local function persistence_dir()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+A.state_file = persistence_dir() .. "/m_aarchaeology_state.lua"
+A.mbot_db_file = persistence_dir() .. "/mmarket.db"
+
+function A.load_settings()
+  A.settings = clone_defaults()
+  A.saved_piece_counts = {}
+  A.saved_pamphlet_counts = {}
+  A.has_saved_inventory = false
+  A.inventory_saved_at = nil
+  local ok, loaded = pcall(dofile, A.state_file)
+  if not ok or type(loaded) ~= "table" then return end
+  if type(loaded.bags) == "string" and trim(loaded.bags) ~= "" then A.settings.bags = loaded.bags end
+  if loaded.sounds == "on" or loaded.sounds == "off" then A.settings.sounds = loaded.sounds end
+  if type(loaded.sound_file) == "string" and loaded.sound_file ~= "" then A.settings.sound_file = loaded.sound_file end
+  local multiplier = tonumber(loaded.fallback_multiplier)
+  if multiplier and multiplier > 0 and multiplier <= 1000 then A.settings.fallback_multiplier = multiplier end
+  if loaded.inventory_saved == true then
+    A.saved_piece_counts = A.decode_saved_counts(loaded.piece_counts)
+    A.saved_pamphlet_counts = A.decode_saved_counts(loaded.pamphlet_counts)
+    A.has_saved_inventory = true
+    A.inventory_saved_at = tonumber(loaded.inventory_saved_at)
+    A.restore_saved_inventory()
+  end
+end
+
+function A.save_settings()
+  local f = io.open(A.state_file, "w")
+  if not f then
+    cecho("<red>[m_aarchaeology] Could not save settings.\n")
+    return false
+  end
+  f:write("return {\n")
+  f:write("  bags = ", string.format("%q", A.settings.bags), ",\n")
+  f:write("  sounds = ", string.format("%q", A.settings.sounds), ",\n")
+  f:write("  sound_file = ", string.format("%q", A.settings.sound_file), ",\n")
+  f:write("  fallback_multiplier = ", tostring(tonumber(A.settings.fallback_multiplier) or 5), ",\n")
+  f:write("  inventory_saved = ", tostring(A.has_saved_inventory == true), ",\n")
+  if A.inventory_saved_at then
+    f:write("  inventory_saved_at = ", tostring(math.floor(A.inventory_saved_at)), ",\n")
+  end
+  f:write("  piece_counts = {\n")
+  for number, piece in ipairs(A.pieces) do
+    local amount = math.floor(tonumber(A.saved_piece_counts and A.saved_piece_counts[piece]) or 0)
+    if amount > 0 then f:write(string.format("    [%d] = %d,\n", number, amount)) end
+  end
+  f:write("  },\n")
+  f:write("  pamphlet_counts = {\n")
+  for number, piece in ipairs(A.pieces) do
+    local amount = math.floor(tonumber(A.saved_pamphlet_counts and A.saved_pamphlet_counts[piece]) or 0)
+    if amount > 0 then f:write(string.format("    [%d] = %d,\n", number, amount)) end
+  end
+  f:write("  },\n")
+  f:write("}\n")
+  f:close()
+  return true
+end
+
+function A.rebuild_indexes()
+  A.number_by_name = {}
+  A.canonical_by_key = {}
+  for number, piece in ipairs(A.pieces) do
+    A.number_by_name[piece] = number
+    A.canonical_by_key[normalize(piece)] = piece
+  end
+end
+
+function A.clear_inventory()
+  A.owned = {}
+  A.piece_counts = {}
+  A.pamphlet_counts = {}
+end
+
+local function copy_counts(source)
+  local result = {}
+  for _, piece in ipairs(A.pieces) do
+    local amount = math.floor(tonumber(source and source[piece]) or 0)
+    if amount > 0 then result[piece] = amount end
+  end
+  return result
+end
+
+function A.decode_saved_counts(source)
+  local result = {}
+  if type(source) ~= "table" then return result end
+  for key, value in pairs(source) do
+    local number = tonumber(key)
+    local canonical = number and A.pieces[number] or A.canonical_by_key[normalize(key)]
+    local amount = math.floor(tonumber(value) or 0)
+    if canonical and amount > 0 then result[canonical] = amount end
+  end
+  return result
+end
+
+function A.restore_saved_inventory()
+  A.clear_inventory()
+  A.piece_counts = copy_counts(A.saved_piece_counts)
+  A.pamphlet_counts = copy_counts(A.saved_pamphlet_counts)
+  for _, piece in ipairs(A.pieces) do
+    if (tonumber(A.piece_counts[piece]) or 0) > 0
+      or (tonumber(A.pamphlet_counts[piece]) or 0) > 0
+    then
+      A.owned[piece] = true
+    end
+  end
+  A.ran = A.has_saved_inventory == true
+end
+
+function A.commit_inventory()
+  A.saved_piece_counts = copy_counts(A.piece_counts)
+  A.saved_pamphlet_counts = copy_counts(A.pamphlet_counts)
+  A.has_saved_inventory = true
+  A.inventory_saved_at = os.time()
+  A.ran = true
+  return A.save_settings()
+end
+
+function A.resolve_candidates(value)
+  local key = normalize(value)
+  if key == "" then return {} end
+  local exact = A.canonical_by_key[key]
+  if exact then return { exact } end
+
+  local found = {}
+  for _, piece in ipairs(A.pieces) do
+    local candidate = normalize(piece)
+    if candidate:sub(1, #key) == key or key:sub(1, #candidate) == candidate then
+      found[#found + 1] = piece
+    end
+  end
+  return found
+end
+
+function A.is_needed(value)
+  local candidates = A.resolve_candidates(value)
+  if #candidates == 0 then return false, candidates end
+  for _, piece in ipairs(candidates) do
+    if not A.owned[piece] then return true, candidates end
+  end
+  return false, candidates
+end
+
+local function count_label(number, singular, plural)
+  number = tonumber(number) or 0
+  if number == 0 then return "" end
+  return tostring(number) .. " " .. (number == 1 and singular or plural)
+end
+
+function A.status_for(value)
+  local candidates = A.resolve_candidates(value)
+  if #candidates == 0 then return "UNK" end
+  local statuses = {}
+  for _, piece in ipairs(candidates) do
+    local pc = tonumber(A.piece_counts[piece]) or 0
+    local pam = tonumber(A.pamphlet_counts[piece]) or 0
+    local parts = {}
+    if pc > 0 then parts[#parts + 1] = count_label(pc, "Pc", "Pcs") end
+    if pam > 0 then parts[#parts + 1] = count_label(pam, "Pam", "Pams") end
+    statuses[#statuses + 1] = #parts > 0 and table.concat(parts, "/") or "NEED"
+  end
+  return table.concat(statuses, "|")
+end
+
+function A.turnin_for(value)
+  local candidates = A.resolve_candidates(value)
+  if #candidates == 0 then return "?" end
+  local values = {}
+  for _, piece in ipairs(candidates) do
+    values[#values + 1] = A.values[A.number_by_name[piece]] or "?"
+  end
+  return table.concat(values, "|")
+end
+
+local function current_line(raw_line)
+  if raw_line ~= nil and raw_line ~= "" then return tostring(raw_line) end
+  if type(getCurrentLine) == "function" then
+    local ok, value = pcall(getCurrentLine)
+    if ok then return tostring(value or "") end
+  end
+  return ""
+end
+
+-- Re-rendering the current line preserves its existing colours and adds the tag
+-- inline. This is the same Mudlet-safe strategy used by g_Fantasy_Cards_Mudlet.
+function A.append_inline(raw_line, decho_markup, plain_text, red_fallback)
+  local raw = current_line(raw_line)
+  if type(copy2decho) == "function" and type(decho) == "function" and type(replace) == "function" then
+    local ok_copy, coloured = pcall(copy2decho)
+    if ok_copy and coloured ~= nil and tostring(coloured) ~= "" then
+      coloured = tostring(coloured):gsub("[\r\n]+$", "")
+      local cleared = false
+      if type(selectCurrentLine) == "function" then
+        local ok_select = pcall(selectCurrentLine)
+        cleared = ok_select and pcall(replace, "") or false
+      elseif raw ~= "" and type(selectString) == "function" then
+        local ok_select, position = pcall(selectString, raw, 1)
+        if ok_select and position and position > -1 then cleared = pcall(replace, "") end
+      end
+      if cleared then
+        decho(coloured .. decho_markup .. "<r>\n")
+        return
+      end
+    end
+  end
+
+  if red_fallback and type(fg) == "function" and type(echo) == "function" then
+    echo(" ")
+    fg("red")
+    echo(plain_text)
+    if type(resetFormat) == "function" then resetFormat() end
+    return
+  end
+  echo(" " .. plain_text)
+end
+
+function A.append_need(raw_line)
+  A.append_inline(raw_line, " <255,0,0>NEED", "NEED", true)
+end
+
+local function echo_lbid_need_link(auction_id)
+  local id = tostring(auction_id or ""):match("^(%d+)$")
+  if not id then return false end
+  local hint = "Click to send: lbid " .. id
+  local callback = function() send("lbid " .. id) end
+  local command = string.format("send(%q)", "lbid " .. id)
+
+  if type(cechoLink) == "function" then
+    local ok = pcall(cechoLink, "<red> [NEED]<reset>", callback, hint, true)
+    if not ok then ok = pcall(cechoLink, "<red> [NEED]<reset>", command, hint, true) end
+    if ok then return true end
+  end
+  if type(echoLink) == "function" then
+    if type(fg) == "function" then fg("red") end
+    local ok = pcall(echoLink, " [NEED]", callback, hint, true)
+    if not ok then ok = pcall(echoLink, " [NEED]", command, hint, true) end
+    if type(resetFormat) == "function" then resetFormat() end
+    if ok then return true end
+  end
+  return false
+end
+
+local function echo_average_tag(tag)
+  if tag and tag ~= "" then cecho(" <yellow>[" .. tag .. "]<reset>") end
+end
+
+local function echo_plain_need()
+  if type(fg) == "function" and type(echo) == "function" then
+    echo(" ")
+    fg("red")
+    echo("[NEED]")
+    if type(resetFormat) == "function" then resetFormat() end
+  elseif type(cecho) == "function" then
+    cecho(" <red>[NEED]<reset>")
+  else
+    echo(" [NEED]")
+  end
+end
+
+function A.append_clickable_need(raw_line, auction_id, average_tag)
+  local raw = current_line(raw_line)
+  local rerendered = false
+  if type(copy2decho) == "function" and type(decho) == "function" and type(replace) == "function" then
+    local ok_copy, coloured = pcall(copy2decho)
+    if ok_copy and coloured ~= nil and tostring(coloured) ~= "" then
+      coloured = tostring(coloured):gsub("[\r\n]+$", "")
+      local cleared = false
+      if type(selectCurrentLine) == "function" then
+        local ok_select = pcall(selectCurrentLine)
+        cleared = ok_select and pcall(replace, "") or false
+      elseif raw ~= "" and type(selectString) == "function" then
+        local ok_select, position = pcall(selectString, raw, 1)
+        if ok_select and position and position > -1 then cleared = pcall(replace, "") end
+      end
+      if cleared then
+        decho(coloured)
+        rerendered = true
+      end
+    end
+  end
+
+  if not echo_lbid_need_link(auction_id) then echo_plain_need() end
+  echo_average_tag(average_tag)
+  if rerendered then echo("\n") end
+end
+
+function A.append_piece_details(raw_line, piece)
+  local candidates = A.resolve_candidates(piece)
+  if #candidates == 0 then return end
+  local number = A.number_by_name[candidates[1]]
+  local value = A.turnin_for(piece)
+  local plain = string.format("[Pamphlet #%s] [%s]", tostring(number or "?"), value)
+  local markup = string.format(" <255,0,255>[<0,255,255>Pamphlet <255,255,255>#%s<255,0,255>] [<0,255,255>%s<255,0,255>]", tostring(number or "?"), value)
+  A.append_inline(raw_line, markup, plain, false)
+end
+
+function A.append_sale_details(raw_line, piece)
+  local status = A.status_for(piece)
+  if status == "UNK" then return end
+  local value = A.turnin_for(piece)
+  local status_rgb = status:find("NEED", 1, true) and "255,0,0" or "0,255,255"
+  local plain = string.format("[%s] [%s]", value, status)
+  local markup = string.format(" <255,0,255>[<0,255,255>%s<255,0,255>] [<%s>%s<255,0,255>]", value, status_rgb, status)
+  A.append_inline(raw_line, markup, plain, false)
+end
+
+function A.capture_piece(count, piece, raw_line)
+  local candidates = A.resolve_candidates(piece)
+  if #candidates == 0 then return end
+  local canonical = candidates[1]
+  if A.scan_in_progress then
+    local amount = tonumber(count) or 1
+    A.owned[canonical] = true
+    A.piece_counts[canonical] = (tonumber(A.piece_counts[canonical]) or 0) + amount
+  end
+  A.append_piece_details(raw_line, canonical)
+end
+
+function A.capture_pamphlet(count, number)
+  if not A.scan_in_progress then return end
+  local canonical = A.pieces[tonumber(number)]
+  if not canonical then return end
+  local amount = tonumber(count) or 1
+  A.owned[canonical] = true
+  A.pamphlet_counts[canonical] = (tonumber(A.pamphlet_counts[canonical]) or 0) + amount
+end
+
+function A.market_list(piece, auction_id, raw_line)
+  local needed, candidates = A.is_needed(piece)
+  if #candidates == 0 or not needed then return end
+  local missing_piece = nil
+  for _, candidate in ipairs(candidates) do
+    if not A.owned[candidate] then missing_piece = candidate; break end
+  end
+  local average_tag = missing_piece and A.average_tag_for_piece(missing_piece) or nil
+  A.append_clickable_need(raw_line, auction_id, average_tag)
+end
+
+local function split_bags(value)
+  local result = {}
+  for bag in tostring(value or ""):gmatch("([^,]+)") do
+    bag = trim(bag)
+    if bag ~= "" then result[#result + 1] = bag end
+  end
+  return result
+end
+
+function A.show_bags()
+  local bags = split_bags(A.settings.bags)
+  local label = #bags == 1 and "bag" or "bags"
+  cecho(string.format("<yellow>[m_aarchaeology] Aarch %s set to:\n", label))
+  for _, bag in ipairs(bags) do cecho("  <cyan>" .. bag .. "\n") end
+end
+
+function A.set_bags(value)
+  value = trim(value)
+  if value ~= "" then
+    A.settings.bags = value
+    A.save_settings()
+  end
+  A.show_bags()
+end
+
+local function multiplier_text(value)
+  local number = tonumber(value) or 5
+  if number == math.floor(number) then return tostring(math.floor(number)) end
+  return tostring(number)
+end
+
+function A.set_multiplier(value)
+  value = trim(value)
+  if value == "" then
+    cecho("<yellow>[m_aarchaeology] Missing-history fallback multiplier: <white>x" .. multiplier_text(A.settings.fallback_multiplier) .. "<yellow>.\n")
+    return
+  end
+  local number = tonumber(value)
+  if not number or number <= 0 or number > 1000 then
+    cecho("<red>[m_aarchaeology] Multiplier must be a number greater than 0 and no more than 1000.\n")
+    return
+  end
+  A.settings.fallback_multiplier = number
+  A.save_settings()
+  A.sales_cache = nil
+  cecho("<yellow>[m_aarchaeology] Missing-history fallback multiplier set to <white>x" .. multiplier_text(number) .. "<yellow>.\n")
+end
+
+function A.set_sound_toggle(value)
+  value = tostring(value or ""):lower()
+  if value ~= "on" and value ~= "off" then
+    cecho("<red>[m_aarchaeology] Use: aarch sound on|off\n")
+    return
+  end
+  A.settings.sounds = value
+  A.save_settings()
+  cecho(string.format("<yellow>[m_aarchaeology] Professor alert is <cyan>%s<yellow>.\n", value))
+end
+
+function A.set_sound_file(value)
+  value = trim(value)
+  local f = io.open(value, "rb")
+  if not f then
+    cecho("<red>[m_aarchaeology] Invalid sound file: <white>" .. value .. "\n")
+    return
+  end
+  f:close()
+  A.settings.sound_file = value
+  A.save_settings()
+  cecho("<yellow>[m_aarchaeology] Alert sound: <cyan>" .. value .. "\n")
+end
+
+local function sound_file_exists(path)
+  local file = io.open(tostring(path or ""), "rb")
+  if not file then return false end
+  file:close()
+  return true
+end
+
+function A.show_sound()
+  local path = A.settings.sound_file
+  local availability = sound_file_exists(path) and "<green>file found" or "<red>file missing"
+  cecho("<yellow>[m_aarchaeology] Professor alert: <cyan>" .. A.settings.sounds .. "<yellow>.\n")
+  cecho("<yellow>[m_aarchaeology] Sound file: <white>" .. path .. " <gray>(" .. availability .. "<gray>)<reset>\n")
+  cecho("<gray>  Use <cyan>aarch sound test<gray> to play it now.<reset>\n")
+end
+
+function A.play_configured_sound()
+  local path = A.settings and A.settings.sound_file or ""
+  if not sound_file_exists(path) then return false, "configured sound file is missing" end
+  if type(playSoundFile) == "function" then
+    local ok, result = pcall(playSoundFile, { name = path, volume = 100 })
+    if ok and result ~= false then return true end
+    ok, result = pcall(playSoundFile, path, 100)
+    if ok and result ~= false then return true end
+    ok, result = pcall(playSoundFile, path)
+    if ok and result ~= false then return true end
+  end
+  if type(playSound) == "function" then
+    local ok, result = pcall(playSound, path)
+    if ok and result ~= false then return true end
+  end
+  return false, "Mudlet could not play the configured file"
+end
+
+function A.play_professor_sound()
+  if not A.settings or A.settings.sounds ~= "on" then return end
+  A.play_configured_sound()
+end
+
+function A.test_sound()
+  local ok, reason = A.play_configured_sound()
+  if ok then
+    cecho("<green>[m_aarchaeology] Played the configured Professor alert.\n")
+  else
+    cecho("<red>[m_aarchaeology] Sound test failed: <white>" .. tostring(reason or "unknown error") .. "<reset>\n")
+  end
+end
+
+local function comma_number(number)
+  local text = tostring(math.floor((tonumber(number) or 0) + 0.5))
+  while true do
+    local changed
+    text, changed = text:gsub("^(%-?%d+)(%d%d%d)", "%1,%2")
+    if changed == 0 then break end
+  end
+  return text
+end
+
+local function gold_value(label)
+  if label == "TP" then return nil end
+  local number = tonumber(label:match("^([%d.]+)")) or 0
+  if label:find("mil", 1, true) then return number * 1000000 end
+  if label:find("k", 1, true) then return number * 1000 end
+  return number
+end
+
+local function compact_number(number)
+  number = tonumber(number) or 0
+  local divisor, suffix = 1, ""
+  if math.abs(number) >= 1000000000 then
+    divisor, suffix = 1000000000, "B"
+  elseif math.abs(number) >= 1000000 then
+    divisor, suffix = 1000000, "M"
+  elseif math.abs(number) >= 1000 then
+    divisor, suffix = 1000, "K"
+  end
+  local scaled = number / divisor
+  local text
+  if divisor == 1 then
+    text = tostring(math.floor(scaled + 0.5))
+  elseif math.abs(scaled) >= 100 then
+    text = string.format("%.0f", scaled)
+  elseif math.abs(scaled) >= 10 then
+    text = string.format("%.1f", scaled)
+  else
+    text = string.format("%.2f", scaled)
+  end
+  text = text:gsub("(%..-)0+$", "%1"):gsub("%.$", "")
+  return text .. suffix
+end
+
+local function normalize_sale_currency(value)
+  local currency = tostring(value or "gold"):lower()
+  if currency == "qp" then return "qp" end
+  return "gold"
+end
+
+local function add_sales_average(averages, item_name, average, times_sold, currency)
+  local key = normalize(item_name)
+  if not A.canonical_by_key[key] then return end
+  average = tonumber(average) or 0
+  times_sold = tonumber(times_sold) or 0
+  if average <= 0 or times_sold <= 0 then return end
+  averages[key] = {
+    average = average,
+    times_sold = times_sold,
+    currency = normalize_sale_currency(currency),
+  }
+end
+
+local function read_lsqlite_averages(connection, sqlite_module)
+  local statement = connection:prepare(
+    "SELECT item_name,avg_price,times_sold,currency " ..
+    "FROM market_items WHERE item_name LIKE '(aarchaeology) %'")
+  if not statement then return nil end
+  local averages = {}
+  local row_code = sqlite_module and sqlite_module.ROW or 100
+  while statement:step() == row_code do
+    add_sales_average(averages,
+      statement:get_value(0), statement:get_value(1),
+      statement:get_value(2), statement:get_value(3))
+  end
+  statement:finalize()
+  return averages
+end
+
+local function read_live_mudlet_db_averages()
+  local api = rawget(_G, "db")
+  local schema = type(MM) == "table" and MM.mdb and MM.mdb.market_items or nil
+  if type(api) ~= "table" or type(api.fetch) ~= "function" or not schema then return nil end
+  local ok, rows = pcall(function()
+    if type(api.like) == "function" and schema.item_name then
+      return api:fetch(schema, api:like(schema.item_name, "(aarchaeology) %"))
+    end
+    return api:fetch(schema)
+  end)
+  if not ok or type(rows) ~= "table" then return nil end
+  local averages = {}
+  for _, row in ipairs(rows) do
+    add_sales_average(averages, row.item_name, row.avg_price, row.times_sold, row.currency)
+  end
+  return averages
+end
+
+-- Every mbot access below is SELECT/fetch only. We never call MM.open_db(),
+-- db:create(), or any INSERT/UPDATE helper.
+function A.read_mbot_averages()
+  if type(MM) == "table" and MM.db and type(MM.db.prepare) == "function" then
+    local ok, averages = pcall(read_lsqlite_averages, MM.db, MM.sqlite3)
+    if ok and type(averages) == "table" then return averages, "mbot-live" end
+  end
+
+  local averages = read_live_mudlet_db_averages()
+  if type(averages) == "table" then return averages, "mbot-live" end
+
+  local file = io.open(A.mbot_db_file, "rb")
+  if not file then return nil, "missing" end
+  file:close()
+
+  local ok, sqlite_module = pcall(require, "lsqlite3")
+  if not ok then ok, sqlite_module = pcall(require, "lsqlite3complete") end
+  if not ok or type(sqlite_module) ~= "table" or type(sqlite_module.open) ~= "function"
+    or sqlite_module.OPEN_READONLY == nil
+  then
+    return nil, "readonly-driver-unavailable"
+  end
+
+  local opened, connection = pcall(sqlite_module.open, A.mbot_db_file, sqlite_module.OPEN_READONLY)
+  if not opened or not connection then return nil, "readonly-open-failed" end
+  local read_ok, result = pcall(read_lsqlite_averages, connection, sqlite_module)
+  pcall(function() connection:close() end)
+  if read_ok and type(result) == "table" then return result, "mbot-file-readonly" end
+  return nil, "readonly-query-failed"
+end
+
+function A.sales_snapshot(force_refresh)
+  local now = os.time()
+  if not force_refresh and type(A.sales_cache) == "table"
+    and now - (tonumber(A.sales_cache.loaded_at) or 0) < 30
+  then
+    return A.sales_cache
+  end
+  -- mbot is optional. Keep all callers working even if its globals, schema,
+  -- SQLite driver, or database file are unavailable or malformed.
+  local ok, averages, source = pcall(A.read_mbot_averages)
+  if not ok then
+    averages, source = nil, "unavailable"
+  end
+  A.sales_cache = {
+    available = type(averages) == "table",
+    averages = averages or {},
+    source = source or "missing",
+    loaded_at = now,
+  }
+  return A.sales_cache
+end
+
+local function fallback_cost(piece)
+  local multiplier = tonumber(A.settings.fallback_multiplier) or 5
+  local number = A.number_by_name[piece]
+  local value = number and A.values[number] or nil
+  if value == "TP" then
+    return { amount = multiplier, currency = "tp", source = "fallback" }
+  end
+  return {
+    amount = multiplier * (gold_value(value or "") or 0),
+    currency = "gold",
+    source = "fallback",
+  }
+end
+
+function A.cost_info_for_piece(piece, snapshot)
+  snapshot = snapshot or A.sales_snapshot(false)
+  local row = snapshot.available and snapshot.averages[normalize(piece)] or nil
+  if row then
+    return {
+      amount = row.average,
+      currency = row.currency,
+      times_sold = row.times_sold,
+      source = "average",
+    }
+  end
+  return fallback_cost(piece)
+end
+
+function A.average_tag_for_piece(piece)
+  local snapshot = A.sales_snapshot(false)
+  local row = snapshot.available and snapshot.averages[normalize(piece)] or nil
+  if not row then return nil end
+  local currency = row.currency == "qp" and "QP" or "gold"
+  return "avg " .. compact_number(row.average) .. " " .. currency
+end
+
+function A.remaining_cost()
+  if A.scan_in_progress then
+    cecho("<yellow>[m_aarchaeology] The bag scan is still running; try aarch cost again when the report finishes.\n")
+    return
+  end
+  if not A.ran or A.scan_failed then
+    cecho("<yellow>[m_aarchaeology] Run <cyan>aarch report<yellow> first so the remaining-cost total uses your current collection.\n")
+    return
+  end
+
+  local missing = {}
+  for _, piece in ipairs(A.pieces) do
+    if not A.owned[piece] then missing[#missing + 1] = piece end
+  end
+  if #missing == 0 then
+    cecho("<yellow>[m_aarchaeology] Remaining estimated cost: <green>0 - collection complete!\n")
+    return
+  end
+
+  local snapshot = A.sales_snapshot(true)
+  local totals = { gold = 0, qp = 0, tp = 0 }
+  local average_count, fallback_count = 0, 0
+  local entries = {}
+  for _, piece in ipairs(missing) do
+    local info = A.cost_info_for_piece(piece, snapshot)
+    entries[#entries + 1] = { piece = piece, info = info }
+    totals[info.currency] = (totals[info.currency] or 0) + (tonumber(info.amount) or 0)
+    if info.source == "average" then average_count = average_count + 1 else fallback_count = fallback_count + 1 end
+  end
+
+  local function estimated_cost_text(info)
+    if info.currency == "qp" then return comma_number(info.amount) .. " QP" end
+    if info.currency == "tp" then return compact_number(info.amount) .. " TP" end
+    return comma_number(info.amount) .. " Gold"
+  end
+
+  cecho(string.format("\n<yellow>[m_aarchaeology] Cost breakdown for <white>%d<yellow> missing piece%s:<reset>\n", #missing, #missing == 1 and "" or "s"))
+  cecho("<yellow>" .. string.format("%-34s %8s  %-18s %21s", "Piece", "Turn-in", "Pricing", "Estimated cost") .. "<reset>\n")
+  for _, entry in ipairs(entries) do
+    local piece = entry.piece
+    local info = entry.info
+    local number = A.number_by_name[piece]
+    local piece_cell = string.format("[%2d] %s", number, piece)
+    local turnin_cell = "[" .. A.values[number] .. "]"
+    local source_cell
+    if info.source == "average" then
+      source_cell = string.format("avg (%d sale%s)", tonumber(info.times_sold) or 0, tonumber(info.times_sold) == 1 and "" or "s")
+    else
+      source_cell = "fallback x" .. multiplier_text(A.settings.fallback_multiplier)
+    end
+    cecho("<white>" .. string.format("%-34s", piece_cell))
+    cecho("<cyan>" .. string.format(" %8s", turnin_cell))
+    cecho((info.source == "average" and "<yellow>" or "<gray>") .. string.format("  %-18s", source_cell))
+    cecho("<white>" .. string.format(" %21s", estimated_cost_text(info)) .. "<reset>\n")
+  end
+
+  cecho(string.format("<yellow>Total estimated cost for <white>%d<yellow> piece%s: ", #missing, #missing == 1 and "" or "s"))
+  local parts = {}
+  if totals.gold > 0 then parts[#parts + 1] = "<white>" .. comma_number(totals.gold) .. " <gold>Gold" end
+  if totals.qp > 0 then parts[#parts + 1] = "<white>" .. comma_number(totals.qp) .. " <green>QP" end
+  if totals.tp > 0 then parts[#parts + 1] = "<white>" .. compact_number(totals.tp) .. " <cyan>TP" end
+  cecho(table.concat(parts, "<yellow> and "))
+  echo("\n")
+  cecho(string.format("<gray>  %d mbot average%s; %d fallback%s at <white>x%s<gray>.\n",
+    average_count, average_count == 1 and "" or "s",
+    fallback_count, fallback_count == 1 and "" or "s",
+    multiplier_text(A.settings.fallback_multiplier)))
+  if not snapshot.available then
+    cecho("<yellow>  mbot sales database unavailable; all missing pieces used the configured fallback.\n")
+  end
+end
+
+function A.report()
+  local missing = {}
+  for _, piece in ipairs(A.pieces) do
+    if not A.owned[piece] then missing[#missing + 1] = piece end
+  end
+
+  cecho("\n<magenta>------------------------------------------------------------------------------------\n")
+  if #missing == 0 then
+    cecho("<cyan> You have all 50 <red>(<yellow>Aarchaeology<red>) <cyan>pieces. Nice work!\n")
+  else
+    cecho(string.format("<cyan> You are missing <white>%d <red>(<yellow>Aarchaeology<red>) <cyan>piece%s:\n", #missing, #missing == 1 and "" or "s"))
+    cecho("<magenta>------------------------------------------------------------------------------------\n")
+    local piece_width, value_width = 34, 8
+    local function echo_missing_entry(piece)
+      local number = A.number_by_name[piece]
+      local label = string.format("[%2d] ", number)
+      local piece_cell = label .. piece
+      local value = A.values[number]
+      local value_cell = "[" .. value .. "]"
+      cecho("<gray>" .. label .. "<white>" .. piece)
+      echo(string.rep(" ", math.max(1, piece_width - #piece_cell)))
+      echo(string.rep(" ", math.max(1, value_width - #value_cell)))
+      cecho("<magenta>[<cyan>" .. value .. "<magenta>]")
+    end
+    for index = 1, #missing, 2 do
+      echo_missing_entry(missing[index])
+      if missing[index + 1] then
+        echo("   ")
+        echo_missing_entry(missing[index + 1])
+      end
+      echo("\n")
+    end
+  end
+
+  cecho("<magenta>------------------------------------------------------------------------------------\n")
+  cecho("<cyan> Duplicates:\n")
+  cecho("<magenta>------------------------------------------------------------------------------------\n")
+  local duplicate_rows = 0
+  local total_gold, total_tp, loose_pieces = 0, 0, 0
+  for _, piece in ipairs(A.pieces) do
+    local number = A.number_by_name[piece]
+    local pc = tonumber(A.piece_counts[piece]) or 0
+    local pam = tonumber(A.pamphlet_counts[piece]) or 0
+    local descriptions = {}
+    if pc > 0 and pam > 0 then
+      descriptions[#descriptions + 1] = count_label(pc, "Extra Piece", "Extra Pieces")
+      descriptions[#descriptions + 1] = count_label(pam, "Pamphlet", "Pamphlets")
+    elseif pc > 1 then
+      descriptions[#descriptions + 1] = count_label(pc - 1, "Extra Piece", "Extra Pieces")
+    elseif pam > 1 then
+      descriptions[#descriptions + 1] = count_label(pam - 1, "Extra Pamphlet", "Extra Pamphlets")
+    end
+    if #descriptions > 0 then
+      duplicate_rows = duplicate_rows + 1
+      cecho(string.format("<gray>[#%2d] <white>%-28s <magenta>- <yellow>%s <magenta>[<cyan>%s<magenta>]\n", number, piece, table.concat(descriptions, ", "), A.values[number]))
+    end
+
+    if pc > 0 then
+      loose_pieces = loose_pieces + pc
+      if A.values[number] == "TP" then
+        total_tp = total_tp + pc
+      else
+        total_gold = total_gold + pc * (gold_value(A.values[number]) or 0)
+      end
+    end
+  end
+  if duplicate_rows == 0 then cecho("<yellow>  None.\n") end
+  cecho("<magenta>------------------------------------------------------------------------------------\n")
+  if loose_pieces > 0 then
+    cecho(string.format("<light_gray> Value of <white>%d <red>(<yellow>Aarchaeology<red>) <light_gray>pieces not turned in yet: ", loose_pieces))
+    if total_gold > 0 then cecho("<white>" .. comma_number(total_gold) .. " <gold>Gold") end
+    if total_gold > 0 and total_tp > 0 then cecho("<light_gray> and ") end
+    if total_tp > 0 then cecho("<white>" .. tostring(total_tp) .. " <green>TP") end
+    echo("\n")
+  end
+  cecho("<magenta>------------------------------------------------------------------------------------\n\n")
+end
+
+function A.run_report()
+  local bags = split_bags(A.settings.bags)
+  if #bags == 0 then
+    cecho("<red>[m_aarchaeology] No bags configured. Use: aarch bag [id/keyword]\n")
+    return
+  end
+  A.clear_inventory()
+  A.scan_in_progress = true
+  A.scan_failed = false
+  A.ran = true
+  for _, bag in ipairs(bags) do
+    if bag:lower() == "vault list" then send("vault list") else send("look in " .. bag) end
+  end
+  send("echo @YLooked in Aarch Bags!", false)
+end
+
+function A.cant_look()
+  if not A.scan_in_progress then return end
+  A.scan_failed = true
+  cecho("<cyan>[m_aarchaeology] You cannot run an Aarch report while sleeping!\n")
+end
+
+function A.done_look()
+  if not A.scan_in_progress then return end
+  A.scan_in_progress = false
+  if not A.scan_failed then
+    A.commit_inventory()
+    A.report()
+  else
+    A.restore_saved_inventory()
+  end
+end
+
+function A.help()
+  cecho("\n<gold>m_aarchaeology commands<reset>\n\n")
+  cecho("<cyan>aarch report<reset>\n<gray>  Scan configured bags, save the inventory, and report missing pieces and duplicates.<reset>\n")
+  cecho("<cyan>aarch cost<reset>\n<gray>  Total missing pieces using mbot averages and the no-history fallback.<reset>\n")
+  cecho("<cyan>aarch multiplier [number]<reset>\n<gray>  Show or set the no-history fallback multiplier.<reset>\n")
+  cecho("<cyan>aarch bag [id/keyword,...]<reset>\n<gray>  Show or set one or more bags.<reset>\n")
+  cecho("<cyan>aarch sound on|off<reset>\n<gray>  Toggle the Professor alert.<reset>\n")
+  cecho("<cyan>aarch sound [file]<reset>\n<gray>  Set the alert sound file.<reset>\n")
+  cecho("<yellow>Cost warning: mbot average prices require a configured mbot sales database.<reset>\n")
+  cecho("<gray>  Without mbot, aarch cost safely uses the configured fallback multiplier.<reset>\n")
+end
+
+function A.on_disconnect()
+  A.scan_in_progress = false
+  A.scan_failed = false
+  A.restore_saved_inventory()
+end
+
+function A.register_handlers()
+  if type(killAnonymousEventHandler) == "function" and type(A.handler_ids) == "table" then
+    for _, id in ipairs(A.handler_ids) do pcall(killAnonymousEventHandler, id) end
+  end
+  A.handler_ids = {}
+  if type(registerAnonymousEventHandler) ~= "function" then return end
+  local function register(event_name, callback)
+    local id = registerAnonymousEventHandler(event_name, callback)
+    if id ~= nil then A.handler_ids[#A.handler_ids + 1] = id end
+  end
+  register("sysDisconnectionEvent", "m_aarchaeology_OnDisconnect")
+end
+
+function A.init()
+  A.rebuild_indexes()
+  A.clear_inventory()
+  A.scan_in_progress = false
+  A.scan_failed = false
+  A.ran = false
+  A.sales_cache = nil
+  A.load_settings()
+  A.register_handlers()
+  cecho(string.format("<gold>[m_aarchaeology] <green>Loaded v%s. <yellow>Type <cyan>aarch help<yellow> for commands.\n", A.version))
+  cecho(string.format("<yellow>[m_aarchaeology] Professor alert: <cyan>%s<yellow>.\n", A.settings.sounds))
+  cecho("<yellow>[m_aarchaeology] Missing-history fallback: <white>x" .. multiplier_text(A.settings.fallback_multiplier) .. "<yellow>.\n")
+  if A.has_saved_inventory then
+    cecho("<yellow>[m_aarchaeology] Restored inventory from the last successful report scan.\n")
+  end
+  A.show_bags()
+end
+
+function m_aarchaeology_Alias_Report() A.run_report() end
+function m_aarchaeology_Alias_Cost() A.remaining_cost() end
+function m_aarchaeology_Alias_Multiplier(matches) A.set_multiplier(matches and matches[2] or "") end
+function m_aarchaeology_Alias_Help() A.help() end
+function m_aarchaeology_Alias_Bag(matches) A.set_bags(matches and matches[2] or "") end
+function m_aarchaeology_Alias_SoundToggle(matches) A.set_sound_toggle(matches and matches[2] or "") end
+function m_aarchaeology_Alias_SoundShow() A.show_sound() end
+function m_aarchaeology_Alias_SoundTest() A.test_sound() end
+function m_aarchaeology_Alias_SoundFile(matches) A.set_sound_file(matches and matches[2] or "") end
+
+function m_aarchaeology_TR_Professor() A.play_professor_sound() end
+function m_aarchaeology_TR_Pamphlet(matches) A.capture_pamphlet(matches and matches[2], matches and matches[3]) end
+function m_aarchaeology_TR_Piece(matches) A.capture_piece(matches and matches[2], matches and matches[3], line) end
+function m_aarchaeology_TR_Market(matches) A.append_sale_details(line, matches and matches[2]) end
+function m_aarchaeology_TR_Auction(matches) A.append_sale_details(line, matches and matches[2]) end
+function m_aarchaeology_TR_LBid(matches) A.append_sale_details(line, matches and matches[3]) end
+function m_aarchaeology_TR_Bid(matches) A.append_sale_details(line, matches and matches[3]) end
+function m_aarchaeology_TR_MarketList(matches) A.market_list(matches and matches[3], matches and matches[2], line) end
+function m_aarchaeology_TR_CantLook() A.cant_look() end
+function m_aarchaeology_TR_Done() A.done_look() end
+function m_aarchaeology_OnDisconnect() A.on_disconnect() end
+
+A.init()
+]]></script><eventHandlerList/><packageName></packageName></Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

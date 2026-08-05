@@ -95,7 +95,7 @@ end
 
 local function db_path()
   local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
-  return home .. "/snd.db"
+  return home .. "/SnDdb.db"
 end
 
 local function resolve_sqlite()

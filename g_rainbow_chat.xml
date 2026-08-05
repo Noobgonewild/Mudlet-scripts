@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <!--
+    Rainbow Chat v1.0
+    Automatically adds Aardwolf @ color codes to outgoing chat messages.
+  -->
+
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>G_RainbowChat</name>
+      <script></script>
+      <command></command>
+      <packageName>G_RainbowChat</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RainbowChat_Control</name>
+        <script>RainbowChat.command(matches[2] or "")</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^(?i:rainbow)(?:\s+(.*))?$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RainbowChat_Tell</name>
+        <script>RainbowChat.handleTell(matches[2], matches[3], matches[4])</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^(?i:(tell))\s+(\S+)\s+(.+)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>RainbowChat_Channel</name>
+        <script>RainbowChat.handleChannel(matches[2], matches[3])</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^(?i:(clan|cla|say|gt|gtell|reply))\s+(.+)$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>G_RainbowChat</name>
+      <script></script>
+      <packageName>G_RainbowChat</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>RainbowChat_Script</name>
+        <script><![CDATA[
+RainbowChat = RainbowChat or {}
+
+local DEFAULT_ENABLED = true
+local DEFAULT_MODE = "rainbow"
+
+-- Hue order for the cycling styles.
+local RAINBOW_PALETTE = {
+  "@r", "@R", "@y", "@Y", "@g", "@G",
+  "@c", "@C", "@b", "@B", "@m", "@M",
+}
+
+local BRIGHT_PALETTE = { "@R", "@Y", "@G", "@C", "@B", "@M" }
+local DARK_PALETTE = { "@r", "@y", "@g", "@c", "@b", "@m" }
+
+-- Approximate perceived luminance, darkest to lightest. The reverse is
+-- used by fadedown. These twelve colors deliberately omit white and gray.
+local FADEUP_PALETTE = {
+  "@b", "@B", "@r", "@m", "@R", "@M",
+  "@g", "@c", "@y", "@G", "@C", "@Y",
+}
+
+local BASE_MODES = {
+  "rainbow", "words", "bright", "dark", "fadeup", "fadedown",
+}
+
+local VALID_MODES = {
+  rainbow = true,
+  words = true,
+  bright = true,
+  dark = true,
+  fadeup = true,
+  fadedown = true,
+  random = true,
+}
+
+local AARD_COLOR_CODES = {
+  b = true, B = true,
+  r = true, R = true,
+  g = true, G = true,
+  y = true, Y = true,
+  c = true, C = true,
+  m = true, M = true,
+  w = true, W = true,
+  D = true,
+}
+
+-- Mudlet color names used to preview Aardwolf's dark/bright color pairs in
+-- local help output. Outgoing chat still uses the original @ color codes.
+local AARD_TO_MUDLET_COLOR = {
+  b = "ansi_blue", B = "ansi_light_blue",
+  r = "ansi_red", R = "ansi_light_red",
+  g = "ansi_green", G = "ansi_light_green",
+  y = "ansi_yellow", Y = "ansi_light_yellow",
+  c = "ansi_cyan", C = "ansi_light_cyan",
+  m = "ansi_magenta", M = "ansi_light_magenta",
+  w = "ansi_white", W = "white",
+  D = "ansi_light_black",
+}
+
+local function trim(value)
+  return (tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function note(message)
+  local text = "[Rainbow] " .. tostring(message or "") .. "\n"
+  if type(cecho) == "function" then
+    cecho("<cyan>" .. text)
+  elseif type(echo) == "function" then
+    echo(text)
+  end
+end
+
+local function persistenceDirectory()
+  local home = "."
+  if type(getMudletHomeDir) == "function" then
+    home = getMudletHomeDir()
+  end
+
+  local directory = home .. "/persistence"
+  if type(mkdir) == "function" then
+    pcall(mkdir, directory)
+  end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then
+    pcall(lfs.mkdir, directory)
+  end
+  return directory
+end
+
+local STATE_FILE = persistenceDirectory() .. "/rainbow_chat_state.lua"
+
+local function loadState()
+  RainbowChat.state = {
+    enabled = DEFAULT_ENABLED,
+    mode = DEFAULT_MODE,
+  }
+
+  local ok, saved = pcall(dofile, STATE_FILE)
+  if not ok or type(saved) ~= "table" then
+    return
+  end
+
+  if type(saved.enabled) == "boolean" then
+    RainbowChat.state.enabled = saved.enabled
+  end
+
+  local mode = tostring(saved.mode or ""):lower()
+  if VALID_MODES[mode] then
+    RainbowChat.state.mode = mode
+  end
+end
+
+local function saveState()
+  local file, openError = io.open(STATE_FILE, "w")
+  if not file then
+    note("Could not save settings: " .. tostring(openError or "unknown error"))
+    return false
+  end
+
+  file:write(string.format(
+    "return { enabled = %s, mode = %q }\n",
+    tostring(RainbowChat.state.enabled == true),
+    RainbowChat.state.mode
+  ))
+  file:close()
+  return true
+end
+
+local function utf8CharacterLength(firstByte)
+  if not firstByte or firstByte < 0x80 then return 1 end
+  if firstByte < 0xE0 then return 2 end
+  if firstByte < 0xF0 then return 3 end
+  if firstByte < 0xF8 then return 4 end
+  return 1
+end
+
+-- Break the message into visible UTF-8 characters. Existing Aardwolf color
+-- tags are removed because this addon replaces them. @@ remains one visible
+-- literal-at token so generated tags never split it apart.
+local function tokenize(message)
+  local tokens = {}
+  local index = 1
+
+  while index <= #message do
+    local first = message:sub(index, index)
+    local second = message:sub(index + 1, index + 1)
+
+    if first == "@" and second == "@" then
+      tokens[#tokens + 1] = { text = "@@", space = false }
+      index = index + 2
+    elseif first == "@" and AARD_COLOR_CODES[second] then
+      index = index + 2
+    else
+      local length = utf8CharacterLength(message:byte(index))
+      local character = message:sub(index, index + length - 1)
+      tokens[#tokens + 1] = {
+        text = character,
+        space = character:match("^%s$") ~= nil,
+      }
+      index = index + length
+    end
+  end
+
+  return tokens
+end
+
+
+local function visibleCount(tokens)
+  local count = 0
+  for _, token in ipairs(tokens) do
+    if not token.space then
+      count = count + 1
+    end
+  end
+  return count
+end
+
+local function colorCharacters(tokens, palette)
+  local output = {}
+  local position = 0
+
+  for _, token in ipairs(tokens) do
+    if token.space then
+      output[#output + 1] = token.text
+    else
+      position = position + 1
+      local paletteIndex = ((position - 1) % #palette) + 1
+      output[#output + 1] = palette[paletteIndex]
+      output[#output + 1] = token.text
+    end
+  end
+
+  return table.concat(output)
+end
+
+local function colorWords(tokens, palette)
+  local output = {}
+  local word = 0
+  local atWordStart = true
+
+  for _, token in ipairs(tokens) do
+    if token.space then
+      output[#output + 1] = token.text
+      atWordStart = true
+    else
+      if atWordStart then
+        word = word + 1
+        local paletteIndex = ((word - 1) % #palette) + 1
+        output[#output + 1] = palette[paletteIndex]
+        atWordStart = false
+      end
+      output[#output + 1] = token.text
+    end
+  end
+
+  return table.concat(output)
+end
+
+local function reversedCopy(source)
+  local result = {}
+  for index = #source, 1, -1 do
+    result[#result + 1] = source[index]
+  end
+  return result
+end
+
+local function fadePaletteIndex(position, count, paletteSize)
+  if count <= 1 then
+    return 1
+  end
+
+  -- Short messages still span the complete dark/light range. At twelve
+  -- characters all twelve colors are used; at twenty-four each is used twice.
+  if count <= paletteSize then
+    return math.floor(((position - 1) * (paletteSize - 1)) / (count - 1)) + 1
+  end
+  return math.floor(((position - 1) * paletteSize) / count) + 1
+end
+
+local function colorFade(tokens, palette)
+  local output = {}
+  local count = visibleCount(tokens)
+  local position = 0
+  local lastPaletteIndex = nil
+
+  for _, token in ipairs(tokens) do
+    if token.space then
+      output[#output + 1] = token.text
+    else
+      position = position + 1
+      local paletteIndex = fadePaletteIndex(position, count, #palette)
+      if paletteIndex ~= lastPaletteIndex then
+        output[#output + 1] = palette[paletteIndex]
+        lastPaletteIndex = paletteIndex
+      end
+      output[#output + 1] = token.text
+    end
+  end
+
+  return table.concat(output)
+end
+
+local function nextRandomIndex(maximum)
+  if not RainbowChat.randomState then
+    local clockPart = math.floor((os.clock() or 0) * 1000000)
+    RainbowChat.randomState = ((os.time() + clockPart) % 2147483646) + 1
+  end
+  RainbowChat.randomState = (RainbowChat.randomState * 48271) % 2147483647
+  return (RainbowChat.randomState % maximum) + 1
+end
+
+local function randomMode()
+  local selected = BASE_MODES[nextRandomIndex(#BASE_MODES)]
+
+  -- Avoid choosing the same random style for two consecutive messages.
+  if #BASE_MODES > 1 and selected == RainbowChat.lastRandomMode then
+    local oldIndex = 1
+    for index, mode in ipairs(BASE_MODES) do
+      if mode == selected then oldIndex = index break end
+    end
+    selected = BASE_MODES[(oldIndex % #BASE_MODES) + 1]
+  end
+
+  RainbowChat.lastRandomMode = selected
+  return selected
+end
+
+
+function RainbowChat.colorize(message, requestedMode)
+  local mode = tostring(requestedMode or RainbowChat.state.mode or DEFAULT_MODE):lower()
+  if mode == "random" then
+    mode = randomMode()
+  end
+  if not VALID_MODES[mode] or mode == "random" then
+    mode = DEFAULT_MODE
+  end
+
+  local tokens = tokenize(tostring(message or ""))
+  if mode == "words" then
+    return colorWords(tokens, RAINBOW_PALETTE), mode
+  elseif mode == "bright" then
+    return colorCharacters(tokens, BRIGHT_PALETTE), mode
+  elseif mode == "dark" then
+    return colorCharacters(tokens, DARK_PALETTE), mode
+  elseif mode == "fadeup" then
+    return colorFade(tokens, FADEUP_PALETTE), mode
+  elseif mode == "fadedown" then
+    return colorFade(tokens, reversedCopy(FADEUP_PALETTE)), mode
+  end
+
+  return colorCharacters(tokens, RAINBOW_PALETTE), "rainbow"
+end
+
+local function sendChat(prefix, message)
+  local outgoing = tostring(message or "")
+  if RainbowChat.state.enabled then
+    outgoing = RainbowChat.colorize(outgoing, RainbowChat.state.mode)
+  end
+  send(prefix .. " " .. outgoing, false)
+end
+
+function RainbowChat.handleChannel(commandName, message)
+  sendChat(tostring(commandName or ""), message)
+end
+
+function RainbowChat.handleTell(commandName, recipient, message)
+  local prefix = tostring(commandName or "tell") .. " " .. tostring(recipient or "")
+  sendChat(prefix, message)
+end
+
+local function showStatus()
+  note(string.format(
+    "Status: %s | Mode: %s",
+    RainbowChat.state.enabled and "ON" or "OFF",
+    RainbowChat.state.mode
+  ))
+end
+
+local function mudletPreview(message, mode)
+  local colored, selectedMode = RainbowChat.colorize(message, mode)
+  local rendered = colored:gsub("@([%a])", function(code)
+    local color = AARD_TO_MUDLET_COLOR[code]
+    return color and ("<" .. color .. ">") or ("@" .. code)
+  end)
+  return rendered, selectedMode
+end
+
+local function showHelp()
+  note("Automatic Aardwolf chat gradients")
+  note("rainbow on|off|toggle          - enable, disable, or toggle automatic coloring")
+  note("rainbow mode <name>            - select a coloring style")
+  note("rainbow status                 - show the current settings")
+  note("rainbow raw <complete command> - send one command without coloring")
+  note("Modes: " .. table.concat(BASE_MODES, ", ") .. ", random")
+  note("Mode examples:")
+  for _, mode in ipairs(BASE_MODES) do
+    local preview = mudletPreview("Rainbow chat example", mode)
+    note(string.format("  %-8s - %s", mode, preview))
+  end
+  local previousRandomState = RainbowChat.randomState
+  local previousLastRandomMode = RainbowChat.lastRandomMode
+  local randomPreview, selectedMode = mudletPreview("Rainbow chat example", "random")
+  RainbowChat.randomState = previousRandomState
+  RainbowChat.lastRandomMode = previousLastRandomMode
+  note(string.format("  %-8s - %s (picked %s this time)", "random", randomPreview, selectedMode))
+  note("Watched: clan, cla, say, gt, gtell, tell, reply")
+  showStatus()
+end
+
+function RainbowChat.command(arguments)
+  local input = trim(arguments)
+  if input == "" or input:lower() == "help" then
+    showHelp()
+    return
+  end
+
+  local action, rest = input:match("^(%S+)%s*(.-)$")
+  action = tostring(action or ""):lower()
+  rest = trim(rest)
+
+  if action == "on" or action == "off" then
+    RainbowChat.state.enabled = (action == "on")
+    saveState()
+    note("Automatic coloring is now " .. (RainbowChat.state.enabled and "ON." or "OFF."))
+    return
+  end
+
+  if action == "toggle" then
+    RainbowChat.state.enabled = not RainbowChat.state.enabled
+    saveState()
+    note("Automatic coloring is now " .. (RainbowChat.state.enabled and "ON." or "OFF."))
+    return
+  end
+
+  if action == "mode" then
+    local mode = rest:lower()
+    if mode == "" then
+      note("Current mode: " .. RainbowChat.state.mode)
+    elseif VALID_MODES[mode] then
+      RainbowChat.state.mode = mode
+      saveState()
+      note("Mode set to " .. mode .. ".")
+    else
+      note("Unknown mode '" .. rest .. "'. Choose: " .. table.concat(BASE_MODES, ", ") .. ", random")
+    end
+    return
+  end
+
+  if action == "status" then
+    showStatus()
+    return
+  end
+
+  if action == "raw" then
+    if rest == "" then
+      note("Usage: rainbow raw <complete command>")
+    else
+      send(rest, false)
+    end
+    return
+  end
+
+  note("Unknown option. Type 'rainbow help'.")
+end
+
+loadState()
+]]></script>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

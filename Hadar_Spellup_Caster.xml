@@ -467,7 +467,7 @@ hspskillgain()</script>
   <integer>1</integer>
  </regexCodePropertyList>
 </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
- <name>eyeGoByeByeDismissed</name>
+  <name>eyeGoByeByeDismissed</name>
  <script>eyeGoByeByeDismissed()</script>
  <conditionLineDelta>0</conditionLineDelta>
  <mStayOpen>0</mStayOpen>
@@ -481,10 +481,28 @@ hspskillgain()</script>
  <regexCodeList>
   <string>^You remove your eye of vigilance from (.*)\.$</string>
  </regexCodeList>
- <regexCodePropertyList>
-  <integer>1</integer>
- </regexCodePropertyList>
-</Trigger>
+  <regexCodePropertyList>
+   <integer>1</integer>
+  </regexCodePropertyList>
+ </Trigger><Trigger isActive="yes" isFolder="no" isColorizerTrigger="no" isFilterTrigger="yes" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+  <name>hspSpellupProseSilence</name>
+  <script>HSP.handleSpellupProse(matches[1])</script>
+  <conditionLineDelta>0</conditionLineDelta>
+  <mStayOpen>0</mStayOpen>
+  <mCommand></mCommand>
+  <packageName></packageName>
+  <mFgColor></mFgColor>
+  <mBgColor></mBgColor>
+  <mSoundFile></mSoundFile>
+  <colorTriggerFgColor></colorTriggerFgColor>
+  <colorTriggerBgColor></colorTriggerBgColor>
+  <regexCodeList>
+   <string>^.*$</string>
+  </regexCodeList>
+  <regexCodePropertyList>
+   <integer>1</integer>
+  </regexCodePropertyList>
+ </Trigger>
   </TriggerGroup>
  </TriggerPackage>
  <TimerPackage />
@@ -536,12 +554,12 @@ hspskillgain()</script>
  <script>-- ============================================================================
 -- Hadar_Spellup_Caster for Mudlet
 -- Ported from MUSHclient plugin by Hadar
--- Version: 1.17
+ -- Version: 1.26
 -- Purpose: Spellup Script for Aardwolf MUD
 -- ============================================================================
 
 HSP = HSP or {}
-HSP.version = &quot;1.17&quot;
+HSP.version = &quot;1.26&quot;
 HSP.pluginName = &quot;Hadar_Spellup_Caster&quot;
 local function hsp_persistence_dir()
   local home = (type(getMudletHomeDir) == &quot;function&quot; and getMudletHomeDir() or &quot;.&quot;)
@@ -560,6 +578,15 @@ HSP.pluscount = 0
 HSP.pluscount2 = 0
 HSP.spellupAllPending = HSP.spellupAllPending or false
 HSP.dinvSubscriptionId = HSP.dinvSubscriptionId or nil
+HSP.pendingCastPrompts = HSP.pendingCastPrompts or 0
+HSP.castPromptDeadline = HSP.castPromptDeadline or 0
+HSP.awaitingCastPromptTerminator = false
+HSP.spellupBlankBudget = HSP.spellupBlankBudget or 0
+HSP.spellupBlankDeadline = HSP.spellupBlankDeadline or 0
+HSP.spellupBlankCategory = HSP.spellupBlankCategory or nil
+HSP.spellupBlankReason = HSP.spellupBlankReason or nil
+HSP.silencedCastPromptCount = HSP.silencedCastPromptCount or 0
+HSP.silencedBlankCount = HSP.silencedBlankCount or 0
 Spellups = Spellups or {}
 
 -- ============================================================================
@@ -642,6 +669,349 @@ function hadarprint(str, level)
   else
     cecho(HSP.ColoursToMudlet(str) .. &quot;&lt;reset&gt;\n&quot;)
   end
+end
+
+-- ============================================================================
+-- Optional exact-line suppression for self spellup prose.
+-- Protocol tags and failure messages are handled elsewhere and are deliberately
+-- not included here.
+-- ============================================================================
+local function hspLineSet(lines)
+  local result = {}
+  for _, line in ipairs(lines) do
+    result[line] = true
+  end
+  return result
+end
+
+HSP.spellupProse = {
+  falloffs = hspLineSet({
+    &quot;You can no longer avoid some attacks.&quot;,
+    &quot;You no longer absorb magical attacks.&quot;,
+    &quot;The aura around your body fades away.&quot;,
+    &quot;Your force field wavers and dissipates.&quot;,
+    &quot;Your divine swiftness slows to a halt.&quot;,
+    &quot;You feel less righteous as the blessing upon you fades.&quot;,
+    &quot;You are no longer able to breathe underwater.&quot;,
+    &quot;You feel more vulnerable to cold.&quot;,
+    &quot;You feel less resistant to light and holy attacks.&quot;,
+    &quot;You feel more vulnerable to electricity.&quot;,
+    &quot;You feel less in control of your will.&quot;,
+    &quot;You feel less protected from destructive energies.&quot;,
+    &quot;You feel more vulnerable to acid.&quot;,
+    &quot;Your brilliant white aura of sanctuary shimmers and is gone.&quot;,
+    &quot;You are no longer displaced.&quot;,
+    &quot;The magic circle around you shimmers and fades away.&quot;,
+    &quot;You feel more vulnerable to disease.&quot;,
+    &quot;You can no longer sense anger.&quot;,
+    &quot;You feel yourself slow down.&quot;,
+    &quot;You no longer move at the speed of light.&quot;,
+    &quot;Your mental abilities feel less balanced.&quot;,
+    &quot;You no longer absorb energy.&quot;,
+    &quot;A momentary lapse of concentration causes your thought shield to fade away.&quot;,
+    &quot;The adrenaline rush wears off.&quot;,
+    &quot;Your mental barrier breaks down.&quot;,
+    &quot;You are no longer manipulating time.&quot;,
+    &quot;Your intellectual fortress crumbles.&quot;,
+    &quot;You no longer feel compressed.&quot;,
+    &quot;You no longer feel enlightened.&quot;,
+    &quot;Your godly embrace relaxes.&quot;,
+    &quot;You feel less perceptive.&quot;,
+    &quot;Your pulse slows to a normal rate.&quot;,
+    &quot;Your mystic might fades away.&quot;,
+    &quot;Your magical armor wears away.&quot;,
+    &quot;Your prayer of fortune weakens.&quot;,
+    &quot;You no longer feel so intelligent.&quot;,
+    &quot;Your mind feels less awake.&quot;,
+    &quot;You are no longer blurred.&quot;,
+    &quot;You no longer see in the dark.&quot;,
+    &quot;You are no longer quite so calculating.&quot;,
+    &quot;You no longer feel protected by the forces of shadow.&quot;,
+    &quot;Your force shield shimmers then fades away.&quot;,
+    &quot;Your facade crumbles, revealing your true nature.&quot;,
+    &quot;You feel less protected.&quot;,
+    &quot;The texture of your skin returns to normal.&quot;,
+    &quot;Your skin feels soft again.&quot;,
+    &quot;Your inertial barrier dissipates.&quot;,
+    &quot;You are no longer channelling energy.&quot;,
+    &quot;You no longer feel so huge.&quot;,
+    &quot;You feel almost blind at the loss of your magical sight.&quot;,
+    &quot;You no longer move in the shadows.&quot;,
+    &quot;The fires of revolution dim within you.&quot;,
+    &quot;Your globe of invulnerability shimmers and fades.&quot;,
+    &quot;Your battle sense has faded.&quot;,
+    &quot;You feel weaker.&quot;,
+    &quot;Your body softens.&quot;,
+    &quot;You are no longer in harmony with yourself.&quot;,
+  }),
+  casts = hspLineSet({
+    &quot;You now possess magical powers of avoidance.&quot;,
+    &quot;You feel a strong magical force surround your body.&quot;,
+    &quot;A warm glowing aura forms around you.&quot;,
+    &quot;You call upon The Revolution to grant you a force field of divine protection.&quot;,
+    &quot;You are blessed with divine swiftness!&quot;,
+    &quot;Your magic is blessed with the luck of The Revolution!&quot;,
+    &quot;You grant yourself the favor of The Revolution.&quot;,
+    &quot;You feel gills growing on your neck!&quot;,
+    &quot;You protect yourself from cold.&quot;,
+    &quot;You protect yourself from the forces of holy and light.&quot;,
+    &quot;You protect yourself from mental attacks.&quot;,
+    &quot;You protect yourself from destructive energy.&quot;,
+    &quot;You protect yourself from acid.&quot;,
+    &quot;You are surrounded by a shimmering white aura of divine protection.&quot;,
+    &quot;Your form shimmers and you appear displaced.&quot;,
+    &quot;A magical circle of protection forms around you.&quot;,
+    &quot;You feel protected from disease.&quot;,
+    &quot;You can now sense anger in your immediate area.&quot;,
+    &quot;You feel yourself moving more quickly.&quot;,
+    &quot;You feel yourself moving at the speed of light!&quot;,
+    &quot;Your mental abilities are now more balanced.&quot;,
+    &quot;You can now absorb some forms of energy.&quot;,
+    &quot;You have created a shield around yourself.&quot;,
+    &quot;You conjure a shield of earth around yourself.&quot;,
+    &quot;You have given yourself an adrenaline rush!&quot;,
+    &quot;You erect a mental barrier around yourself.&quot;,
+    &quot;You start to manipulate time.&quot;,
+    &quot;A virtual fortress forms around you.&quot;,
+    &quot;You compress your body to resist magical attacks.&quot;,
+    &quot;You feel enlightened.&quot;,
+    &quot;You are embraced by the might of The Revolution.&quot;,
+    &quot;You feel your concentration increase.&quot;,
+    &quot;You feel your adrenaline pump as your body speeds up.&quot;,
+    &quot;You feel your body surge with extra power.&quot;,
+    &quot;You cast a protective armor around yourself.&quot;,
+    &quot;You are blessed with good fortune from The Revolution.&quot;,
+    &quot;You are granted the knowledge of the ages.&quot;,
+    &quot;Your mind feels like a sponge as its power is awakened.&quot;,
+    &quot;You make your appearance look blurred.&quot;,
+    &quot;Your eyes glow red.&quot;,
+    &quot;You begin to calculate your odds with great precision.&quot;,
+    &quot;You feel aligned with darkness.&quot;,
+    &quot;You are surrounded by a force shield.&quot;,
+    &quot;You hide your true intentions and become another face in the crowd.&quot;,
+    &quot;The Revolution lends a hand to aid you.&quot;,
+    &quot;Your flesh turns to steel.&quot;,
+    &quot;Your skin turns to stone.&quot;,
+    &quot;An inertial barrier forms around you.&quot;,
+    &quot;You begin to focus your energy into your weapon.&quot;,
+    &quot;You are now HUGE!&quot;,
+    &quot;You feel your body harden.&quot;,
+    &quot;You conjure forth a globe of physical resistance around you.&quot;,
+    &quot;You now detect the presence of those hidden.&quot;,
+    &quot;You now detect the presence of those invisible.&quot;,
+    &quot;You now sense magical properties held within artifacts.&quot;,
+    &quot;You now detect the presence of those who walk in shadow.&quot;,
+    &quot;You now detect the presence of those who walk in the light.&quot;,
+    &quot;You now have true sight.&quot;,
+    &quot;You attempt to move in the shadows.&quot;,
+    &quot;You are already skulking about.&quot;,
+    &quot;You now move silently in the shadows.&quot;,
+    &quot;You rebel against the status quo and the fires of Revolution ignite your soul.&quot;,
+    &quot;You gain a keen understanding of battle tactics.&quot;,
+    &quot;Your muscles surge with heightened power!&quot;,
+    &quot;You are completely focused on your inner power.&quot;,
+  }),
+}
+
+local function hspDeletePreviousBlankLine(currentLineNumber)
+  if type(currentLineNumber) ~= &quot;number&quot; or currentLineNumber &lt;= 0 then return false end
+  if type(getLines) ~= &quot;function&quot; or type(moveCursor) ~= &quot;function&quot; then return false end
+
+  local previousLineNumber = currentLineNumber - 1
+  local ok, previousLines = pcall(getLines, &quot;main&quot;, previousLineNumber, previousLineNumber)
+  local previousLine = ok and type(previousLines) == &quot;table&quot; and previousLines[1] or nil
+  if previousLine == nil or not tostring(previousLine):match(&quot;^%s*$&quot;) then return false end
+
+  local moved, moveResult = pcall(moveCursor, &quot;main&quot;, 0, previousLineNumber)
+  if moved and moveResult ~= false then
+    pcall(deleteLine)
+    if type(moveCursorEnd) == &quot;function&quot; then
+      pcall(moveCursorEnd, &quot;main&quot;)
+    elseif type(getLineCount) == &quot;function&quot; then
+      local countOk, lineCount = pcall(getLineCount)
+      if countOk and type(lineCount) == &quot;number&quot; then
+        pcall(moveCursor, &quot;main&quot;, 0, lineCount)
+      end
+    end
+    return true
+  end
+  return false
+end
+
+local function hspCurrentLineNumber()
+  if type(getLineNumber) ~= &quot;function&quot; then return nil end
+  local ok, number = pcall(getLineNumber)
+  return ok and tonumber(number) or nil
+end
+
+local function hspIsAardwolfPrompt(line)
+  -- Match the normal [...] and combat &lt;...&gt; prompt wrappers, while requiring
+  -- the hp/mn/mv fields so ordinary bracketed output is never suppressed.
+  -- Prompt modifiers such as *[NOEXP]* may follow the closing wrapper.
+  local body = line:match(&quot;^%s*%[(.-)%]&quot;) or line:match(&quot;^%s*&lt;(.-)&gt;&quot;)
+  if body == nil then return false end
+  return body:match(&quot;^%d+/%d+hp%s+%d+/%d+mn%s+%d+/%d+mv%s+&quot;) ~= nil
+end
+
+local function hspSilenceDebug(message)
+  local settings = Spellups[&quot;GL&quot;] or {}
+  if settings[&quot;Debug&quot;] ~= &quot;yes&quot; then return end
+
+  -- Running cecho while a trigger is deleting or moving buffer rows can join
+  -- unrelated lines. Defer these diagnostics until the trigger has finished.
+  if type(tempTimer) == &quot;function&quot; then
+    tempTimer(0.001, function() hadarprint(message, &quot;debug&quot;) end)
+  else
+    hadarprint(message, &quot;debug&quot;)
+  end
+end
+
+local function hspClearBlankCleanup()
+  HSP.spellupBlankBudget = 0
+  HSP.spellupBlankDeadline = 0
+  HSP.spellupBlankCategory = nil
+  HSP.spellupBlankReason = nil
+end
+
+local function hspArmBlankCleanup(category, reason, budget)
+  local requestedBudget = tonumber(budget) or 3
+  HSP.spellupBlankBudget = math.max(tonumber(HSP.spellupBlankBudget) or 0, requestedBudget)
+  HSP.spellupBlankDeadline = os.time() + 5
+  HSP.spellupBlankCategory = category
+  HSP.spellupBlankReason = reason
+end
+
+local function hspBlankCleanupActive()
+  if (tonumber(HSP.spellupBlankBudget) or 0) &lt;= 0 then return false end
+  if os.time() &gt; (tonumber(HSP.spellupBlankDeadline) or 0) then
+    hspClearBlankCleanup()
+    return false
+  end
+  return true
+end
+
+local hspHiddenProtocolTags = {
+  affon = true,
+  affoff = true,
+  sfail = true,
+  recon = true,
+  recoff = true,
+  skillgain = true,
+  spellheaders = true,
+  [&quot;/spellheaders&quot;] = true,
+  recoveries = true,
+  [&quot;/recoveries&quot;] = true,
+}
+
+local function hspHiddenProtocolTag(line)
+  local tag = line:match(&quot;^%{([^}%s]+)&quot;)
+  return tag and hspHiddenProtocolTags[tag] and tag or nil
+end
+
+function HSP.expectCastPrompt()
+  local settings = Spellups[&quot;GL&quot;] or {}
+  if settings[&quot;silenceCasts&quot;] ~= &quot;yes&quot; then return end
+
+  HSP.pendingCastPrompts = (tonumber(HSP.pendingCastPrompts) or 0) + 1
+  HSP.castPromptDeadline = os.time() + 10
+  hspArmBlankCleanup(&quot;casts&quot;, &quot;outgoing HSP cast&quot;, 3)
+  hspSilenceDebug(&quot;Queued HSP cast prompt suppression; pending: &quot; .. HSP.pendingCastPrompts)
+end
+
+local function hspConsumeExpectedCastPrompt(line)
+  if not hspIsAardwolfPrompt(line) then return false end
+
+  local pending = tonumber(HSP.pendingCastPrompts) or 0
+  if pending &lt;= 0 then return false end
+  if os.time() &gt; (tonumber(HSP.castPromptDeadline) or 0) then
+    HSP.pendingCastPrompts = 0
+    HSP.castPromptDeadline = 0
+    hspSilenceDebug(&quot;HSP cast prompt suppression expired before a prompt arrived&quot;)
+    return false
+  end
+
+  HSP.pendingCastPrompts = pending - 1
+  if HSP.pendingCastPrompts == 0 then HSP.castPromptDeadline = 0 end
+  return true
+end
+
+function HSP.handleSpellupProse(line)
+  line = tostring(line or &quot;&quot;)
+
+  -- Aardwolf can terminate a GA-delimited prompt only when later output
+  -- arrives. Keep this one-shot state without a wall-clock timeout, but cancel
+  -- it on any nonblank inbound row so it can never consume an unrelated blank.
+  if line:match(&quot;^%s*$&quot;) and HSP.awaitingCastPromptTerminator then
+    deleteLine()
+    HSP.awaitingCastPromptTerminator = false
+    HSP.silencedBlankCount = HSP.silencedBlankCount + 1
+    hspSilenceDebug(&quot;Suppressed delayed HSP prompt terminator blank&quot;)
+    return
+  elseif not line:match(&quot;^%s*$&quot;) and HSP.awaitingCastPromptTerminator then
+    HSP.awaitingCastPromptTerminator = false
+    hspSilenceDebug(&quot;Cancelled delayed HSP prompt terminator wait on nonblank output&quot;)
+  end
+
+  -- A cast can produce several adjacent separators, with omitted protocol tags
+  -- interleaved between them. Consume a small bounded run and stop as soon as
+  -- genuine visible output arrives.
+  if line:match(&quot;^%s*$&quot;) then
+    if hspBlankCleanupActive() then
+      deleteLine()
+      HSP.spellupBlankBudget = HSP.spellupBlankBudget - 1
+      HSP.silencedBlankCount = HSP.silencedBlankCount + 1
+      local reason = HSP.spellupBlankReason or &quot;spellup output&quot;
+      local remaining = HSP.spellupBlankBudget
+      if remaining &lt;= 0 then hspClearBlankCleanup() end
+      hspSilenceDebug(&quot;Suppressed adjacent blank row (&quot; .. reason .. &quot;); remaining budget: &quot; .. remaining)
+    end
+    return
+  end
+
+  local hiddenTag = hspHiddenProtocolTag(line)
+  if hiddenTag then
+    local settings = Spellups[&quot;GL&quot;] or {}
+    if hiddenTag == &quot;affon&quot; and settings[&quot;silenceCasts&quot;] == &quot;yes&quot; then
+      hspArmBlankCleanup(&quot;casts&quot;, &quot;hidden affon row&quot;, 3)
+    elseif hiddenTag == &quot;affoff&quot; and settings[&quot;silenceFalloffs&quot;] == &quot;yes&quot; then
+      hspArmBlankCleanup(&quot;falloffs&quot;, &quot;hidden affoff row&quot;, 3)
+    end
+    -- All of these rows are deleted by HSP triggers, so they must not cancel a
+    -- cleanup transaction that is waiting for their adjacent separators.
+    return
+  end
+
+  if hspConsumeExpectedCastPrompt(line) then
+    local currentLineNumber = hspCurrentLineNumber()
+    deleteLine()
+    if hspDeletePreviousBlankLine(currentLineNumber) then
+      HSP.silencedBlankCount = HSP.silencedBlankCount + 1
+    end
+    HSP.silencedCastPromptCount = HSP.silencedCastPromptCount + 1
+    HSP.awaitingCastPromptTerminator = true
+    hspArmBlankCleanup(&quot;casts&quot;, &quot;HSP cast prompt&quot;, 3)
+    hspSilenceDebug(&quot;Suppressed HSP cast prompt; pending: &quot; .. HSP.pendingCastPrompts)
+    return
+  end
+
+  local settings = Spellups[&quot;GL&quot;] or {}
+  local suppress =
+    (settings[&quot;silenceFalloffs&quot;] == &quot;yes&quot; and HSP.spellupProse.falloffs[line]) or
+    (settings[&quot;silenceCasts&quot;] == &quot;yes&quot; and HSP.spellupProse.casts[line])
+
+  if suppress then
+    local currentLineNumber = hspCurrentLineNumber()
+
+    deleteLine()
+    if hspDeletePreviousBlankLine(currentLineNumber) then
+      HSP.silencedBlankCount = HSP.silencedBlankCount + 1
+    end
+    local category = HSP.spellupProse.falloffs[line] and &quot;falloffs&quot; or &quot;casts&quot;
+    hspArmBlankCleanup(category, &quot;suppressed &quot; .. category .. &quot; row&quot;, 3)
+    return
+  end
+
+  hspClearBlankCleanup()
 end
 
 -- ============================================================================
@@ -941,6 +1311,9 @@ function injectVars()
   v[&quot;GL&quot;][&quot;commLogTab&quot;] = nil
   v[&quot;GL&quot;][&quot;thirtytimer&quot;] = &quot;yes&quot;
   v[&quot;GL&quot;][&quot;tentimer&quot;] = &quot;yes&quot;
+  v[&quot;GL&quot;][&quot;timerWarnings&quot;] = &quot;yes&quot;
+  v[&quot;GL&quot;][&quot;silenceFalloffs&quot;] = &quot;no&quot;
+  v[&quot;GL&quot;][&quot;silenceCasts&quot;] = &quot;no&quot;
   v[&quot;GL&quot;][&quot;seespells&quot;] = &quot;yes&quot;
   v[&quot;GL&quot;][&quot;failed&quot;] = 0
   v[&quot;GL&quot;][&quot;mudsidespellup&quot;] = 1
@@ -1176,6 +1549,7 @@ function HSPmain()
   elseif first == &quot;elementalward&quot; then hspsetelementalward(rest)
   elseif first == &quot;combat&quot; then hspsetcombat(rest)
   elseif first == &quot;timer&quot; then hspdotimerexception(rest)
+  elseif first == &quot;silence&quot; then hspSilence(rest)
   elseif first == &quot;fullspellupreset&quot; then
     HSP.pastFirstInstall = false
     HSP.slistCommandSent = false
@@ -1219,6 +1593,52 @@ function hspToggleSpellup()
   end
 
   HSP.SaveState()
+end
+
+function HSP.showSilenceStatus()
+  local falloffs = Spellups[&quot;GL&quot;][&quot;silenceFalloffs&quot;] == &quot;yes&quot; and &quot;@GON@w&quot; or &quot;@ROFF@w&quot;
+  local casts = Spellups[&quot;GL&quot;][&quot;silenceCasts&quot;] == &quot;yes&quot; and &quot;@GON@w&quot; or &quot;@ROFF@w&quot;
+  hadarprint(&quot;Silence falloffs: &quot; .. falloffs, &quot;script&quot;)
+  hadarprint(&quot;Silence successful casts: &quot; .. casts, &quot;script&quot;)
+  hadarprint(&quot;Silenced this session: &quot; .. HSP.silencedCastPromptCount .. &quot; HSP prompts, &quot; .. HSP.silencedBlankCount .. &quot; adjacent blank rows&quot;, &quot;script&quot;)
+end
+
+function hspSilence(str)
+  local input = string.lower(tostring(str or &quot;&quot;))
+  local category, state = input:match(&quot;^%s*(%w*)%s*(%w*)%s*$&quot;)
+
+  if category == &quot;&quot; or category == &quot;status&quot; then
+    HSP.showSilenceStatus()
+    return
+  end
+
+  if category ~= &quot;falloffs&quot; and category ~= &quot;casts&quot; and category ~= &quot;all&quot; then
+    hadarprint(&quot;Usage: @Ghsp silence falloffs|casts|all on|off@w, or @Ghsp silence status@w&quot;, &quot;error&quot;)
+    return
+  end
+  if state ~= &quot;on&quot; and state ~= &quot;off&quot; then
+    hadarprint(&quot;Usage: @Ghsp silence &quot; .. category .. &quot; on|off@w&quot;, &quot;error&quot;)
+    return
+  end
+
+  local value = state == &quot;on&quot; and &quot;yes&quot; or &quot;no&quot;
+  if category == &quot;falloffs&quot; or category == &quot;all&quot; then
+    Spellups[&quot;GL&quot;][&quot;silenceFalloffs&quot;] = value
+  end
+  if category == &quot;casts&quot; or category == &quot;all&quot; then
+    Spellups[&quot;GL&quot;][&quot;silenceCasts&quot;] = value
+    if value == &quot;no&quot; then
+      HSP.pendingCastPrompts = 0
+      HSP.castPromptDeadline = 0
+      HSP.awaitingCastPromptTerminator = false
+    end
+  end
+  if value == &quot;no&quot; and (category == &quot;all&quot; or HSP.spellupBlankCategory == category) then
+    hspClearBlankCleanup()
+  end
+
+  HSP.SaveState()
+  HSP.showSilenceStatus()
 end
 
 function HSU()
@@ -1669,6 +2089,7 @@ function cast_spells()
     end
 
     hadarprint(&quot;an expired spell triggered spellup all&quot;, &quot;debug&quot;)
+    HSP.expectCastPrompt()
     if Spellups[&quot;GL&quot;][&quot;seespells&quot;] == &quot;yes&quot; then
       send(&quot;spellup all&quot;)
     else
@@ -1700,6 +2121,7 @@ function cast_spells()
             hadarprint(&quot;Contains V1 Cskill&quot;, &quot;debug&quot;)
             cast_this(Spellups[&quot;EX&quot;][&quot;clanskillV1&quot;], tonumber(Spellups[&quot;AS&quot;][&quot;list&quot;][Spellups[&quot;EX&quot;][&quot;clanskillV1&quot;]][&quot;type&quot;]))
           end
+          HSP.expectCastPrompt()
           send(&quot;spellup&quot;, false)
           Spellups[&quot;QS&quot;] = {}
           break
@@ -1753,6 +2175,7 @@ function cast_this(sn, ctype)
   end
 
   if castline ~= nil then
+    HSP.expectCastPrompt()
     if Spellups[&quot;GL&quot;][&quot;seespells&quot;] == &quot;yes&quot; then
       send(castline)
     else
@@ -2100,6 +2523,11 @@ function recoff()
 end
 
 function rcwarning(arg)
+  if Spellups[&quot;GL&quot;][&quot;timerWarnings&quot;] == &quot;no&quot; then
+    hadarprint(&quot;Timer warning suppressed: &quot; .. tostring(arg), &quot;debug&quot;)
+    return
+  end
+
   local t = HSP.split(arg, &quot;_&quot;)
   local nm = Spellups[&quot;AS&quot;][&quot;list&quot;][tonumber(t[3])][&quot;name&quot;]
   local message
@@ -2349,6 +2777,7 @@ function totemrecovery()
     raiseEvent(&quot;HSP_CommLog&quot;, message, Spellups[&quot;GL&quot;][&quot;commLogTab&quot;] or &quot;SpellTracker&quot;)
   end
   if Spellups[&quot;TG&quot;][&quot;totemcastauto&quot;] == &quot;yes&quot; then
+    HSP.expectCastPrompt()
     if Spellups[&quot;GL&quot;][&quot;seespells&quot;] == &quot;yes&quot; then
       send(&quot;cast &#x27;gaias totem&#x27; &quot; .. Spellups[&quot;TG&quot;][&quot;totemcast&quot;])
     else
@@ -2605,6 +3034,15 @@ function hspskillgain()
 end
 
 function hspdotimerexception(str)
+  local command = string.lower(tostring(str or &quot;&quot;):match(&quot;^%s*(.-)%s*$&quot;))
+  if command == &quot;on&quot; or command == &quot;off&quot; then
+    Spellups[&quot;GL&quot;][&quot;timerWarnings&quot;] = command == &quot;on&quot; and &quot;yes&quot; or &quot;no&quot;
+    HSP.SaveState()
+    local status = command == &quot;on&quot; and &quot;@GON@w&quot; or &quot;@ROFF@w&quot;
+    hadarprint(&quot;Timer warnings: &quot; .. status .. &quot; (individual timer settings preserved)&quot;, &quot;script&quot;)
+    return
+  end
+
   local arg, rest = str:match(&quot;([0-9.a-zA-Z]*)%s*(.*)&quot;)
   arg = tonumber(arg) or string.lower(arg or &quot;&quot;)
   local nm2
@@ -2645,6 +3083,8 @@ function hspdotimerexception(str)
     end
   else
     -- Show timer list
+    local warnings = Spellups[&quot;GL&quot;][&quot;timerWarnings&quot;] == &quot;yes&quot; and &quot;@GON@w&quot; or &quot;@ROFF@w&quot;
+    hadarprint(&quot;Timer warnings globally: &quot; .. warnings, &quot;script&quot;)
     hadarprint(&quot;@W+&lt;medium_turquoise&gt;---------@G[@CT@cimers @CE@cxceptions@G]&lt;medium_turquoise&gt;--------@W+@w&quot;)
     hadarprint(&quot;@W|   @CS@cpell @CN@cumber  @W|   @CS@cpell @Cn@came   @W|  @CT@cimers  @W|@w&quot;)
     hadarprint(&quot;@W+&lt;medium_turquoise&gt;--------------------------------------------------------------------------@W+@w&quot;)
@@ -3018,6 +3458,8 @@ function HadarHelp(str)
     hadarprint(&quot;&lt;medium_turquoise&gt;+-------------------------[timers help files]&lt;medium_turquoise&gt;--------------------------+&quot;, &quot;helpfile2&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp timer     &lt;light_steel_blue&gt;- &lt;dark_orange&gt;no argument shows a table with the spell number and  &lt;medium_turquoise&gt;|&quot;, &quot;helpfile2&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                 &lt;dark_orange&gt;the spell name, along with what timers are active    &lt;medium_turquoise&gt;|&quot;, &quot;helpfile2&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp timer on|off           &lt;light_steel_blue&gt;- &lt;orange&gt;globally show or suppress timer warnings      &lt;medium_turquoise&gt;|&quot;, &quot;helpfile2&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;|                             &lt;orange&gt;individual timer settings are preserved       &lt;medium_turquoise&gt;|&quot;, &quot;helpfile2&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                                                                      &lt;medium_turquoise&gt;|&quot;, &quot;helpfile2&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp timer &lt;SN or name&gt;    &lt;light_steel_blue&gt;- &lt;orange&gt;will add or remove the skill from the    &lt;medium_turquoise&gt;|&quot;, &quot;helpfile2&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                             &lt;orange&gt;list to show a timer, when added to the  &lt;medium_turquoise&gt;|&quot;, &quot;helpfile2&quot;)
@@ -3080,6 +3522,8 @@ function HadarHelp(str)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp noauto clear         &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Clears your noauto list                      &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp disable &lt;check&gt;      &lt;light_steel_blue&gt;- &lt;orange&gt;Toggles script on or off, check gives status &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;dark_orange&gt;hsp reload               &lt;light_steel_blue&gt;- &lt;dark_orange&gt;Reload skills and spells (after tier)        &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp silence &lt;type&gt; on|off &lt;light_steel_blue&gt;- &lt;orange&gt;Silence falloffs, casts, or all              &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
+    hadarprint(&quot;&lt;medium_turquoise&gt;|                            &lt;orange&gt;Use hsp silence status to show settings     &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;| &lt;orange&gt;hsp autoaura &lt;command&gt;   &lt;light_steel_blue&gt;- &lt;orange&gt;Has multiple commands, they are:             &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                           &lt;orange&gt; On  &lt;light_steel_blue&gt;-&lt;dark_orange&gt; enables wearing aura in combat         &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)
     hadarprint(&quot;&lt;medium_turquoise&gt;|                           &lt;orange&gt; Off &lt;light_steel_blue&gt;-&lt;dark_orange&gt; diables wearing aura in combat         &lt;medium_turquoise&gt;|&quot;, &quot;helpfile&quot;)

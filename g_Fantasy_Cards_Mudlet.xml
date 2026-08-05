@@ -13,13 +13,14 @@
       <Trigger isActive="yes" isFolder="no"><name>auction_card</name><script>FantasyCards_TR_Auction(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Auction: (.+ has placed a bid for [\d,]+ gold on|.+ is auctioning) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card \(Level \d+, Num \d+\).( Current bid is [\d,]+.)?$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>bid_card</name><script>FantasyCards_TR_Bid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^([\d ]+) - .+(.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card\s+\d+\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>lbid_card</name><script>FantasyCards_TR_LBid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ (\d+) (.+) (Fantasy|Expansion|Memorial and Immortal's|Original and Immortal's) Series Collector's Card\s+\d+ (\*| )?G.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
-      <Trigger isActive="yes" isFolder="no"><name>market_list_card</name><script>FantasyCards_TR_MarketList(matches)</script><command></command><packageName></packageName><regexCodeList><string>^ +(\d+) (\S+) +(Fantasy|Expansion|Memorial|Original).* +(\d+) +\*?(Gold|Qp).+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>market_list_card</name><script>FantasyCards_TR_MarketList(matches)</script><command></command><packageName></packageName><regexCodeList><string>^\s*(\d+)\s+(\S+)\s+(Fantasy|Expansion|Memorial|Original).*?\s+(\d+)\s+\*?\s*(Gold|Qp|QP)\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="no" isFolder="no"><name>scan_done</name><script>FantasyCards_TR_ScanDone(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Scanned all Fantasy Card cases!$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
     </TriggerGroup>
   </TriggerPackage>
   <AliasPackage>
     <AliasGroup isActive="yes" isFolder="yes"><name>Fantasy_Cards</name><script></script><command></command><packageName>Fantasy_Cards</packageName><regex></regex>
       <Alias isActive="yes" isFolder="no"><name>lft_help</name><script>FantasyCards_Alias_Help(matches)</script><command></command><packageName></packageName><regex>^lft help$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>lft_cost</name><script>FantasyCards_Alias_Cost(matches)</script><command></command><packageName></packageName><regex>^lft cost$</regex></Alias>
       <Alias isActive="yes" isFolder="no"><name>lft_summary</name><script>Summary(nil,nil,{case=matches[2]})</script><command></command><packageName></packageName><regex>^lft summary ([0-4])$</regex></Alias>
       <Alias isActive="yes" isFolder="no"><name>lft_find</name><script>FindCard(nil,nil,{[2]=matches[3]})</script><command></command><packageName></packageName><regex>^lft (search|find) (.*)$</regex></Alias>
       <Alias isActive="yes" isFolder="no"><name>lft_report</name><script>ReportCards(nil,nil,{case=matches[2],channel=matches[3]})</script><command></command><packageName></packageName><regex>^lft report ([0-4]) (.*)$</regex></Alias>
@@ -112,6 +113,7 @@ local function persistence_dir()
 end
 
 local STATE_FILE = persistence_dir() .. "/fantasy_cards_state.lua"
+local MBOT_DB_FILE = persistence_dir() .. "/mmarket.db"
 
 local function persist_load()
   local function resolve_table_save_refs(node, root, seen)
@@ -197,6 +199,168 @@ end
 local function card_is_owned(cardName)
   local card = normalize_card_text(cardName)
   return fateTable[card] ~= nil and tonumber(fateTable[card].count) == 1
+end
+
+local fantasySalesCache = nil
+
+local function fantasy_comma_number(number)
+  local text = tostring(math.floor((tonumber(number) or 0) + 0.5))
+  while true do
+    local changed
+    text, changed = text:gsub("^(%-?%d+)(%d%d%d)", "%1,%2")
+    if changed == 0 then break end
+  end
+  return text
+end
+
+local function fantasy_compact_number(number)
+  number = tonumber(number) or 0
+  local divisor, suffix = 1, ""
+  if math.abs(number) >= 1000000000 then
+    divisor, suffix = 1000000000, "B"
+  elseif math.abs(number) >= 1000000 then
+    divisor, suffix = 1000000, "M"
+  elseif math.abs(number) >= 1000 then
+    divisor, suffix = 1000, "K"
+  end
+  local scaled = number / divisor
+  local text
+  if divisor == 1 then
+    text = tostring(math.floor(scaled + 0.5))
+  elseif math.abs(scaled) >= 100 then
+    text = string.format("%.0f", scaled)
+  elseif math.abs(scaled) >= 10 then
+    text = string.format("%.1f", scaled)
+  else
+    text = string.format("%.2f", scaled)
+  end
+  text = text:gsub("(%..-)0+$", "%1"):gsub("%.$", "")
+  return text .. suffix
+end
+
+local function fantasy_currency(value)
+  return tostring(value or "gold"):lower() == "qp" and "qp" or "gold"
+end
+
+local function fantasy_add_sales_average(averages, item_name, average, times_sold, currency)
+  local normalized = normalize_card_text(item_name)
+  if not normalized:match(" series collector's card$") then return end
+  local card = normalized:match("^(%S+)%s+")
+  if not card or not fateTable[card] then return end
+  average = tonumber(average) or 0
+  times_sold = tonumber(times_sold) or 0
+  if average <= 0 or times_sold <= 0 then return end
+  currency = fantasy_currency(currency)
+  local existing = averages[card]
+  if existing and existing.currency == currency then
+    local combined_sales = existing.times_sold + times_sold
+    existing.average = (existing.average * existing.times_sold + average * times_sold) / combined_sales
+    existing.times_sold = combined_sales
+    return
+  elseif existing and existing.times_sold >= times_sold then
+    return
+  end
+  averages[card] = {
+    average = average,
+    times_sold = times_sold,
+    currency = currency,
+  }
+end
+
+local function fantasy_read_lsqlite(connection, sqlite_module)
+  local statement = connection:prepare(
+    "SELECT item_name,avg_price,times_sold,currency " ..
+    "FROM market_items WHERE item_name LIKE ?")
+  if not statement then return nil end
+  statement:bind(1, "% series collector's card")
+  local averages = {}
+  local row_code = sqlite_module and sqlite_module.ROW or 100
+  while statement:step() == row_code do
+    fantasy_add_sales_average(averages,
+      statement:get_value(0), statement:get_value(1),
+      statement:get_value(2), statement:get_value(3))
+  end
+  statement:finalize()
+  return averages
+end
+
+local function fantasy_read_mudlet_db()
+  local api = rawget(_G, "db")
+  local schema = type(MM) == "table" and MM.mdb and MM.mdb.market_items or nil
+  if type(api) ~= "table" or type(api.fetch) ~= "function" or not schema then return nil end
+  local ok, rows = pcall(function()
+    if type(api.like) == "function" and schema.item_name then
+      return api:fetch(schema, api:like(schema.item_name, "% Series Collector's Card"))
+    end
+    return api:fetch(schema)
+  end)
+  if not ok or type(rows) ~= "table" then return nil end
+  local averages = {}
+  for _, row in ipairs(rows) do
+    fantasy_add_sales_average(averages,
+      row.item_name, row.avg_price, row.times_sold, row.currency)
+  end
+  return averages
+end
+
+-- mbot access is strictly read-only: SELECT/fetch on a live handle, or
+-- SQLite OPEN_READONLY when reading the database file directly.
+local function fantasy_read_mbot_averages()
+  if type(MM) == "table" and MM.db and type(MM.db.prepare) == "function" then
+    local ok, averages = pcall(fantasy_read_lsqlite, MM.db, MM.sqlite3)
+    if ok and type(averages) == "table" then return averages, "mbot-live" end
+  end
+
+  local averages = fantasy_read_mudlet_db()
+  if type(averages) == "table" then return averages, "mbot-live" end
+
+  local file = io.open(MBOT_DB_FILE, "rb")
+  if not file then return nil, "missing" end
+  file:close()
+  local ok, sqlite_module = pcall(require, "lsqlite3")
+  if not ok then ok, sqlite_module = pcall(require, "lsqlite3complete") end
+  if not ok or type(sqlite_module) ~= "table" or type(sqlite_module.open) ~= "function"
+    or sqlite_module.OPEN_READONLY == nil
+  then
+    return nil, "readonly-driver-unavailable"
+  end
+  local opened, connection = pcall(sqlite_module.open, MBOT_DB_FILE, sqlite_module.OPEN_READONLY)
+  if not opened or not connection then return nil, "readonly-open-failed" end
+  local read_ok, result = pcall(fantasy_read_lsqlite, connection, sqlite_module)
+  pcall(function() connection:close() end)
+  if read_ok and type(result) == "table" then return result, "mbot-file-readonly" end
+  return nil, "readonly-query-failed"
+end
+
+local function fantasy_sales_snapshot(force_refresh)
+  local now = os.time()
+  if not force_refresh and type(fantasySalesCache) == "table"
+    and now - (tonumber(fantasySalesCache.loaded_at) or 0) < 30
+  then
+    return fantasySalesCache
+  end
+  -- mbot is optional. Keep all callers working even if its globals, schema,
+  -- SQLite driver, or database file are unavailable or malformed.
+  local ok, averages, source = pcall(fantasy_read_mbot_averages)
+  if not ok then
+    averages, source = nil, "unavailable"
+  end
+  fantasySalesCache = {
+    available = type(averages) == "table",
+    averages = averages or {},
+    source = source or "missing",
+    loaded_at = now,
+  }
+  return fantasySalesCache
+end
+
+local function fantasy_average_tag(card_name)
+  local card = normalize_card_text(card_name)
+  local snapshot = fantasy_sales_snapshot(false)
+  local row = snapshot.available and snapshot.averages[card] or nil
+  if not row then return nil end
+  local currency = row.currency == "qp" and "QP" or "gold"
+  return "avg " .. fantasy_compact_number(row.average) .. " " .. currency
 end
 
 function ResetTable()
@@ -428,8 +592,15 @@ function ResetTable()
     end
 
 function FantasyCards_Help()
-  ColourNote("orange", "", "Fantasy Cards commands: lft help | lft search/find <card> | lft summary <1-4> | lft report <1-4> <channel> | lft owned <1-4> <channel> | lft scan")
-  ColourNote("cyan", "", "Ownership comes from scanned collector-case data.")
+  cecho("\n<gold>Fantasy Cards commands<reset>\n\n")
+  cecho("<cyan>lft cost<reset>\n<gray>  Show per-card mbot pricing and the total known cost of missing cards.<reset>\n")
+  cecho("<cyan>lft search/find [card]<reset>\n<gray>  Check whether you own a specific card.<reset>\n")
+  cecho("<cyan>lft summary [1-4]<reset>\n<gray>  Show owned and missing cards for a collector case.<reset>\n")
+  cecho("<cyan>lft report [1-4] [channel]<reset>\n<gray>  Report missing cards from a collector case to a channel.<reset>\n")
+  cecho("<cyan>lft owned [1-4] [channel]<reset>\n<gray>  Report owned cards from a collector case to a channel.<reset>\n")
+  cecho("<cyan>lft scan<reset>\n<gray>  Scan all four collector cases and update ownership.<reset>\n")
+  cecho("<yellow>Cost warning: lft cost requires a configured mbot sales database.<reset>\n")
+  cecho("<gray>  Without mbot, all other Fantasy Cards features continue to work.<reset>\n")
 end
 
 function FantasyCards_OnPluginInstall()
@@ -475,13 +646,54 @@ end
         return true
     end
 
-    local function append_need_tag(rawLine)
+    local function echo_lbid_need_link(auctionId)
+        local id = tostring(auctionId or ""):match("^(%d+)$")
+        if not id then return false end
+        local hint = "Click to send: lbid " .. id
+        local callback = function() send("lbid " .. id) end
+        local command = string.format("send(%q)", "lbid " .. id)
+
+        if type(cechoLink) == "function" then
+            local ok = pcall(cechoLink, "<red> [NEED]<reset>", callback, hint, true)
+            if not ok then ok = pcall(cechoLink, "<red> [NEED]<reset>", command, hint, true) end
+            if ok then return true end
+        end
+        if type(echoLink) == "function" then
+            if type(fg) == "function" then fg("red") end
+            local ok = pcall(echoLink, " [NEED]", callback, hint, true)
+            if not ok then ok = pcall(echoLink, " [NEED]", command, hint, true) end
+            if type(resetFormat) == "function" then resetFormat() end
+            if ok then return true end
+        end
+        return false
+    end
+
+    local function echo_fantasy_average_tag(tag)
+        if tag and tag ~= "" then cecho(" <yellow>[" .. tag .. "]<reset>") end
+    end
+
+    local function echo_plain_need(bracketed)
+        local label = bracketed and "[NEED]" or "NEED"
+        if type(fg) == "function" and type(echo) == "function" then
+            echo(" ")
+            fg("red")
+            echo(label)
+            if type(resetFormat) == "function" then resetFormat() end
+        elseif type(cecho) == "function" then
+            cecho(" <red>" .. label .. "<reset>")
+        else
+            echo(" " .. label)
+        end
+    end
+
+    local function append_need_tag(rawLine, auctionId, averageTag)
         local current = rawLine
         if (current == nil or current == "") and type(getCurrentLine) == "function" then
             local ok, got = pcall(getCurrentLine)
             if ok then current = got end
         end
 
+        local rerendered = false
         if type(copy2decho) == "function" and type(decho) == "function" and type(replace) == "function" then
             local ok, coloured = pcall(copy2decho)
             if ok and coloured ~= nil and tostring(coloured) ~= "" then
@@ -501,35 +713,26 @@ end
                 end
 
                 if cleared then
-                    decho(coloured .. " <255,0,0>NEED<r>\n")
-                    return
+                    decho(coloured)
+                    rerendered = true
                 end
             end
         end
 
-        if type(fg) == "function" and type(echo) == "function" then
-            echo(" ")
-            fg("red")
-            echo("NEED")
-            if type(resetFormat) == "function" then resetFormat() end
-            return
-        end
-
-        if type(cecho) == "function" then
-            cecho(" <red>NEED<reset>\n")
-        else
-            Note(" NEED")
-        end
+        if not echo_lbid_need_link(auctionId) then echo_plain_need(auctionId ~= nil) end
+        echo_fantasy_average_tag(averageTag)
+        if rerendered then echo("\n") end
     end
 
-    local function show_line_status(styles, status, rawLine)
+    local function show_line_status(styles, status, rawLine, auctionId, averageTag)
         local rendered = echo_styles(styles)
         if status == "NEED" then
             if rendered then
-                ColourTell("red", "", " NEED")
+                ColourTell("red", "", auctionId and " [NEED]" or " NEED")
+                echo_fantasy_average_tag(averageTag)
                 Note("")
             else
-                append_need_tag(rawLine)
+                append_need_tag(rawLine, auctionId, averageTag)
             end
         elseif rendered then
             Note("")
@@ -568,7 +771,7 @@ end
     function MarketListCard(name, line, wildcards, styles)
         local cardName = trim(wildcards.card)
         local status = FindCardStatus(cardName)
-        show_line_status(styles, status, line)
+        show_line_status(styles, status, line, wildcards.auctionId, fantasy_average_tag(cardName))
     end
 
     -- Scan all 4 collector cases
@@ -614,6 +817,66 @@ end
         ColourNote("cyan", "", "Case 2 (Expansion): " .. owned[2] .. "/" .. total[2] .. " cards")
         ColourNote("cyan", "", "Case 3 (Memorial/Immortal): " .. owned[3] .. "/" .. total[3] .. " cards")
         ColourNote("cyan", "", "Case 4 (Original/Immortal): " .. owned[4] .. "/" .. total[4] .. " cards")
+    end
+
+    function FantasyCards_CostReport()
+        local missing = {}
+        for card, data in pairs(fateTable) do
+            if not card_is_owned(card) then missing[#missing + 1] = { card = card, data = data } end
+        end
+        table.sort(missing, function(a, b) return a.card < b.card end)
+        if #missing == 0 then
+            cecho("<yellow>[FantasyCards] Remaining estimated cost: <green>0 - collection complete!<reset>\n")
+            return
+        end
+
+        local snapshot = fantasy_sales_snapshot(true)
+        if not snapshot.available then
+            cecho("<yellow>[FantasyCards] Cost unavailable: no configured mbot sales database could be read.<reset>\n")
+            cecho("<gray>  Scanning, reports, searches, and clickable NEED tags still work without mbot.<reset>\n")
+            return
+        end
+        local totals = { gold = 0, qp = 0 }
+        local average_count, no_history_count = 0, 0
+        local series_names = {
+            [1] = "Fantasy",
+            [2] = "Expansion",
+            [3] = "Memorial/Immortal",
+            [4] = "Original/Immortal",
+        }
+
+        cecho(string.format("\n<yellow>[FantasyCards] Cost breakdown for <white>%d<yellow> missing card%s:<reset>\n", #missing, #missing == 1 and "" or "s"))
+        cecho("<yellow>" .. string.format("%-22s %-20s %-18s %21s", "Card", "Series", "Pricing", "Estimated cost") .. "<reset>\n")
+        for _, entry in ipairs(missing) do
+            local row = snapshot.available and snapshot.averages[entry.card] or nil
+            local source_text, cost_text
+            if row then
+                average_count = average_count + 1
+                totals[row.currency] = (totals[row.currency] or 0) + row.average
+                source_text = string.format("avg (%d sale%s)", row.times_sold, row.times_sold == 1 and "" or "s")
+                cost_text = fantasy_comma_number(row.average) .. (row.currency == "qp" and " QP" or " Gold")
+            else
+                no_history_count = no_history_count + 1
+                source_text = "no history"
+                cost_text = "-"
+            end
+            local card_name = entry.card:gsub("^%l", string.upper)
+            local series_name = series_names[entry.data.caseID] or tostring(entry.data.caseName or "")
+            cecho("<white>" .. string.format("%-22s", card_name))
+            cecho("<cyan>" .. string.format(" %-20s", series_name))
+            cecho((row and "<yellow>" or "<gray>") .. string.format(" %-18s", source_text))
+            cecho("<white>" .. string.format(" %21s", cost_text) .. "<reset>\n")
+        end
+
+        local parts = {}
+        if totals.gold > 0 then parts[#parts + 1] = "<white>" .. fantasy_comma_number(totals.gold) .. " <gold>Gold" end
+        if totals.qp > 0 then parts[#parts + 1] = "<white>" .. fantasy_comma_number(totals.qp) .. " <green>QP" end
+        cecho("<yellow>Total known average cost: ")
+        if #parts > 0 then cecho(table.concat(parts, "<yellow> and ")) else cecho("<gray>no recorded prices") end
+        echo("\n")
+        cecho(string.format("<gray>  %d mbot average%s; %d card%s without history.<reset>\n",
+            average_count, average_count == 1 and "" or "s",
+            no_history_count, no_history_count == 1 and "" or "s"))
     end
 
     function ReportCards(name, line, wildcards)
@@ -827,6 +1090,7 @@ function FantasyCards_Init()
 end
 
 function FantasyCards_Alias_Help(matches) FantasyCards_Help() end
+function FantasyCards_Alias_Cost(matches) FantasyCards_CostReport() end
 function FantasyCards_Alias_Summary(matches) Summary(nil,nil,{case=matches[2]}) end
 function FantasyCards_Alias_Find(matches) FindCard(nil,nil,{[2]=matches[3]}) end
 function FantasyCards_Alias_Report(matches) ReportCards(nil,nil,{case=matches[2],channel=matches[3]}) end
@@ -842,7 +1106,7 @@ function FantasyCards_TR_Market(matches) MarketCard(nil,line,{card=matches[3]},{
 function FantasyCards_TR_Auction(matches) AuctionCard(nil,line,{card=matches[3]},{}) end
 function FantasyCards_TR_Bid(matches) BidCard(nil,line,{card=matches[3]},{}) end
 function FantasyCards_TR_LBid(matches) LBidCard(nil,line,{card=matches[3]},{}) end
-function FantasyCards_TR_MarketList(matches) MarketListCard(nil,line,{card=matches[3]},{}) end
+function FantasyCards_TR_MarketList(matches) MarketListCard(nil,line,{auctionId=matches[2],card=matches[3]},{}) end
 function FantasyCards_TR_ScanDone(matches) ScanComplete() end
 
 FantasyCards_Init()

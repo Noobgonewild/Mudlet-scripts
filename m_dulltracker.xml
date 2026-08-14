@@ -31,7 +31,7 @@
       <name>m_dulltracker_main</name>
       <packageName>m_dulltracker</packageName>
       <script><![CDATA[DULL = DULL or {}
-DULL.version = "1.2.3"
+DULL.version = "1.3.0"
 DULL.ids = DULL.ids or { triggers = {}, timers = {} }
 DULL.ids.triggers = DULL.ids.triggers or {}
 DULL.ids.handlers = DULL.ids.handlers or {}
@@ -392,6 +392,94 @@ function DULL.open_db()
     details TEXT
   )]])
   db:exec("CREATE INDEX IF NOT EXISTS idx_dull_timer_history_timer_end ON timer_history(timer, ended_at)")
+  db:exec([[CREATE TABLE IF NOT EXISTS level_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    total_level INTEGER,
+    visible_level INTEGER,
+    started_at INTEGER NOT NULL,
+    ended_at INTEGER,
+    duration_seconds INTEGER,
+    is_complete INTEGER NOT NULL DEFAULT 1,
+    hp INTEGER DEFAULT 0,
+    mana INTEGER DEFAULT 0,
+    moves INTEGER DEFAULT 0,
+    practices INTEGER DEFAULT 0,
+    trains_base INTEGER DEFAULT 0,
+    trains_bonus INTEGER DEFAULT 0,
+    trains_blessing INTEGER DEFAULT 0,
+    trains_total INTEGER DEFAULT 0,
+    str_gain INTEGER DEFAULT 0,
+    int_gain INTEGER DEFAULT 0,
+    wis_gain INTEGER DEFAULT 0,
+    dex_gain INTEGER DEFAULT 0,
+    con_gain INTEGER DEFAULT 0,
+    luc_gain INTEGER DEFAULT 0,
+    kill_count INTEGER DEFAULT 0,
+    xp_kill_count INTEGER DEFAULT 0,
+    noexp_kill_count INTEGER DEFAULT 0,
+    xp_base INTEGER DEFAULT 0,
+    xp_rare INTEGER DEFAULT 0,
+    xp_bonus INTEGER DEFAULT 0,
+    xp_blessing INTEGER DEFAULT 0,
+    xp_total INTEGER DEFAULT 0,
+    gold_total INTEGER DEFAULT 0,
+    tp_total INTEGER DEFAULT 0,
+    avg_xp_per_kill REAL,
+    xp_per_minute REAL,
+    source_key TEXT NOT NULL,
+    source_row_id INTEGER NOT NULL,
+    imported_at INTEGER NOT NULL,
+    UNIQUE(source_key, source_row_id)
+  )]])
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_level_history_character_end ON level_history(character, ended_at)")
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_level_history_type_end ON level_history(event_type, ended_at)")
+  db:exec([[CREATE TABLE IF NOT EXISTS kill_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character TEXT NOT NULL,
+    killed_at INTEGER NOT NULL,
+    mob_name TEXT,
+    room_id INTEGER,
+    area TEXT,
+    total_level INTEGER,
+    visible_level INTEGER,
+    xp_base INTEGER DEFAULT 0,
+    xp_rare INTEGER DEFAULT 0,
+    xp_bonus INTEGER DEFAULT 0,
+    xp_blessing INTEGER DEFAULT 0,
+    xp_total INTEGER DEFAULT 0,
+    noexp INTEGER DEFAULT 0,
+    gold INTEGER DEFAULT 0,
+    gold_raw TEXT,
+    tp INTEGER DEFAULT 0,
+    finish_method TEXT,
+    vorpal INTEGER DEFAULT 0,
+    banishment INTEGER DEFAULT 0,
+    assassinate INTEGER DEFAULT 0,
+    slit INTEGER DEFAULT 0,
+    disintegrate INTEGER DEFAULT 0,
+    deathblow INTEGER DEFAULT 0,
+    wielded_weapon TEXT,
+    second_weapon TEXT,
+    source_key TEXT NOT NULL,
+    source_row_id INTEGER NOT NULL,
+    imported_at INTEGER NOT NULL,
+    UNIQUE(source_key, source_row_id)
+  )]])
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_kill_history_character_time ON kill_history(character, killed_at)")
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_kill_history_area_time ON kill_history(area, killed_at)")
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_kill_history_total_level ON kill_history(total_level)")
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_kill_history_finish ON kill_history(finish_method)")
+  db:exec([[CREATE TABLE IF NOT EXISTS milestones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character TEXT NOT NULL,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    note TEXT,
+    UNIQUE(character, name)
+  )]])
+  db:exec("CREATE INDEX IF NOT EXISTS idx_dull_milestones_character_time ON milestones(character, created_at)")
   DULL.db = db
   DULL.db_checked = true
   DULL.db_available = true
@@ -448,6 +536,602 @@ end
 
 function DULL.sql_quote(value)
   return "'" .. tostring(value or ""):gsub("'", "''") .. "'"
+end
+
+function DULL.db_rows(sql)
+  if not DULL.open_db() then return nil end
+  local rows = {}
+  for row in DULL.db:nrows(sql) do table.insert(rows, row) end
+  return rows
+end
+
+function DULL.db_first(sql)
+  local rows = DULL.db_rows(sql)
+  return rows and rows[1] or nil
+end
+
+function DULL.current_character()
+  local root = type(gmcp) == "table" and (gmcp.char or gmcp.Char) or {}
+  local base = type(root) == "table" and (root.base or root.Base) or {}
+  local status = type(root) == "table" and (root.status or root.Status) or {}
+  local name = type(base) == "table" and (base.name or base.Name) or nil
+  if not name and type(status) == "table" then name = status.name or status.Name end
+  name = DULL.trim(name)
+  return name ~= "" and name or "Gizmmo"
+end
+
+function DULL.current_level_values()
+  local root = type(gmcp) == "table" and (gmcp.char or gmcp.Char) or {}
+  local base = type(root) == "table" and (root.base or root.Base) or {}
+  local status = type(root) == "table" and (root.status or root.Status) or {}
+  local visible = tonumber(type(status) == "table" and (status.level or status.Level)) or 0
+  local total = tonumber(type(base) == "table" and (base.totallevels or base.totallevel or base.TotalLevels)) or 0
+  return total, visible
+end
+
+function DULL.current_room_id()
+  local room = type(gmcp) == "table" and ((gmcp.room and gmcp.room.info) or (gmcp.Room and gmcp.Room.Info)) or {}
+  return tonumber(type(room) == "table" and (room.num or room.id or room.uid)) or 0
+end
+
+function DULL.current_enemy()
+  local root = type(gmcp) == "table" and (gmcp.char or gmcp.Char) or {}
+  local status = type(root) == "table" and (root.status or root.Status) or {}
+  return DULL.trim(type(status) == "table" and (status.enemy or status.Enemy) or "")
+end
+
+function DULL.parse_window(value, default_seconds)
+  local raw = DULL.trim(value):lower()
+  if raw == "" then return tonumber(default_seconds) or 3600 end
+  if raw == "all" then return os.time() end
+  local amount, unit = raw:match("^(%d+)%s*([mhdw]?)$")
+  amount = tonumber(amount)
+  if not amount or amount <= 0 then return nil end
+  local factors = { m = 60, h = 3600, d = 86400, w = 604800 }
+  return math.min(amount * (factors[unit ~= "" and unit or "m"] or 60), 31536000)
+end
+
+function DULL.window_label(seconds)
+  seconds = tonumber(seconds) or 0
+  if seconds > 31536000 then return "all history" end
+  if seconds % 604800 == 0 then return tostring(seconds / 604800) .. "w" end
+  if seconds % 86400 == 0 then return tostring(seconds / 86400) .. "d" end
+  if seconds % 3600 == 0 then return tostring(seconds / 3600) .. "h" end
+  return tostring(math.floor(seconds / 60)) .. "m"
+end
+
+function DULL.short_number(value)
+  local n = tonumber(value) or 0
+  if math.abs(n) >= 1000000000 then return string.format("%.2fb", n / 1000000000) end
+  if math.abs(n) >= 1000000 then return string.format("%.2fm", n / 1000000) end
+  if math.abs(n) >= 1000 then return string.format("%.1fk", n / 1000) end
+  return DULL.comma_value(math.floor(n + 0.5))
+end
+
+function DULL.report_block(title, lines, channel)
+  DULL.report(DULL.disp_blbl("---- " .. tostring(title) .. " ----"), channel or "echo")
+  for _, report_line in ipairs(lines or {}) do DULL.report(report_line, channel or "echo") end
+end
+
+function DULL.n(row, key)
+  return tonumber(type(row) == "table" and row[key] or nil) or 0
+end
+
+function DULL.new_source_row_id()
+  DULL.source_sequence = (tonumber(DULL.source_sequence) or 0) + 1
+  if DULL.source_sequence > 999 then DULL.source_sequence = 1 end
+  local clock_bucket = math.floor((os.clock() % 1) * 1000)
+  return os.time() * 1000000 + clock_bucket * 1000 + DULL.source_sequence
+end
+
+function DULL.insert_kill_history(kill)
+  if not DULL.open_db() then return false end
+  local stmt = DULL.db:prepare([[
+    INSERT INTO kill_history
+      (character, killed_at, mob_name, room_id, area, total_level, visible_level,
+       xp_base, xp_rare, xp_bonus, xp_blessing, xp_total, noexp, gold, gold_raw, tp,
+       finish_method, vorpal, banishment, assassinate, slit, disintegrate, deathblow,
+       wielded_weapon, second_weapon, source_key, source_row_id, imported_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ]])
+  if not stmt then return false end
+  local OK = DULL.sqlite3 and DULL.sqlite3.OK or 0
+  local DONE = DULL.sqlite3 and DULL.sqlite3.DONE or 101
+  local xp_base = tonumber(kill.xp_base) or 0
+  local xp_rare = tonumber(kill.xp_rare) or 0
+  local xp_bonus = tonumber(kill.xp_bonus) or 0
+  local xp_blessing = tonumber(kill.xp_blessing) or 0
+  local bind_ok = stmt:bind_values(
+    tostring(kill.character or DULL.current_character()), tonumber(kill.killed_at) or os.time(),
+    tostring(kill.mob_name or ""), tonumber(kill.room_id) or 0, tostring(kill.area or "none"),
+    tonumber(kill.total_level) or 0, tonumber(kill.visible_level) or 0,
+    xp_base, xp_rare, xp_bonus, xp_blessing, xp_base + xp_rare + xp_bonus + xp_blessing,
+    tonumber(kill.noexp) or 0, tonumber(kill.gold) or 0, tostring(kill.gold_raw or ""), tonumber(kill.tp) or 0,
+    tostring(kill.finish_method or ""), tonumber(kill.vorpal) or 0, tonumber(kill.banishment) or 0,
+    tonumber(kill.assassinate) or 0, tonumber(kill.slit) or 0, tonumber(kill.disintegrate) or 0,
+    tonumber(kill.deathblow) or 0, tostring(kill.wielded_weapon or ""), tostring(kill.second_weapon or ""),
+    "dull-live", tonumber(kill.source_row_id) or DULL.new_source_row_id(), os.time()
+  )
+  local step_ok = false
+  if bind_ok == OK then step_ok = stmt:step() == DONE end
+  stmt:finalize()
+  return step_ok
+end
+
+function DULL.ensure_pending_kill()
+  if DULL.pendingKill then return DULL.pendingKill end
+  local total_level, visible_level = DULL.current_level_values()
+  DULL.pendingKill = {
+    character = DULL.current_character(), killed_at = os.time(), mob_name = DULL.current_enemy(),
+    room_id = DULL.current_room_id(), area = DULL.current_area(), total_level = total_level,
+    visible_level = visible_level, xp_base = 0, xp_rare = 0, xp_bonus = 0,
+    xp_blessing = 0, noexp = 0, gold = 0, gold_raw = "", tp = 0,
+    source_row_id = DULL.new_source_row_id(),
+  }
+  return DULL.pendingKill
+end
+
+function DULL.finalize_pending_kill()
+  if DULL.ids.kill_finalize then pcall(killTimer, DULL.ids.kill_finalize) end
+  DULL.ids.kill_finalize = nil
+  local kill = DULL.pendingKill
+  DULL.pendingKill = nil
+  if not kill then return end
+  local reward_xp = (tonumber(kill.xp_base) or 0) + (tonumber(kill.xp_rare) or 0) +
+    (tonumber(kill.xp_bonus) or 0) + (tonumber(kill.xp_blessing) or 0)
+  if reward_xp == 0 and (tonumber(kill.noexp) or 0) == 0 and
+      (tonumber(kill.tp) or 0) == 0 and DULL.trim(kill.finish_method) == "" then return end
+  DULL.insert_kill_history(kill)
+end
+
+function DULL.bump_kill_finalize()
+  if DULL.ids.kill_finalize then pcall(killTimer, DULL.ids.kill_finalize) end
+  DULL.ids.kill_finalize = tempTimer(0.75, function()
+    DULL.ids.kill_finalize = nil
+    DULL.finalize_pending_kill()
+  end)
+end
+
+function DULL.capture_kill_xp(info, m)
+  if DULL.pendingKill and ((tonumber(DULL.pendingKill.xp_base) or 0) > 0 or (tonumber(DULL.pendingKill.noexp) or 0) > 0) then
+    DULL.finalize_pending_kill()
+  end
+  local kill = DULL.ensure_pending_kill()
+  local total = 0
+  for number in tostring(m[2] or "0"):gmatch("[0-9,]+") do
+    total = total + (tonumber((number:gsub(",", ""))) or 0)
+  end
+  kill.xp_base = total
+  local enemy = DULL.current_enemy()
+  if enemy ~= "" then kill.mob_name = enemy end
+  DULL.bump_kill_finalize()
+end
+
+function DULL.capture_kill_noexp()
+  if DULL.pendingKill and ((tonumber(DULL.pendingKill.xp_base) or 0) > 0 or (tonumber(DULL.pendingKill.noexp) or 0) > 0) then
+    DULL.finalize_pending_kill()
+  end
+  local kill = DULL.ensure_pending_kill()
+  kill.noexp = 1
+  local enemy = DULL.current_enemy()
+  if enemy ~= "" then kill.mob_name = enemy end
+  DULL.increment_count({ field = "count_kill" })
+  DULL.bump_kill_finalize()
+end
+
+function DULL.capture_kill_part(info, m)
+  local kill = DULL.ensure_pending_kill()
+  local amount = DULL.extract_amount(info, m)
+  local field = info.kill_field
+  if field and field ~= "" then kill[field] = (tonumber(kill[field]) or 0) + amount end
+  if info.mob_index and DULL.trim(m[info.mob_index]) ~= "" then kill.mob_name = DULL.trim(m[info.mob_index]) end
+  if info.raw_index then kill.gold_raw = tostring(m[info.raw_index] or "") end
+  DULL.bump_kill_finalize()
+end
+
+function DULL.capture_kill_method(info, m)
+  local kill = DULL.ensure_pending_kill()
+  local method = tostring(info.method or "")
+  kill.finish_method = method
+  if method ~= "" then kill[method] = 1 end
+  if info.mob_index and DULL.trim(m[info.mob_index]) ~= "" then kill.mob_name = DULL.trim(m[info.mob_index]) end
+  DULL.bump_kill_finalize()
+end
+
+function DULL.capture_boundary()
+  if DULL.pendingKill then DULL.finalize_pending_kill() end
+  if DULL.pendingLevel then
+    if DULL.ids.report_timer then pcall(killTimer, DULL.ids.report_timer) end
+    DULL.ids.report_timer = nil
+    DULL.report_timers()
+  end
+end
+
+function DULL.begin_level_event(event_type)
+  local timer = event_type == "pup" and "pup" or "lvl"
+  local now = os.time()
+  local total_level, visible_level = DULL.current_level_values()
+  DULL.pendingLevel = {
+    character = DULL.current_character(), event_type = timer == "pup" and "pup" or "level", timer = timer, total_level = total_level,
+    visible_level = visible_level, started_at = tonumber(DULL.timers[timer].start) or now,
+    ended_at = now, duration_seconds = now - (tonumber(DULL.timers[timer].start) or now),
+    hp = 0, mana = 0, moves = 0, practices = 0, trains_base = 0,
+    trains_bonus = 0, trains_blessing = 0, str_gain = 0, int_gain = 0,
+    wis_gain = 0, dex_gain = 0, con_gain = 0, luc_gain = 0,
+    source_row_id = DULL.new_source_row_id(),
+  }
+end
+
+function DULL.capture_level_gains(info, m)
+  local level = DULL.pendingLevel
+  if not level then return end
+  level.hp = tonumber(m[2]) or 0
+  level.mana = tonumber(m[3]) or 0
+  level.moves = tonumber(m[4]) or 0
+  level.practices = tonumber(m[5]) or 0
+  level.trains_base = tonumber(m[6]) or 0
+end
+
+function DULL.level_kill_totals(level)
+  if not DULL.open_db() then return {} end
+  local sql = string.format([[
+    SELECT COUNT(*) AS kill_count,
+      SUM(CASE WHEN noexp=0 THEN 1 ELSE 0 END) AS xp_kill_count,
+      SUM(CASE WHEN noexp<>0 THEN 1 ELSE 0 END) AS noexp_kill_count,
+      SUM(xp_base) AS xp_base, SUM(xp_rare) AS xp_rare, SUM(xp_bonus) AS xp_bonus,
+      SUM(xp_blessing) AS xp_blessing, SUM(xp_total) AS xp_total,
+      SUM(gold) AS gold_total, SUM(tp) AS tp_total
+    FROM kill_history WHERE character=%s AND killed_at>=%d AND killed_at<=%d
+  ]], DULL.sql_quote(level.character), tonumber(level.started_at) or 0, tonumber(level.ended_at) or os.time())
+  return DULL.db_first(sql) or {}
+end
+
+function DULL.insert_level_history(level)
+  if not level or not DULL.open_db() then return false end
+  local kills = DULL.level_kill_totals(level)
+  local kill_count = DULL.n(kills, "kill_count")
+  local xp_kill_count = DULL.n(kills, "xp_kill_count")
+  local xp_total = DULL.n(kills, "xp_total")
+  local duration = tonumber(level.duration_seconds) or 0
+  local trains_total = (tonumber(level.trains_base) or 0) + (tonumber(level.trains_bonus) or 0) + (tonumber(level.trains_blessing) or 0)
+  local stmt = DULL.db:prepare([[
+    INSERT INTO level_history
+      (character, event_type, total_level, visible_level, started_at, ended_at, duration_seconds,
+       is_complete, hp, mana, moves, practices, trains_base, trains_bonus, trains_blessing,
+       trains_total, str_gain, int_gain, wis_gain, dex_gain, con_gain, luc_gain, kill_count,
+       xp_kill_count, noexp_kill_count, xp_base, xp_rare, xp_bonus, xp_blessing, xp_total,
+       gold_total, tp_total, avg_xp_per_kill, xp_per_minute, source_key, source_row_id, imported_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dull-live', ?, ?)
+  ]])
+  if not stmt then return false end
+  local OK = DULL.sqlite3 and DULL.sqlite3.OK or 0
+  local DONE = DULL.sqlite3 and DULL.sqlite3.DONE or 101
+  local bind_ok = stmt:bind_values(
+    level.character, level.event_type, tonumber(level.total_level) or 0, tonumber(level.visible_level) or 0,
+    tonumber(level.started_at) or os.time(), tonumber(level.ended_at) or os.time(), duration,
+    tonumber(level.hp) or 0, tonumber(level.mana) or 0, tonumber(level.moves) or 0,
+    tonumber(level.practices) or 0, tonumber(level.trains_base) or 0, tonumber(level.trains_bonus) or 0,
+    tonumber(level.trains_blessing) or 0, trains_total, tonumber(level.str_gain) or 0,
+    tonumber(level.int_gain) or 0, tonumber(level.wis_gain) or 0, tonumber(level.dex_gain) or 0,
+    tonumber(level.con_gain) or 0, tonumber(level.luc_gain) or 0, kill_count, xp_kill_count,
+    DULL.n(kills, "noexp_kill_count"), DULL.n(kills, "xp_base"), DULL.n(kills, "xp_rare"),
+    DULL.n(kills, "xp_bonus"), DULL.n(kills, "xp_blessing"), xp_total,
+    DULL.n(kills, "gold_total"), DULL.n(kills, "tp_total"),
+    xp_kill_count > 0 and xp_total / xp_kill_count or 0,
+    duration > 0 and xp_total / (duration / 60) or 0,
+    tonumber(level.source_row_id) or DULL.new_source_row_id(), os.time()
+  )
+  local step_ok = false
+  if bind_ok == OK then step_ok = stmt:step() == DONE end
+  stmt:finalize()
+  return step_ok
+end
+
+function DULL.percent(part, whole)
+  whole = tonumber(whole) or 0
+  if whole == 0 then return "0.0%" end
+  return string.format("%.1f%%", (tonumber(part) or 0) * 100 / whole)
+end
+
+function DULL.report_level_stats(event_type, count)
+  if not DULL.open_db() then return end
+  local command_kind = event_type == "pup" and "pup" or "lvl"
+  event_type = command_kind == "pup" and "pup" or "level"
+  local raw_count = DULL.trim(count):lower()
+  local limit = ""
+  local label_count = "all"
+  if raw_count ~= "" and raw_count ~= "all" then
+    local n = tonumber(raw_count)
+    if not n or n < 1 then return DULL.warn("Usage: dull " .. command_kind .. " stats [number|all]") end
+    n = math.min(math.floor(n), 10000)
+    limit = " LIMIT " .. n
+    label_count = tostring(n)
+  elseif raw_count == "" then
+    limit = " LIMIT 100"
+    label_count = "100"
+  end
+  local character = DULL.current_character()
+  local sql = string.format([[
+    SELECT COUNT(*) AS events,
+      SUM(CASE WHEN duration_seconds BETWEEN 1 AND 21600 THEN 1 ELSE 0 END) AS timed_events,
+      AVG(CASE WHEN duration_seconds BETWEEN 1 AND 21600 THEN duration_seconds END) AS avg_seconds,
+      MIN(CASE WHEN duration_seconds BETWEEN 1 AND 21600 THEN duration_seconds END) AS best_seconds,
+      MAX(CASE WHEN duration_seconds BETWEEN 1 AND 21600 THEN duration_seconds END) AS worst_seconds,
+      AVG(hp) AS avg_hp, AVG(mana) AS avg_mana, AVG(moves) AS avg_moves,
+      AVG(practices) AS avg_practices, AVG(trains_total) AS avg_trains,
+      AVG(kill_count) AS avg_kills, AVG(avg_xp_per_kill) AS avg_xpk,
+      AVG(xp_per_minute) AS avg_xpm, SUM(noexp_kill_count) AS noexp,
+      SUM(str_gain) AS str_gain, SUM(int_gain) AS int_gain, SUM(wis_gain) AS wis_gain,
+      SUM(dex_gain) AS dex_gain, SUM(con_gain) AS con_gain, SUM(luc_gain) AS luc_gain
+    FROM (
+      SELECT * FROM level_history WHERE character=%s AND event_type=%s AND is_complete=1
+      ORDER BY ended_at DESC%s
+    )
+  ]], DULL.sql_quote(character), DULL.sql_quote(event_type), limit)
+  local row = DULL.db_first(sql)
+  if not row or DULL.n(row, "events") == 0 then return DULL.note("No " .. event_type .. " history for " .. character .. ".") end
+  local events, timed = DULL.n(row, "events"), DULL.n(row, "timed_events")
+  local title = string.upper(command_kind) .. " stats - " .. character .. " - last " .. label_count
+  local lines = {
+    DULL.segment("Events", events) .. " " .. DULL.segment("Timed", timed) .. " " .. DULL.segment("Excluded", events - timed),
+    DULL.segment("Time avg", DULL.seconds_to_plain(DULL.n(row, "avg_seconds"))) .. " " ..
+      DULL.segment("best", DULL.seconds_to_plain(DULL.n(row, "best_seconds"))) .. " " ..
+      DULL.segment("worst", DULL.seconds_to_plain(DULL.n(row, "worst_seconds"))),
+    DULL.segment("Avg gains", string.format("%.1fhp %.1fmana %.1fmv %.2fpr %.2ftr",
+      DULL.n(row, "avg_hp"), DULL.n(row, "avg_mana"), DULL.n(row, "avg_moves"),
+      DULL.n(row, "avg_practices"), DULL.n(row, "avg_trains"))),
+    DULL.segment("Combat avg", string.format("%.1f kills  %s xp/kill  %s xp/min",
+      DULL.n(row, "avg_kills"), DULL.short_number(DULL.n(row, "avg_xpk")), DULL.short_number(DULL.n(row, "avg_xpm")))),
+    DULL.segment("Bonus stats", string.format("Str %d Int %d Wis %d Dex %d Con %d Luc %d",
+      DULL.n(row, "str_gain"), DULL.n(row, "int_gain"), DULL.n(row, "wis_gain"),
+      DULL.n(row, "dex_gain"), DULL.n(row, "con_gain"), DULL.n(row, "luc_gain"))) .. " " ..
+      DULL.segment("No-exp", DULL.n(row, "noexp")),
+  }
+  DULL.report_block(title, lines, "echo")
+end
+
+function DULL.window_totals(seconds, start_at, end_at)
+  end_at = tonumber(end_at) or os.time()
+  start_at = tonumber(start_at) or (end_at - seconds)
+  local character = DULL.current_character()
+  local kill = DULL.db_first(string.format([[
+    SELECT COUNT(*) AS kills, SUM(xp_total) AS xp, SUM(gold) AS gold, SUM(tp) AS tp,
+      SUM(CASE WHEN noexp<>0 THEN 1 ELSE 0 END) AS noexp,
+      SUM(CASE WHEN xp_rare>0 THEN 1 ELSE 0 END) AS rare,
+      SUM(CASE WHEN xp_bonus>0 THEN 1 ELSE 0 END) AS bonus,
+      SUM(CASE WHEN xp_blessing>0 THEN 1 ELSE 0 END) AS blessing
+    FROM kill_history WHERE character=%s AND killed_at>=%d AND killed_at<=%d
+  ]], DULL.sql_quote(character), start_at, end_at)) or {}
+  local level = DULL.db_first(string.format([[
+    SELECT SUM(CASE WHEN event_type='level' THEN 1 ELSE 0 END) AS levels,
+      SUM(CASE WHEN event_type='pup' THEN 1 ELSE 0 END) AS pups,
+      SUM(trains_total) AS trains, SUM(practices) AS practices
+    FROM level_history WHERE character=%s AND is_complete=1 AND ended_at>=%d AND ended_at<=%d
+  ]], DULL.sql_quote(character), start_at, end_at)) or {}
+  return kill, level, start_at, end_at
+end
+
+function DULL.report_window(value)
+  if not DULL.open_db() then return end
+  local seconds = DULL.parse_window(value, 3600)
+  if not seconds then return DULL.warn("Usage: dull report <minutes|4h|7d|2w>") end
+  local kill, level = DULL.window_totals(seconds)
+  local kills, xp, gold = DULL.n(kill, "kills"), DULL.n(kill, "xp"), DULL.n(kill, "gold")
+  local minutes = seconds / 60
+  local lines = {
+    DULL.segment("Kills", kills) .. " " .. DULL.segment("XP", DULL.short_number(xp)) .. " " ..
+      DULL.segment("XP/kill", kills > 0 and DULL.short_number(xp / kills) or 0) .. " " ..
+      DULL.segment("XP/min", DULL.short_number(xp / minutes)),
+    DULL.segment("Gold", DULL.short_number(gold)) .. " " .. DULL.segment("Gold/min", DULL.short_number(gold / minutes)) ..
+      " " .. DULL.segment("TP", DULL.n(kill, "tp")) .. " " .. DULL.segment("No-exp", DULL.n(kill, "noexp")),
+    DULL.segment("Levels", DULL.n(level, "levels")) .. " " .. DULL.segment("Pups", DULL.n(level, "pups")) ..
+      " " .. DULL.segment("Trains", DULL.n(level, "trains")) .. " " .. DULL.segment("Pracs", DULL.n(level, "practices")),
+    DULL.segment("Special kills", string.format("rare %d  bonus %d  blessing %d",
+      DULL.n(kill, "rare"), DULL.n(kill, "bonus"), DULL.n(kill, "blessing"))),
+  }
+  DULL.report_block("Rolling " .. DULL.window_label(seconds) .. " - " .. DULL.current_character(), lines, "echo")
+end
+
+function DULL.report_daily(count)
+  if not DULL.open_db() then return end
+  count = math.max(1, math.min(tonumber(count) or 7, 60))
+  local character = DULL.current_character()
+  local rows = DULL.db_rows(string.format([[
+    SELECT date(killed_at, 'unixepoch', 'localtime') AS day, COUNT(*) AS kills,
+      SUM(xp_total) AS xp, SUM(gold) AS gold, SUM(CASE WHEN xp_rare>0 THEN 1 ELSE 0 END) AS rare
+    FROM kill_history WHERE character=%s GROUP BY day ORDER BY day DESC LIMIT %d
+  ]], DULL.sql_quote(character), count)) or {}
+  if #rows == 0 then return DULL.note("No daily kill history for " .. character .. ".") end
+  local levels = DULL.db_rows(string.format([[
+    SELECT date(ended_at, 'unixepoch', 'localtime') AS day,
+      SUM(CASE WHEN event_type='level' THEN 1 ELSE 0 END) AS levels,
+      SUM(CASE WHEN event_type='pup' THEN 1 ELSE 0 END) AS pups
+    FROM level_history WHERE character=%s AND is_complete=1 GROUP BY day
+  ]], DULL.sql_quote(character))) or {}
+  local by_day = {}
+  for _, row in ipairs(levels) do by_day[tostring(row.day)] = row end
+  local lines = {}
+  for _, row in ipairs(rows) do
+    local level = by_day[tostring(row.day)] or {}
+    table.insert(lines, DULL.segment(tostring(row.day), string.format("%d kills  %s xp  %s gold  %d rare  %d lvl/%d pup",
+      DULL.n(row, "kills"), DULL.short_number(DULL.n(row, "xp")), DULL.short_number(DULL.n(row, "gold")),
+      DULL.n(row, "rare"), DULL.n(level, "levels"), DULL.n(level, "pups"))))
+  end
+  DULL.report_block("Daily history - " .. character, lines, "echo")
+end
+
+function DULL.report_combat(value)
+  if not DULL.open_db() then return end
+  local seconds = DULL.parse_window(value, 86400)
+  if not seconds then return DULL.warn("Usage: dull combat [minutes|hours|days]") end
+  local kill = DULL.window_totals(seconds)
+  local kills, xp, gold = DULL.n(kill, "kills"), DULL.n(kill, "xp"), DULL.n(kill, "gold")
+  local methods = DULL.db_first(string.format([[
+    SELECT SUM(vorpal) AS vorpal, SUM(banishment) AS banishment, SUM(assassinate) AS assassinate,
+      SUM(slit) AS slit, SUM(disintegrate) AS disintegrate, SUM(deathblow) AS deathblow
+    FROM kill_history WHERE character=%s AND killed_at>=%d
+  ]], DULL.sql_quote(DULL.current_character()), os.time() - seconds)) or {}
+  local lines = {
+    DULL.segment("Kills", kills) .. " " .. DULL.segment("XP/kill", kills > 0 and DULL.short_number(xp / kills) or 0) ..
+      " " .. DULL.segment("Gold/kill", kills > 0 and DULL.short_number(gold / kills) or 0),
+    DULL.segment("Rare", DULL.n(kill, "rare") .. " (" .. DULL.percent(DULL.n(kill, "rare"), kills) .. ")") .. " " ..
+      DULL.segment("No-exp", DULL.n(kill, "noexp") .. " (" .. DULL.percent(DULL.n(kill, "noexp"), kills) .. ")"),
+    DULL.segment("Finishes", string.format("vorpal %d  banish %d  assassinate %d  slit %d  disintegrate %d  deathblow %d",
+      DULL.n(methods, "vorpal"), DULL.n(methods, "banishment"), DULL.n(methods, "assassinate"),
+      DULL.n(methods, "slit"), DULL.n(methods, "disintegrate"), DULL.n(methods, "deathblow"))),
+  }
+  DULL.report_block("Combat " .. DULL.window_label(seconds), lines, "echo")
+end
+
+function DULL.report_combat_methods(value)
+  if not DULL.open_db() then return end
+  local seconds = DULL.parse_window(value, 604800)
+  if not seconds then return DULL.warn("Usage: dull combat methods [window]") end
+  local rows = DULL.db_rows(string.format([[
+    SELECT COALESCE(NULLIF(finish_method,''), 'normal') AS method, COUNT(*) AS kills,
+      AVG(xp_total) AS avg_xp, SUM(gold) AS gold
+    FROM kill_history WHERE character=%s AND killed_at>=%d
+    GROUP BY method ORDER BY kills DESC
+  ]], DULL.sql_quote(DULL.current_character()), os.time() - seconds)) or {}
+  local lines = {}
+  for _, row in ipairs(rows) do
+    table.insert(lines, DULL.segment(tostring(row.method), string.format("%d kills  %s avg xp  %s gold",
+      DULL.n(row, "kills"), DULL.short_number(DULL.n(row, "avg_xp")), DULL.short_number(DULL.n(row, "gold")))))
+  end
+  if #lines == 0 then lines[1] = DULL.segment("No data", DULL.window_label(seconds)) end
+  DULL.report_block("Finishing methods - " .. DULL.window_label(seconds), lines, "echo")
+end
+
+function DULL.report_areas(value, limit)
+  if not DULL.open_db() then return end
+  local seconds = DULL.parse_window(value, 604800)
+  if not seconds then return DULL.warn("Usage: dull areas [window] [limit]") end
+  limit = math.max(1, math.min(tonumber(limit) or 10, 50))
+  local rows = DULL.db_rows(string.format([[
+    SELECT COALESCE(NULLIF(area,''), 'unknown') AS area, COUNT(*) AS kills,
+      AVG(xp_total) AS avg_xp, AVG(gold) AS avg_gold,
+      SUM(CASE WHEN xp_rare>0 THEN 1 ELSE 0 END) AS rare,
+      SUM(CASE WHEN noexp<>0 THEN 1 ELSE 0 END) AS noexp
+    FROM kill_history WHERE character=%s AND killed_at>=%d
+    GROUP BY area ORDER BY kills DESC LIMIT %d
+  ]], DULL.sql_quote(DULL.current_character()), os.time() - seconds, limit)) or {}
+  local lines = {}
+  for _, row in ipairs(rows) do
+    table.insert(lines, DULL.segment(tostring(row.area), string.format("%d kills  %s xp/kill  %s gold/kill  %s rare  %d no-exp",
+      DULL.n(row, "kills"), DULL.short_number(DULL.n(row, "avg_xp")), DULL.short_number(DULL.n(row, "avg_gold")),
+      DULL.percent(DULL.n(row, "rare"), DULL.n(row, "kills")), DULL.n(row, "noexp"))))
+  end
+  if #lines == 0 then lines[1] = DULL.segment("No data", DULL.window_label(seconds)) end
+  DULL.report_block("Areas - " .. DULL.window_label(seconds), lines, "echo")
+end
+
+function DULL.report_area(name, value)
+  if not DULL.open_db() then return end
+  name = DULL.trim(name)
+  if name == "" then return DULL.warn("Usage: dull area <name> [window]") end
+  local seconds = DULL.parse_window(value, 31536000)
+  if not seconds then return DULL.warn("Usage: dull area <name> [window]") end
+  local row = DULL.db_first(string.format([[
+    SELECT COUNT(*) AS kills, SUM(xp_total) AS xp, AVG(xp_total) AS avg_xp,
+      SUM(gold) AS gold, AVG(gold) AS avg_gold, COUNT(DISTINCT room_id) AS rooms,
+      SUM(CASE WHEN xp_rare>0 THEN 1 ELSE 0 END) AS rare,
+      SUM(CASE WHEN noexp<>0 THEN 1 ELSE 0 END) AS noexp
+    FROM kill_history WHERE character=%s AND killed_at>=%d AND area LIKE %s
+  ]], DULL.sql_quote(DULL.current_character()), os.time() - seconds, DULL.sql_quote("%" .. name .. "%"))) or {}
+  local kills = DULL.n(row, "kills")
+  local lines = {
+    DULL.segment("Kills", kills) .. " " .. DULL.segment("Rooms", DULL.n(row, "rooms")) .. " " ..
+      DULL.segment("Rare", DULL.n(row, "rare") .. " (" .. DULL.percent(DULL.n(row, "rare"), kills) .. ")"),
+    DULL.segment("XP", DULL.short_number(DULL.n(row, "xp"))) .. " " .. DULL.segment("XP/kill", DULL.short_number(DULL.n(row, "avg_xp"))) ..
+      " " .. DULL.segment("Gold", DULL.short_number(DULL.n(row, "gold"))) .. " " .. DULL.segment("Gold/kill", DULL.short_number(DULL.n(row, "avg_gold"))),
+    DULL.segment("No-exp", DULL.n(row, "noexp")),
+  }
+  DULL.report_block("Area matching '" .. name .. "' - " .. DULL.window_label(seconds), lines, "echo")
+end
+
+function DULL.report_trend(value)
+  if not DULL.open_db() then return end
+  local seconds = DULL.parse_window(value, 604800)
+  if not seconds then return DULL.warn("Usage: dull trend [window]") end
+  local now = os.time()
+  local current = DULL.window_totals(seconds, now - seconds, now)
+  local previous = DULL.window_totals(seconds, now - seconds * 2, now - seconds)
+  local function delta(field)
+    local old = DULL.n(previous, field)
+    local new = DULL.n(current, field)
+    if old == 0 then return new == 0 and "0.0%" or "new" end
+    return string.format("%+.1f%%", (new - old) * 100 / old)
+  end
+  local cur_kills, prev_kills = DULL.n(current, "kills"), DULL.n(previous, "kills")
+  local cur_xpk = cur_kills > 0 and DULL.n(current, "xp") / cur_kills or 0
+  local prev_xpk = prev_kills > 0 and DULL.n(previous, "xp") / prev_kills or 0
+  local cur_gpk = cur_kills > 0 and DULL.n(current, "gold") / cur_kills or 0
+  local prev_gpk = prev_kills > 0 and DULL.n(previous, "gold") / prev_kills or 0
+  local function pair(label, new, old)
+    local change = old == 0 and (new == 0 and "0.0%" or "new") or string.format("%+.1f%%", (new - old) * 100 / old)
+    return DULL.segment(label, DULL.short_number(new) .. " vs " .. DULL.short_number(old) .. "  " .. change)
+  end
+  local lines = {
+    pair("Kills", cur_kills, prev_kills), pair("XP/kill", cur_xpk, prev_xpk),
+    pair("Gold/kill", cur_gpk, prev_gpk),
+    DULL.segment("Rare", DULL.n(current, "rare") .. " vs " .. DULL.n(previous, "rare") .. "  " .. delta("rare")),
+  }
+  DULL.report_block("Trend - current " .. DULL.window_label(seconds) .. " vs previous", lines, "echo")
+end
+
+function DULL.milestone_add(name, note)
+  if not DULL.open_db() then return end
+  name = DULL.trim(name)
+  if name == "" then return DULL.warn("Usage: dull milestone add <name> [note]") end
+  local stmt = DULL.db:prepare("INSERT OR REPLACE INTO milestones(character,name,created_at,note) VALUES(?,?,?,?)")
+  if not stmt then return DULL.warn("Could not prepare milestone insert.") end
+  local OK = DULL.sqlite3 and DULL.sqlite3.OK or 0
+  local DONE = DULL.sqlite3 and DULL.sqlite3.DONE or 101
+  local ok = stmt:bind_values(DULL.current_character(), name, os.time(), DULL.trim(note)) == OK and stmt:step() == DONE
+  stmt:finalize()
+  if ok then DULL.note("Milestone saved: " .. name) else DULL.warn("Could not save milestone: " .. name) end
+end
+
+function DULL.milestone_list()
+  if not DULL.open_db() then return end
+  local rows = DULL.db_rows(string.format("SELECT name,created_at,note FROM milestones WHERE character=%s ORDER BY created_at DESC",
+    DULL.sql_quote(DULL.current_character()))) or {}
+  local lines = {}
+  for _, row in ipairs(rows) do
+    local note = DULL.trim(row.note)
+    table.insert(lines, DULL.segment(tostring(row.name), os.date("%Y-%m-%d %H:%M", tonumber(row.created_at) or 0) .. (note ~= "" and (" - " .. note) or "")))
+  end
+  if #lines == 0 then lines[1] = DULL.segment("No milestones", DULL.current_character()) end
+  DULL.report_block("Milestones", lines, "echo")
+end
+
+function DULL.milestone_compare(from_name, to_name)
+  if not DULL.open_db() then return end
+  from_name, to_name = DULL.trim(from_name), DULL.trim(to_name)
+  if from_name == "" then return DULL.warn("Usage: dull milestone compare <from> [to|current]") end
+  local character = DULL.current_character()
+  local from = DULL.db_first(string.format("SELECT created_at FROM milestones WHERE character=%s AND name=%s",
+    DULL.sql_quote(character), DULL.sql_quote(from_name)))
+  if not from then return DULL.warn("Milestone not found: " .. from_name) end
+  local end_at, end_label = os.time(), "current"
+  if to_name ~= "" and to_name:lower() ~= "current" then
+    local target = DULL.db_first(string.format("SELECT created_at FROM milestones WHERE character=%s AND name=%s",
+      DULL.sql_quote(character), DULL.sql_quote(to_name)))
+    if not target then return DULL.warn("Milestone not found: " .. to_name) end
+    end_at, end_label = tonumber(target.created_at) or os.time(), to_name
+  end
+  local start_at = tonumber(from.created_at) or 0
+  if end_at < start_at then start_at, end_at = end_at, start_at end
+  local kill, level = DULL.window_totals(end_at - start_at, start_at, end_at)
+  local lines = {
+    DULL.segment("Elapsed", string.format("%.1f days", (end_at - start_at) / 86400)) .. " " ..
+      DULL.segment("Kills", DULL.n(kill, "kills")),
+    DULL.segment("XP", DULL.short_number(DULL.n(kill, "xp"))) .. " " ..
+      DULL.segment("Gold", DULL.short_number(DULL.n(kill, "gold"))) .. " " .. DULL.segment("TP", DULL.n(kill, "tp")),
+    DULL.segment("Levels", DULL.n(level, "levels")) .. " " .. DULL.segment("Pups", DULL.n(level, "pups")) ..
+      " " .. DULL.segment("Trains", DULL.n(level, "trains")) .. " " .. DULL.segment("Pracs", DULL.n(level, "practices")),
+  }
+  DULL.report_block("Milestone " .. from_name .. " -> " .. end_label, lines, "echo")
 end
 
 function DULL.valid_timer_name(timer)
@@ -800,6 +1484,9 @@ function DULL.init_runtime()
     dps = { last = os.clock(), total = 0, seconds = 0, rate = 0 },
   }
   DULL.pending_timer_reports = {}
+  DULL.timer_snapshots = {}
+  DULL.pendingKill = nil
+  DULL.pendingLevel = nil
   DULL.capture = DULL.capture or {}
   DULL.timers = {
     cp = { last = 0, start = tonumber(DULL.saved_timer_starts.cp) or os.time(), history = {} },
@@ -864,6 +1551,12 @@ end
 function DULL.increment(info, m, line)
   local amount = DULL.extract_amount(info, m)
   amount = DULL.increment_field(info, amount) or 0
+  if DULL.pendingLevel then
+    if info.field == "tr_lvl" or info.field == "tr_pup" then DULL.pendingLevel.trains_base = amount
+    elseif info.field == "tr_luck" then DULL.pendingLevel.trains_bonus = (tonumber(DULL.pendingLevel.trains_bonus) or 0) + amount
+    elseif info.field == "tr_db" then DULL.pendingLevel.trains_blessing = (tonumber(DULL.pendingLevel.trains_blessing) or 0) + amount
+    elseif info.field == "pr_lvl" then DULL.pendingLevel.practices = amount end
+  end
   if amount ~= 0 and info.rate == "xp" then DULL.xp_increase(amount, line) end
   if amount ~= 0 and info.rate == "gold" then DULL.gold_increase(amount) end
   if info.after == "disable_group" and info.group then DULL.group_enabled[info.group] = false end
@@ -892,6 +1585,14 @@ function DULL.bonus_stat(info, m)
   local stat = tostring(m[2] or "")
   if stat ~= "" then
     DULL.lastIncrease.BonusStat = tostring(DULL.lastIncrease.BonusStat or "") .. stat .. " "
+    if DULL.pendingLevel then
+      local fields = {
+        strength = "str_gain", intelligence = "int_gain", wisdom = "wis_gain",
+        dexterity = "dex_gain", constitution = "con_gain", luck = "luc_gain",
+      }
+      local field = fields[stat:lower()]
+      if field then DULL.pendingLevel[field] = (tonumber(DULL.pendingLevel[field]) or 0) + 1 end
+    end
   end
 end
 
@@ -921,7 +1622,12 @@ function DULL.end_timer(timer)
   local now = os.time()
   DULL.timers[timer].last = now - (tonumber(DULL.timers[timer].start) or now)
   DULL.timers[timer].ended_at = now
-  DULL.queue_timer_report(timer, 0.25)
+  DULL.timer_snapshots[timer] = {
+    start = tonumber(DULL.timers[timer].start) or now,
+    ended_at = now,
+    last = DULL.timers[timer].last,
+  }
+  DULL.queue_timer_report(timer, (timer == "lvl" or timer == "pup") and 0.9 or 0.25)
   DULL.schedule_save(1.0)
 end
 
@@ -942,6 +1648,8 @@ end
 
 function DULL.timer_common_row(timer, report, extra)
   local t = DULL.timers[timer] or {}
+  local snapshot = DULL.timer_snapshots and DULL.timer_snapshots[timer] or nil
+  if snapshot then t = snapshot end
   local row = extra or {}
   local started_at = tonumber(t.start) or os.time()
   local duration_seconds = tonumber(t.last) or 0
@@ -983,10 +1691,18 @@ function DULL.timer_report_lvl()
   local lucky_s = lucky > 0 and (" " .. DULL.disp_val(lucky) .. DULL.disp_lbl("lucky")) or ""
   local db_s = db > 0 and (" " .. DULL.disp_val(db) .. DULL.disp_lbl("db")) or ""
   local bonus_s = bonus ~= "" and (DULL.disp_blbl(" Bonus: ") .. DULL.disp_val(bonus)) or ""
+  local level = DULL.pendingLevel and DULL.pendingLevel.timer == "lvl" and DULL.pendingLevel or {}
+  local kills = DULL.level_kill_totals(level)
+  local gains = string.format("%dhp %dmana %dmv %dpr ", tonumber(level.hp) or 0, tonumber(level.mana) or 0,
+    tonumber(level.moves) or 0, tonumber(level.practices) or 0)
+  local combat = string.format(" | %d kills %s xp %s gold", DULL.n(kills, "kill_count"),
+    DULL.short_number(DULL.n(kills, "xp_total")), DULL.short_number(DULL.n(kills, "gold_total")))
   local report = DULL.disp_lbl("[") .. DULL.disp_blbl("LVL #") .. count .. DULL.disp_lbl(": ") ..
-    DULL.disp_val(tr) .. DULL.disp_lbl("tr") .. lucky_s .. db_s ..
-    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.lvl.last) .. bonus_s
-  return report, DULL.timer_common_row("lvl", report, { levels = 1, trains = tr + lucky + db, details = { bonus_stat = bonus } })
+    DULL.disp_val(gains) .. DULL.disp_val(tr) .. DULL.disp_lbl("tr") .. lucky_s .. db_s ..
+    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.lvl.last) .. bonus_s .. DULL.disp_lbl(combat)
+  return report, DULL.timer_common_row("lvl", report, { levels = 1, trains = tr + lucky + db,
+    xp = DULL.n(kills, "xp_total"), gold = DULL.n(kills, "gold_total"), tp = DULL.n(kills, "tp_total"),
+    practices = tonumber(level.practices) or 0, details = { bonus_stat = bonus, kills = DULL.n(kills, "kill_count") } })
 end
 
 function DULL.timer_report_pup()
@@ -999,10 +1715,16 @@ function DULL.timer_report_pup()
   local lucky_s = lucky > 0 and (" " .. DULL.disp_val(lucky) .. DULL.disp_lbl("lucky")) or ""
   local db_s = db > 0 and (" " .. DULL.disp_val(db) .. DULL.disp_lbl("db")) or ""
   local bonus_s = bonus ~= "" and (DULL.disp_blbl(" Bonus: ") .. DULL.disp_val(bonus)) or ""
+  local level = DULL.pendingLevel and DULL.pendingLevel.timer == "pup" and DULL.pendingLevel or {}
+  local kills = DULL.level_kill_totals(level)
+  local combat = string.format(" | %d kills %s xp %s gold", DULL.n(kills, "kill_count"),
+    DULL.short_number(DULL.n(kills, "xp_total")), DULL.short_number(DULL.n(kills, "gold_total")))
   local report = DULL.disp_lbl("[") .. DULL.disp_blbl("PUP #") .. count .. DULL.disp_lbl(": ") ..
     DULL.disp_val(tr) .. DULL.disp_lbl("tr") .. lucky_s .. db_s ..
-    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.pup.last) .. bonus_s
-  return report, DULL.timer_common_row("pup", report, { pups = 1, trains = tr + lucky + db, details = { bonus_stat = bonus } })
+    DULL.disp_lbl("] ") .. DULL.seconds_to_minutes(DULL.timers.pup.last) .. bonus_s .. DULL.disp_lbl(combat)
+  return report, DULL.timer_common_row("pup", report, { pups = 1, trains = tr + lucky + db,
+    xp = DULL.n(kills, "xp_total"), gold = DULL.n(kills, "gold_total"), tp = DULL.n(kills, "tp_total"),
+    details = { bonus_stat = bonus, kills = DULL.n(kills, "kill_count") } })
 end
 
 function DULL.timer_report_quest()
@@ -1091,9 +1813,14 @@ function DULL.report_timer(timer)
   DULL.lastReports = DULL.lastReports or {}
   DULL.lastReports[timer] = report
   DULL.insert_timer_history(row or {})
+  if (timer == "lvl" or timer == "pup") and DULL.pendingLevel and DULL.pendingLevel.timer == timer then
+    DULL.insert_level_history(DULL.pendingLevel)
+    DULL.pendingLevel = nil
+  end
   if DULL.should_auto_report(timer) then DULL.report(report) end
   if timer == "cp" then DULL.group_enabled.cp_capture = false end
   DULL.pending_timer_reports[timer] = false
+  if DULL.timer_snapshots then DULL.timer_snapshots[timer] = nil end
 end
 
 function DULL.double_start(info, m)
@@ -1779,9 +2506,18 @@ end
 
 function DULL.apply_highlight(info)
   if DULL.settings.highlight ~= "y" then return end
-  if type(selectCurrentLine) == "function" then pcall(selectCurrentLine) end
+  local selected = false
+  if type(getCurrentLine) == "function" and type(selectString) == "function" then
+    local current_line = getCurrentLine() or ""
+    if current_line ~= "" then
+      local ok, position = pcall(selectString, current_line, 1)
+      selected = ok and type(position) == "number" and position >= 0
+    end
+  end
+  if not selected then return end
   if info.fg and type(fg) == "function" then pcall(fg, info.fg) end
   if info.bg and type(bg) == "function" then pcall(bg, info.bg) end
+  if type(deselect) == "function" then pcall(deselect) end
   if type(resetFormat) == "function" then pcall(resetFormat) end
 end
 
@@ -1798,6 +2534,12 @@ function DULL.on_trigger(info, m, current_line)
   elseif info.action == "double_end" then DULL.double_end()
   elseif info.action == "bonus_stat" then DULL.bonus_stat(info, m)
   elseif info.action == "damage" then DULL.damage_increase(info, m)
+  elseif info.action == "kill_xp" then DULL.capture_kill_xp(info, m)
+  elseif info.action == "kill_noexp" then DULL.capture_kill_noexp()
+  elseif info.action == "kill_part" then DULL.capture_kill_part(info, m)
+  elseif info.action == "kill_method" then DULL.capture_kill_method(info, m)
+  elseif info.action == "level_gains" then DULL.capture_level_gains(info, m)
+  elseif info.action == "capture_boundary" then DULL.capture_boundary()
   elseif info.action == "enable_group" then
     DULL.group_enabled[info.group_name] = true
   elseif info.action == "disable_group" then DULL.group_enabled[info.group_name] = false
@@ -1807,10 +2549,12 @@ function DULL.on_trigger(info, m, current_line)
     DULL.increment_count({ field = "count_cp" })
     DULL.end_timer("cp")
   elseif info.action == "level_done" then
+    DULL.begin_level_event("lvl")
     DULL.increment_count({ field = "count_lvl" })
     DULL.end_timer("lvl")
     DULL.start_timer("lvl")
   elseif info.action == "pup_done" then
+    DULL.begin_level_event("pup")
     DULL.increment_count({ field = "count_pup" })
     DULL.end_timer("pup")
     DULL.start_timer("pup")
@@ -1835,6 +2579,7 @@ end
 
 function DULL.install_triggers()
   DULL.triggers = {
+    { id = "db_capture_boundary", pattern = "^$", action = "capture_boundary" },
     { id = "cp_start", pattern = "^.* tells you 'Good luck in your campaign!'$", action = "start_timer", timer = "cp" },
     { id = "cp_done", pattern = "^CONGRATULATIONS! You have completed your campaign\\.$", action = "campaign_done" },
     { id = "cp_capture_end", pattern = "^You have completed [0-9]+ campaigns today\\.$", action = "disable_group", group_name = "cp_capture" },
@@ -1848,12 +2593,29 @@ function DULL.install_triggers()
 
     { id = "level_done", pattern = "^You raise a level! You are now level [0-9]+\\.$", action = "level_done" },
     { id = "pup_done", pattern = "^Congratulations, hero\\. You have increased your powers!$", action = "pup_done" },
+    { id = "level_gains_capture", pattern = "^You gain ([0-9]+) hit points, ([0-9]+) mana, ([0-9]+) moves, ([0-9]+) practices?(?:,| and) ([0-9]+) trains?(?: and [0-9]+ instinct trains?)?\\.$", action = "level_gains" },
     { id = "quest_start", pattern = "^.*tells you 'You have [0-9]+ minutes to complete your quest\\.'$", action = "start_timer", timer = "quest" },
     { id = "quest_done", pattern = "^.*tells you 'Congratulations, .*, on completing your quest!'$", action = "quest_done" },
 
     { id = "double_start", pattern = "^For the next ([0-9]+) minutes experience is doubled in honor of the new superhero\\.$|^Double experience for ([0-9]+) minutes courtesy of.+$|^\\[    ([0-9]+) minutes of double exp started courtesy of donations being open   \\]$|^For the next ([0-9]+) minutes all experience is doubled!!$", action = "double_start" },
     { id = "double_login", pattern = "^INFO: Double experience is running in honor of .* reaching superhero\\. - ([0-9]+) minutes left\\.?$|^INFO: Double experience is running courtesy of Aardwolf supporters - see 'help donate'\\. - ([0-9]+) minutes left$|^INFO: Double experience is running courtesy of .* daily blessing\\. - ([0-9]+) minutes left\\.$", action = "double_start" },
     { id = "double_end", pattern = "^INFO: Bonus experience has now expired\\.$", action = "double_end" },
+
+    -- Like Bast's broadcast_kills plugin, these triggers assemble adjacent reward
+    -- lines into one kill and commit it after the reward block goes quiet.
+    { id = "db_kill_xp", pattern = "^You receive ([0-9,]+(?:\\+[0-9,]+){0,3}) experience points?\\.$", action = "kill_xp" },
+    { id = "db_kill_noexp", pattern = "^That was a pointless no experience kill!$", action = "kill_noexp" },
+    { id = "db_kill_rare", pattern = "^You receive ([0-9,]+) 'rare kill' experience bonus\\.$", action = "kill_part", kill_field = "xp_rare" },
+    { id = "db_kill_bonus", pattern = "^You receive ([0-9,]+) bonus experience points? (?:in honor of|courtesy of|to rejoice)", action = "kill_part", kill_field = "xp_bonus" },
+    { id = "db_kill_blessing", pattern = "^You receive ([0-9,]+) bonus experience points? from your daily blessing\\.$", action = "kill_part", kill_field = "xp_blessing" },
+    { id = "db_kill_gold", pattern = "^You get ([0-9,]+) gold coins? from .* of (.*)\\.$", action = "kill_part", kill_field = "gold", mob_index = 3, raw_index = 2 },
+    { id = "db_kill_tp", pattern = "^You killed a Trivia Point bonus mob!! Trivia point added\\.$", action = "kill_part", kill_field = "tp", amount = 1 },
+    { id = "db_kill_vorpal", pattern = "^Deep magic stirs within .* and a strange glow surrounds .*!$", action = "kill_method", method = "vorpal" },
+    { id = "db_kill_banish", pattern = "^You look at (.*) very strangely\\.$", action = "kill_method", method = "banishment", mob_index = 2 },
+    { id = "db_kill_assassinate", pattern = "^You assassinate (.*) with cold efficiency\\.$", action = "kill_method", method = "assassinate", mob_index = 2 },
+    { id = "db_kill_slit", pattern = "^You sneak behind (.*) and slit (?:his|her|its) throat\\.$", action = "kill_method", method = "slit", mob_index = 2 },
+    { id = "db_kill_disintegrate", pattern = "^You have disintegrated (.*)!$", action = "kill_method", method = "disintegrate", mob_index = 2 },
+    { id = "db_kill_deathblow", pattern = "^Your death blow CLEAVES (.*) in two!$", action = "kill_method", method = "deathblow", mob_index = 2 },
 
     { id = "xp_mob_1", pattern = "^You receive ([0-9,]+)(?:\\+[0-9,]+)?(?:\\+[0-9,]+)?(?:\\+[0-9,]+)? experience points?\\.$", action = "increment", field = "xp_mob", gag = "xp", rate = "xp" },
     { id = "xp_mob_2", pattern = "^You receive [0-9,]+\\+([0-9,]+)(?:\\+[0-9,]+)?(?:\\+[0-9,]+)? experience points?\\.$", action = "increment", field = "xp_mob", gag = "xp", rate = "xp" },
@@ -1985,12 +2747,17 @@ function DULL.kill_temp()
   DULL.ids.save_timer = nil
   if DULL.ids.session_rollover then pcall(killTimer, DULL.ids.session_rollover) end
   DULL.ids.session_rollover = nil
+  if DULL.ids.kill_finalize then pcall(killTimer, DULL.ids.kill_finalize) end
+  DULL.ids.kill_finalize = nil
+  DULL.pendingKill = nil
+  DULL.pendingLevel = nil
 end
 
 DULL.help_index_rows = {
   { cmd = "dull help", desc = "Show this list" },
   { cmd = "dull help reports", desc = "Session, total, double, history, and average reports" },
   { cmd = "dull help rates", desc = "Area XP rate, gold rate, and DPS commands" },
+  { cmd = "dull help analytics", desc = "Database-backed level, combat, area, trend, and milestone reports" },
   { cmd = "dull help settings", desc = "Settings, gags, colors, and report channel" },
   { cmd = "dull help colors", desc = "Value, label, and bright-label color settings" },
   { cmd = "dull help data", desc = "Save, clear, status, and diagnostic commands" },
@@ -2022,6 +2789,23 @@ DULL.help_sections = {
       { cmd = "dull dps [area|n]", desc = "Show area DPS rows." },
       { cmd = "dull dps clear [area]", desc = "Clear all or matching area DPS data." },
       { cmd = "dull dps reset", desc = "Reset live DPS counters." },
+    }
+  },
+  analytics = {
+    header = "Database analytics",
+    rows = {
+      { cmd = "dull lvl stats [n|all]", desc = "Level time, gains, trains, kills, XP rates, and bonus-stat totals. Default: last 100." },
+      { cmd = "dull pup stats [n|all]", desc = "Powerup time, trains, combat rates, and bonus-stat totals. Default: last 100." },
+      { cmd = "dull report <60|4h|7d|2w>", desc = "Rolling kills, XP, gold, levels/pups, trains, rare/bonus/blessing, TP, and no-exp summary." },
+      { cmd = "dull daily [n]", desc = "One compact line per local calendar day. Default: 7 days." },
+      { cmd = "dull combat [window|all]", desc = "Kill efficiency, rare/no-exp rates, and finishing-method totals." },
+      { cmd = "dull combat methods [window|all]", desc = "Break kills, average XP, and gold down by finishing method." },
+      { cmd = "dull areas [window|all] [n]", desc = "Rank areas by kills with XP/kill, gold/kill, rare rate, and no-exp kills." },
+      { cmd = "dull area <name> [window|all]", desc = "Detailed totals for area names containing the supplied text." },
+      { cmd = "dull trend [window]", desc = "Compare the current window with the immediately preceding window." },
+      { cmd = "dull milestone add <name> [note]", desc = "Save a named timestamp without changing historical rows." },
+      { cmd = "dull milestone list", desc = "List saved milestones." },
+      { cmd = "dull milestone compare <from> [to|current]", desc = "Report progress between two milestone timestamps." },
     }
   },
   settings = {
@@ -2061,6 +2845,7 @@ DULL.help_sections = {
       { cmd = "dull save session", desc = "Force-save current state to /persistence." },
       { cmd = "dull show|showtotal", desc = "Print raw session or total tables for troubleshooting." },
       { cmd = "dull db", desc = "Show DB path and availability." },
+      { cmd = "Automatic DB capture", desc = "Kill reward blocks and level/pup gain blocks are recorded to kill_history and level_history." },
     }
   },
 }
@@ -2110,7 +2895,7 @@ function DULL.show_help(topic)
   if topic == "" then
     for _, row in ipairs(DULL.help_index_rows) do DULL.help_row(row, command_width, desc_width) end
   elseif topic == "all" then
-    for _, key in ipairs({ "reports", "rates", "settings", "colors", "data" }) do
+    for _, key in ipairs({ "reports", "rates", "analytics", "settings", "colors", "data" }) do
       local section = DULL.help_sections[key]
       cecho("\n<yellow>" .. section.header .. "<reset>\n\n")
       for _, row in ipairs(section.rows) do DULL.help_row(row, command_width, desc_width) end
@@ -2154,6 +2939,35 @@ function DULL.command(arg)
   if help_topic then return DULL.show_help(help_topic) end
 
   if lower == "reports" then return DULL.report_auto_report_settings() end
+  local rolling_window = lower:match("^report%s+(%d+[mhdw]?)$")
+  if rolling_window then return DULL.report_window(rolling_window) end
+
+  local level_kind, level_count = lower:match("^(%S+)%s+stats%s*(%S*)$")
+  if level_kind == "lvl" or level_kind == "level" or level_kind == "pup" then
+    return DULL.report_level_stats(level_kind == "pup" and "pup" or "lvl", level_count)
+  end
+  local daily_count = lower:match("^daily%s*(%d*)$")
+  if daily_count ~= nil then return DULL.report_daily(daily_count ~= "" and daily_count or nil) end
+  local method_window = lower:match("^combat%s+methods%s*(%S*)$")
+  if method_window ~= nil then return DULL.report_combat_methods(method_window) end
+  local combat_window = lower:match("^combat%s*(%S*)$")
+  if combat_window ~= nil then return DULL.report_combat(combat_window) end
+  local areas_window, areas_limit = lower:match("^areas%s*(%S*)%s*(%d*)$")
+  if areas_window ~= nil then return DULL.report_areas(areas_window, areas_limit ~= "" and areas_limit or nil) end
+  local area_args = cmd:match("^[Aa][Rr][Ee][Aa]%s+(.+)$")
+  if area_args then
+    local area_name, area_window = area_args:match("^(.-)%s+(%S+)$")
+    if not area_window or not DULL.parse_window(area_window, nil) then area_name, area_window = area_args, "" end
+    return DULL.report_area(area_name, area_window)
+  end
+  local trend_window = lower:match("^trend%s*(%S*)$")
+  if trend_window ~= nil then return DULL.report_trend(trend_window) end
+  if lower == "milestone list" or lower == "milestones" then return DULL.milestone_list() end
+  local milestone_name, milestone_note = cmd:match("^[Mm][Ii][Ll][Ee][Ss][Tt][Oo][Nn][Ee]%s+[Aa][Dd][Dd]%s+(%S+)%s*(.-)$")
+  if milestone_name then return DULL.milestone_add(milestone_name, milestone_note) end
+  local milestone_from, milestone_to = cmd:match("^[Mm][Ii][Ll][Ee][Ss][Tt][Oo][Nn][Ee]%s+[Cc][Oo][Mm][Pp][Aa][Rr][Ee]%s+(%S+)%s*(%S*)$")
+  if milestone_from then return DULL.milestone_compare(milestone_from, milestone_to) end
+
   local report_activity, report_value = lower:match("^report%s+(%S+)%s+(%S+)$")
   if report_activity then return DULL.set_activity_report(report_activity, report_value) end
   report_activity = lower:match("^report%s+(%S+)$")

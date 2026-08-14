@@ -554,13 +554,14 @@ hspskillgain()</script>
  <script>-- ============================================================================
 -- Hadar_Spellup_Caster for Mudlet
 -- Ported from MUSHclient plugin by Hadar
- -- Version: 1.26
+ -- Version: 1.30
 -- Purpose: Spellup Script for Aardwolf MUD
 -- ============================================================================
 
 HSP = HSP or {}
-HSP.version = &quot;1.26&quot;
+HSP.version = &quot;1.30&quot;
 HSP.pluginName = &quot;Hadar_Spellup_Caster&quot;
+HSP.combatDefaultsVersion = 2
 local function hsp_persistence_dir()
   local home = (type(getMudletHomeDir) == &quot;function&quot; and getMudletHomeDir() or &quot;.&quot;)
   local dir = home .. &quot;/persistence&quot;
@@ -699,6 +700,7 @@ HSP.spellupProse = {
     &quot;You feel less in control of your will.&quot;,
     &quot;You feel less protected from destructive energies.&quot;,
     &quot;You feel more vulnerable to acid.&quot;,
+    &quot;You feel less resistant to poison.&quot;,
     &quot;Your brilliant white aura of sanctuary shimmers and is gone.&quot;,
     &quot;You are no longer displaced.&quot;,
     &quot;The magic circle around you shimmers and fades away.&quot;,
@@ -743,6 +745,7 @@ HSP.spellupProse = {
     &quot;You feel weaker.&quot;,
     &quot;Your body softens.&quot;,
     &quot;You are no longer in harmony with yourself.&quot;,
+    &quot;You are no longer surrounded by your party shield.&quot;,
   }),
   casts = hspLineSet({
     &quot;You now possess magical powers of avoidance.&quot;,
@@ -758,6 +761,7 @@ HSP.spellupProse = {
     &quot;You protect yourself from mental attacks.&quot;,
     &quot;You protect yourself from destructive energy.&quot;,
     &quot;You protect yourself from acid.&quot;,
+    &quot;You inject yourself with anti-toxin.&quot;,
     &quot;You are surrounded by a shimmering white aura of divine protection.&quot;,
     &quot;Your form shimmers and you appear displaced.&quot;,
     &quot;A magical circle of protection forms around you.&quot;,
@@ -810,6 +814,7 @@ HSP.spellupProse = {
     &quot;You gain a keen understanding of battle tactics.&quot;,
     &quot;Your muscles surge with heightened power!&quot;,
     &quot;You are completely focused on your inner power.&quot;,
+    &quot;You are surrounded by your protective shield.&quot;,
   }),
 }
 
@@ -1169,7 +1174,8 @@ function HSP.onGMCPCharStatus()
   if not Spellups[&quot;GL&quot;] then return end
 
   if HSP.isInCombat() then
-    hadarprint(&quot;In combat (state 8), skipping spellup commands&quot;, &quot;debug&quot;)
+    hadarprint(&quot;In combat (state 8), checking combat spellup queue&quot;, &quot;debug&quot;)
+    cast_spells()
     return
   end
   
@@ -1254,6 +1260,21 @@ function buildInitial()
     [&quot;perdition&quot;] = 497, [&quot;loqui&quot;] = 510, [&quot;gaardian&quot;] = 509,
     [&quot;tao&quot;] = 499, [&quot;touchstone&quot;] = 496, [&quot;boot&quot;] = 606
   }
+end
+
+function HSP.applyCombatDefaults()
+  Spellups[&quot;GL&quot;] = Spellups[&quot;GL&quot;] or {}
+  Spellups[&quot;EX&quot;] = Spellups[&quot;EX&quot;] or {}
+  Spellups[&quot;EX&quot;][&quot;exceptions&quot;] = Spellups[&quot;EX&quot;][&quot;exceptions&quot;] or {}
+
+  local appliedVersion = tonumber(Spellups[&quot;GL&quot;][&quot;combatDefaultsVersion&quot;]) or 0
+  if appliedVersion &lt; HSP.combatDefaultsVersion then
+    -- Quickstab (SN 601) cannot be used during combat. Remove the v1 default
+    -- from existing profiles and let it follow the normal standing spellup path.
+    remove(Spellups[&quot;EX&quot;][&quot;exceptions&quot;], 601)
+    Spellups[&quot;GL&quot;][&quot;combatDefaultsVersion&quot;] = HSP.combatDefaultsVersion
+    HSP.SaveState()
+  end
 end
 
 -- ============================================================================
@@ -2050,10 +2071,7 @@ end
 -- cast_spells (adapted)
 -- ============================================================================
 function cast_spells()
-  if HSP.isInCombat() then
-    hadarprint(&quot;In combat (state 8), skipping spell casts&quot;, &quot;debug&quot;)
-    return
-  end
+  local inCombat = HSP.isInCombat()
   hadarprint(&quot;We are attempting to cast_spells&quot;, &quot;debug&quot;)
   if Spellups[&quot;GL&quot;][&quot;disabled&quot;] == &quot;yes&quot; then
     hadarprint(&quot;cast_spells disabled == yes&quot;, &quot;debug&quot;)
@@ -2073,16 +2091,35 @@ function cast_spells()
 
   for sn in pairs(Spellups[&quot;QS&quot;]) do
     if HSP.isNoAuto(sn) then
-      hadarprint(Spellups[&quot;AS&quot;][&quot;list&quot;][sn][&quot;name&quot;] .. &quot; is noauto, removing&quot;, &quot;debug&quot;)
+      local skill = Spellups[&quot;AS&quot;][&quot;list&quot;][sn]
+      hadarprint((skill and skill[&quot;name&quot;] or tostring(sn)) .. &quot; is noauto, removing&quot;, &quot;debug&quot;)
       Spellups[&quot;QS&quot;][sn] = nil
     end
   end
 
-  if HSP.useSpellupAll() and HSP.spellupAllPending and not HSP.hasNoAuto() then
-    if next(Spellups[&quot;QS&quot;]) == nil then
-      HSP.spellupAllPending = false
-      return
+  if inCombat then
+    if Spellups[&quot;GL&quot;][&quot;exceptions&quot;] == &quot;yes&quot; then
+      for sn in pairs(Spellups[&quot;QS&quot;]) do
+        local skillNumber = tonumber(sn)
+        local skill = Spellups[&quot;AS&quot;][&quot;list&quot;][skillNumber]
+        if skill and contains(Spellups[&quot;EX&quot;][&quot;exceptions&quot;], skillNumber) then
+          hadarprint(&quot;Casting combat exception: &quot; .. skill[&quot;name&quot;], &quot;debug&quot;)
+          cast_this(skillNumber, tonumber(skill[&quot;type&quot;]))
+        end
+      end
     end
+    return
+  end
+
+  local queuedSpellCount = table.count(Spellups[&quot;QS&quot;])
+  if queuedSpellCount == 0 then
+    if next(Spellups[&quot;QS&quot;]) == nil then HSP.spellupAllPending = false end
+    return
+  end
+
+  local canUseMudsideSpellup = not HSP.hasNoAuto()
+
+  if HSP.useSpellupAll() and HSP.spellupAllPending and canUseMudsideSpellup then
     if Spellups[&quot;GL&quot;][&quot;SpellsDisabled&quot;] == &quot;yes&quot; then
       hadarprint(&quot;spellup all postponed while spells are disabled&quot;, &quot;debug&quot;)
       return
@@ -2101,17 +2138,19 @@ function cast_spells()
   end
 
 
-  if HSP.spellupAllPending and HSP.hasNoAuto() then
-    hadarprint(&quot;noauto list is active; using per-spell casts instead of spellup all&quot;, &quot;debug&quot;)
+  if HSP.spellupAllPending and not canUseMudsideSpellup then
+    hadarprint(&quot;noauto list is active; using eligible per-spell casts instead of spellup all&quot;, &quot;debug&quot;)
     HSP.spellupAllPending = false
   end
 
   for i, v in pairs(Spellups[&quot;QS&quot;]) do
-    local ctype = tonumber(Spellups[&quot;AS&quot;][&quot;list&quot;][i][&quot;type&quot;])
+    local skillNumber = tonumber(i)
+    local skill = Spellups[&quot;AS&quot;][&quot;list&quot;][skillNumber]
 
-    if HSP.currentState ~= 8 then
-      if HSP.useSpellupAll() and tonumber(Spellups[&quot;GL&quot;][&quot;mudsidespellup&quot;]) == 1 and not HSP.hasNoAuto() then
-        if table.count(Spellups[&quot;QS&quot;]) &gt;= tonumber(Spellups[&quot;CG&quot;][&quot;spellstorecast&quot;]) then
+    if skill then
+      local ctype = tonumber(skill[&quot;type&quot;])
+      if HSP.useSpellupAll() and tonumber(Spellups[&quot;GL&quot;][&quot;mudsidespellup&quot;]) == 1 and canUseMudsideSpellup then
+        if queuedSpellCount &gt;= tonumber(Spellups[&quot;CG&quot;][&quot;spellstorecast&quot;]) then
           hadarprint(&quot;doing a mudside spellup&quot;, &quot;debug&quot;)
           if table.find(Spellups[&quot;EX&quot;][&quot;clanskill&quot;], Spellups[&quot;QS&quot;]) ~= nil then
             hadarprint(&quot;Contains Cskill&quot;, &quot;debug&quot;)
@@ -2127,14 +2166,14 @@ function cast_spells()
           break
         end
       end
-      if contains(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], i) == false then
-        if Spellups[&quot;AS&quot;][&quot;list&quot;][i][&quot;prac&quot;] &gt; 1 or i == Spellups[&quot;EX&quot;][&quot;clanskill&quot;] or i == Spellups[&quot;EX&quot;][&quot;clanskillV1&quot;] then
-          cast_this(i, ctype)
+      if contains(Spellups[&quot;EX&quot;][&quot;noAuto&quot;], skillNumber) == false then
+        if tonumber(skill[&quot;prac&quot;]) &gt; 1 or skillNumber == Spellups[&quot;EX&quot;][&quot;clanskill&quot;] or skillNumber == Spellups[&quot;EX&quot;][&quot;clanskillV1&quot;] then
+          cast_this(skillNumber, ctype)
         else
           Spellups[&quot;QS&quot;][i] = nil
         end
       else
-        hadarprint(Spellups[&quot;AS&quot;][&quot;list&quot;][i][&quot;name&quot;] .. &quot; is noauto, removing&quot;, &quot;debug&quot;)
+        hadarprint(skill[&quot;name&quot;] .. &quot; is noauto, removing&quot;, &quot;debug&quot;)
         Spellups[&quot;QS&quot;][i] = nil
       end
     end
@@ -3584,6 +3623,8 @@ function HSP.OnPluginEnable()
     hadarprint(&quot;@CLooks like this is your first install, Lets get you setup! @Ghsp@C for help&quot;, &quot;script&quot;)
     buildInitial()
   end
+
+  HSP.applyCombatDefaults()
 
   local state = HSP.gmcpval(&quot;char.status.state&quot;)
   HSP.currentState = state and tonumber(state) or -1

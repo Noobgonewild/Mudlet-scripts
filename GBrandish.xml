@@ -1,0 +1,956 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>GBrandish</name>
+      <script></script>
+      <command></command>
+      <packageName>GBrandish</packageName>
+      <regex></regex>
+      <Alias isActive="yes" isFolder="no">
+        <name>gbrandish</name>
+        <script><![CDATA[if GBRANDISH and GBRANDISH.command then
+    GBRANDISH.command(matches[2] or "")
+else
+    cecho("<red>[GBrandish] Startup failed; reinstall the current GBrandish.xml package.<reset>\n")
+end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gbrandish(?:\s+(.*))?$</regex>
+      </Alias>
+      <Alias isActive="yes" isFolder="no">
+        <name>gbr</name>
+        <script><![CDATA[if GBRANDISH and GBRANDISH.command then
+    GBRANDISH.command(matches[2] or "")
+else
+    cecho("<red>[GBrandish] Startup failed; reinstall the current GBrandish.xml package.<reset>\n")
+end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^gbr(?:\s+(.*))?$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>GBrandish</name>
+      <packageName>GBrandish</packageName>
+      <script></script>
+      <eventHandlerList/>
+      <Script isActive="yes" isFolder="no">
+        <name>GBrandish</name>
+        <packageName>GBrandish</packageName>
+        <script><![CDATA[
+----------------------------------------------------------------------------------------------------
+-- GBrandish
+-- Automatic, charge-safe stave use backed by the DINV v3 controlled API.
+----------------------------------------------------------------------------------------------------
+
+GBRANDISH = GBRANDISH or {}
+local gbr = GBRANDISH
+
+gbr.version = "1.0.1"
+gbr.config = gbr.config or {
+    enabled = false,
+    selector = "breath",
+    aoe = 2,
+    interval = 3.0,
+    chargeFloor = 1,
+    resultTimeout = 5.0,
+    roomMaxAge = 5.0,
+}
+gbr.runtime = gbr.runtime or {}
+gbr.triggers = gbr.triggers or {}
+gbr.aliases = gbr.aliases or {}
+gbr.handlers = gbr.handlers or {}
+gbr.timers = gbr.timers or {}
+
+local function trim(value)
+    return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function stripColors(value)
+    local text = tostring(value or "")
+    if type(ansi2decho) == "function" then
+        -- Aardwolf @-codes are the only ones DINV names normally contain;
+        -- leave ANSI handling to Mudlet and remove those stable codes here.
+    end
+    return text:gsub("@.", ""):gsub("<[^>]+>", "")
+end
+
+local function normalized(value)
+    return trim(stripColors(value):gsub("%s+", " ")):lower()
+end
+
+local function truthy(value)
+    return value == true or value == 1 or tostring(value):lower() == "true"
+end
+
+local function number(value, fallback)
+    local parsed = tonumber(value)
+    if parsed == nil then return fallback end
+    return parsed
+end
+
+function gbr.print(message, color)
+    color = color or "cyan"
+    if type(cecho) == "function" then
+        cecho(string.format("<%s>[GBrandish]<reset> %s\n", color, tostring(message or "")))
+    else
+        print("[GBrandish] " .. tostring(message or ""))
+    end
+end
+
+function gbr.debug(message)
+    if gbr.config.debug == true then gbr.print(message, "dim_grey") end
+end
+
+local function killTimerField(name)
+    local id = gbr.timers[name]
+    if id and type(killTimer) == "function" then pcall(killTimer, id) end
+    gbr.timers[name] = nil
+end
+
+local function after(seconds, name, callback)
+    killTimerField(name)
+    if type(tempTimer) ~= "function" then
+        callback()
+        return nil
+    end
+    gbr.timers[name] = tempTimer(seconds, function()
+        gbr.timers[name] = nil
+        callback()
+    end)
+    return gbr.timers[name]
+end
+
+local function sendCommand(command)
+    if type(send) == "function" then
+        send(command, false)
+        return true
+    end
+    return false
+end
+
+function gbr.settingsPath()
+    local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+    return home .. "/GBrandish/settings.lua"
+end
+
+function gbr.saveSettings()
+    local file = io.open(gbr.settingsPath(), "w")
+    if not file then return false end
+    file:write("return {\n")
+    file:write("  enabled = ", tostring(gbr.config.enabled == true), ",\n")
+    file:write("  selector = ", string.format("%q", tostring(gbr.config.selector or "")), ",\n")
+    file:write("  aoe = ", tostring(math.floor(number(gbr.config.aoe, 2))), ",\n")
+    file:write("  interval = ", tostring(number(gbr.config.interval, 3)), ",\n")
+    file:write("}\n")
+    file:close()
+    return true
+end
+
+function gbr.loadSettings()
+    local chunk = loadfile(gbr.settingsPath())
+    if not chunk then return false end
+    local ok, saved = pcall(chunk)
+    if not ok or type(saved) ~= "table" then return false end
+    if saved.enabled ~= nil then gbr.config.enabled = saved.enabled == true end
+    if trim(saved.selector) ~= "" then gbr.config.selector = trim(saved.selector) end
+    gbr.config.aoe = math.max(1, math.floor(number(saved.aoe, gbr.config.aoe)))
+    gbr.config.interval = math.max(0.5, number(saved.interval, gbr.config.interval))
+    return true
+end
+
+function gbr.dinvReady()
+    return DINV and DINV.api and DINV.actions
+        and number(DINV.api.version, 0) >= 3
+        and type(DINV.api.getStaves) == "function"
+        and type(DINV.actions.reserveStaveUse) == "function"
+end
+
+local function currentRoomId()
+    local candidates = {
+        gmcp and gmcp.room and gmcp.room.info and gmcp.room.info.num,
+        gmcp and gmcp.room and gmcp.room.info and gmcp.room.info.id,
+        gmcp and gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.num,
+        gmcp and gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.id,
+    }
+    for _, value in ipairs(candidates) do
+        if value ~= nil and tostring(value) ~= "" then return tostring(value) end
+    end
+    return ""
+end
+
+local function combatState()
+    local state = gmcp and gmcp.char and gmcp.char.status and gmcp.char.status.state
+    if state == nil and gmcp and gmcp.Char and gmcp.Char.Status then
+        state = gmcp.Char.Status.state
+    end
+    return tostring(state or "")
+end
+
+function gbr.inCombat()
+    return combatState() == "8"
+end
+
+local function itemName(item)
+    return trim(item and (item.name or item.colorName or item.colorname) or "")
+end
+
+local function itemMatchesSelector(item)
+    local needle = normalized(gbr.config.selector)
+    if needle == "" then return false end
+    local fields = {
+        item and item.name,
+        item and item.colorName,
+        item and item.colorname,
+        item and item.keywords,
+    }
+    for _, value in ipairs(fields) do
+        if normalized(value):find(needle, 1, true) then return true end
+    end
+    return false
+end
+
+local function chargeState(item)
+    local known = truthy(item and (item.chargeKnown ~= nil and item.chargeKnown or item.chargeknown))
+    local dirty = truthy(item and (item.chargeDirty ~= nil and item.chargeDirty or item.chargedirty))
+    local charges = known and tonumber(item and item.charges) or nil
+    return known, dirty, charges and math.max(0, math.floor(charges)) or nil
+end
+
+local function itemIsKept(item)
+    return truthy(item and item.keepflag)
+end
+
+local function itemIsHeld(item)
+    if not item then return false end
+    local worn = normalized(item.worn)
+    local location = normalized(item.location)
+    return worn == "hold" or location == "hold"
+        or (item.isWorn == true and normalized(item.wearable) == "hold")
+end
+
+function gbr.getStaves(applySelector)
+    if not gbr.dinvReady() then return nil, "DINV API v3 is not ready." end
+    local result = DINV.api.getStaves({ detail = "full", source = "live" })
+    if not result or not result.ok then
+        return nil, result and (result.message or result.code) or "DINV getStaves failed."
+    end
+    local staves = {}
+    for _, item in ipairs(result.items or {}) do
+        if applySelector ~= true or itemMatchesSelector(item) then
+            table.insert(staves, item)
+        end
+    end
+    return staves
+end
+
+local function sortUsable(left, right)
+    local _, _, leftCharges = chargeState(left)
+    local _, _, rightCharges = chargeState(right)
+    leftCharges, rightCharges = leftCharges or math.huge, rightCharges or math.huge
+    if leftCharges ~= rightCharges then return leftCharges < rightCharges end
+    return tostring(left.id) < tostring(right.id)
+end
+
+function gbr.findUsableStaves(excludeId)
+    local staves, err = gbr.getStaves(true)
+    if not staves then return nil, err end
+    local usable = {}
+    for _, item in ipairs(staves) do
+        local known, dirty, charges = chargeState(item)
+        if tostring(item.id) ~= tostring(excludeId or "")
+            and known and not dirty and charges and charges > gbr.config.chargeFloor then
+            table.insert(usable, item)
+        end
+    end
+    table.sort(usable, sortUsable)
+    return usable
+end
+
+function gbr.currentStave()
+    local staves = gbr.getStaves(true)
+    if not staves then return nil end
+    for _, item in ipairs(staves) do
+        if itemIsHeld(item) then return item end
+    end
+    if gbr.runtime.activeId then
+        for _, item in ipairs(staves) do
+            if tostring(item.id) == tostring(gbr.runtime.activeId) then return item end
+        end
+    end
+    return nil
+end
+
+function gbr.equipStave(item, callback)
+    callback = callback or function() end
+    if not item or not item.id then callback(false, "No stave selected."); return end
+    if not gbr.dinvReady() then callback(false, "DINV API v3 is not ready."); return end
+    if gbr.runtime.switching then callback(false, "A stave switch is already pending."); return end
+
+    if itemIsHeld(item) then
+        gbr.runtime.activeId = tostring(item.id)
+        callback(true)
+        return
+    end
+
+    gbr.runtime.switching = true
+    local finished = false
+    local function finish(ok, message)
+        if finished then return end
+        finished = true
+        gbr.runtime.switching = false
+        if ok then gbr.runtime.activeId = tostring(item.id) end
+        callback(ok, message)
+    end
+
+    local result = DINV.actions.hold(item.id, {
+        label = "GBrandish switch",
+        report = false,
+        onFinish = function(operation)
+            finish(operation and #(operation.failures or {}) == 0,
+                operation and #(operation.failures or {}) > 0 and "DINV did not confirm the stave switch." or nil)
+        end,
+    })
+    if not result or not result.ok then
+        finish(false, result and (result.message or result.code) or "DINV hold failed.")
+    elseif number(result.commandCount, 0) == 0 then
+        finish(true)
+    end
+end
+
+local function groupMembersHere()
+    local raw = gmcp and (gmcp.group or gmcp.Group)
+    local names = {}
+    if type(raw) ~= "table" or type(raw.members) ~= "table" then return names, false end
+    for _, member in ipairs(raw.members) do
+        local info = type(member) == "table" and member.info or nil
+        local here = info and (info.here == true or number(info.here, 0) == 1)
+        if here and trim(member.name) ~= "" then names[normalized(member.name)] = true end
+    end
+    return names, true
+end
+
+local function parseRoomcharLine(line)
+    local remaining = trim(stripColors(line))
+    if remaining == "" or remaining == "{roomchars}" or remaining == "{/roomchars}" then
+        return nil
+    end
+    local isPlayer = false
+    while remaining ~= "" do
+        local flag, rest = remaining:match("^(%b())%s*(.*)$")
+        if not flag then flag, rest = remaining:match("^(%b[])%s*(.*)$") end
+        if not flag then break end
+        local value = normalized(flag:gsub("^.", ""):gsub(".$", ""))
+        if value == "p" or value == "player" then isPlayer = true end
+        remaining = trim(rest)
+    end
+    return { player = isPlayer, name = remaining, raw = trim(line) }
+end
+
+function gbr.roomcharsStart()
+    gbr.runtime.roomCapture = {
+        roomId = currentRoomId(),
+        npcCount = 0,
+        players = {},
+        rows = 0,
+    }
+end
+
+function gbr.roomcharsLine(line)
+    local capture = gbr.runtime.roomCapture
+    if not capture then return end
+    local row = parseRoomcharLine(line)
+    if not row then return end
+    capture.rows = capture.rows + 1
+    if row.player then
+        table.insert(capture.players, row.name)
+    else
+        capture.npcCount = capture.npcCount + 1
+    end
+end
+
+function gbr.roomSafety(snapshot)
+    snapshot = snapshot or gbr.runtime.roomSnapshot
+    if not snapshot then return false, { "room population is unknown" } end
+    if #(snapshot.players or {}) == 0 then return true, {} end
+    local members, available = groupMembersHere()
+    if not available then return false, { "group GMCP is unavailable" } end
+    local unsafe = {}
+    for _, name in ipairs(snapshot.players or {}) do
+        if not members[normalized(name)] then table.insert(unsafe, name) end
+    end
+    return #unsafe == 0, unsafe
+end
+
+function gbr.roomcharsEnd()
+    local capture = gbr.runtime.roomCapture
+    gbr.runtime.roomCapture = nil
+    if not capture then return end
+    capture.roomId = currentRoomId()
+    capture.at = os.time()
+    gbr.runtime.roomSnapshot = capture
+    gbr.runtime.roomDirty = false
+    gbr.runtime.lookInFlight = false
+    killTimerField("lookTimeout")
+
+    if gbr.runtime.manualQueued then
+        gbr.runtime.manualQueued = false
+        after(0.05, "tick", function() gbr.attemptBrandish(true) end)
+    elseif gbr.config.enabled and gbr.inCombat() then
+        after(0.05, "tick", function() gbr.attemptBrandish(false) end)
+    end
+end
+
+function gbr.invalidateRoom(reason)
+    gbr.runtime.roomDirty = true
+    gbr.runtime.roomDirtyReason = reason or "room changed"
+end
+
+function gbr.roomSnapshotReady()
+    local snapshot = gbr.runtime.roomSnapshot
+    if not snapshot or gbr.runtime.roomDirty then return false end
+    local roomId = currentRoomId()
+    if roomId ~= "" and tostring(snapshot.roomId or "") ~= roomId then return false end
+    if os.time() - number(snapshot.at, 0) > gbr.config.roomMaxAge then return false end
+    return true
+end
+
+function gbr.requestRoomSnapshot(manual)
+    if manual then gbr.runtime.manualQueued = true end
+    if gbr.runtime.lookInFlight then return end
+    gbr.runtime.lookInFlight = true
+    if not sendCommand("look") then
+        gbr.runtime.lookInFlight = false
+        return
+    end
+    after(2.5, "lookTimeout", function()
+        if not gbr.runtime.lookInFlight then return end
+        gbr.runtime.lookInFlight = false
+        gbr.invalidateRoom("roomchars timeout")
+        if manual then
+            gbr.runtime.manualQueued = false
+            gbr.print("No roomchars snapshot arrived after look; brandish was not sent.", "red")
+        end
+    end)
+end
+
+function gbr.scheduleAuto(delay)
+    if not gbr.config.enabled or not gbr.inCombat() then return end
+    after(delay or gbr.config.interval, "tick", function() gbr.attemptBrandish(false) end)
+end
+
+function gbr.handleMissingResult()
+    local pending = gbr.runtime.pendingUse
+    if not pending then return end
+    gbr.runtime.pendingUse = nil
+    local result = DINV.actions.cancelStaveUse(pending.id, pending.token, {
+        markUnknown = true,
+        source = "brandish-result-timeout",
+    })
+    gbr.print("No unambiguous charge result arrived for item " .. tostring(pending.id)
+        .. "; its charges are now unknown.", "red")
+    if result and result.ok then gbr.switchFrom(pending.id, "unknown charge count") end
+end
+
+function gbr.sendBrandish(item)
+    local stateResult = DINV.api.getStaveChargeState(item.id, { source = "live" })
+    if not stateResult or not stateResult.ok or not stateResult.state then
+        gbr.print("Cannot read the selected stave's charge state.", "red")
+        return false
+    end
+    local state = stateResult.state
+    local reservation = DINV.actions.reserveStaveUse(item.id, {
+        floor = gbr.config.chargeFloor,
+        expectedRevision = state.revision,
+    })
+    if not reservation or not reservation.ok then
+        gbr.print("Brandish blocked: " .. tostring(reservation and (reservation.message or reservation.code)
+            or "charge reservation failed"), "orange_red")
+        return false
+    end
+
+    gbr.runtime.pendingUse = {
+        id = tostring(item.id),
+        token = reservation.state.reservationToken,
+        revision = reservation.state.revision,
+        name = normalized(itemName(item)),
+        startedAt = os.time(),
+    }
+    if not sendCommand("brandish") then
+        DINV.actions.cancelStaveUse(item.id, reservation.state.reservationToken, { markUnknown = false })
+        gbr.runtime.pendingUse = nil
+        return false
+    end
+    after(gbr.config.resultTimeout, "resultTimeout", gbr.handleMissingResult)
+    return true
+end
+
+function gbr.attemptBrandish(manual)
+    manual = manual == true
+    if not manual and not gbr.config.enabled then return end
+    if not gbr.inCombat() then
+        if manual then gbr.print("Manual brandish is guarded and only runs in combat.", "orange_red") end
+        return
+    end
+    if not gbr.dinvReady() then
+        gbr.print("DINV API v3 is required. Reload the updated DINV package first.", "red")
+        return
+    end
+    if gbr.runtime.pendingUse or gbr.runtime.switching then return end
+
+    if not gbr.roomSnapshotReady() then
+        gbr.requestRoomSnapshot(manual)
+        return
+    end
+    local snapshot = gbr.runtime.roomSnapshot
+    local safe, unsafe = gbr.roomSafety(snapshot)
+    if not safe then
+        if manual then
+            gbr.print("Brandish blocked by room safety: " .. table.concat(unsafe, ", "), "red")
+        end
+        gbr.scheduleAuto(gbr.config.interval)
+        return
+    end
+    if number(snapshot.npcCount, 0) < 1 then
+        if manual then gbr.print("Brandish blocked: no NPCs are visible in roomchars.", "orange_red") end
+        gbr.scheduleAuto(gbr.config.interval)
+        return
+    end
+    if not manual and number(snapshot.npcCount, 0) < gbr.config.aoe then
+        gbr.scheduleAuto(gbr.config.interval)
+        return
+    end
+
+    local current = gbr.currentStave()
+    local currentKnown, currentDirty, currentCharges = chargeState(current)
+    if current and currentKnown and not currentDirty
+        and currentCharges and currentCharges > gbr.config.chargeFloor then
+        gbr.runtime.activeId = tostring(current.id)
+        gbr.sendBrandish(current)
+        return
+    end
+
+    local usable, err = gbr.findUsableStaves(current and current.id)
+    if not usable then
+        gbr.print(err, "red")
+        return
+    end
+    if #usable == 0 then
+        gbr.print("No identified matching stave has more than one charge. Auto mode stopped.", "red")
+        gbr.config.enabled = false
+        gbr.saveSettings()
+        return
+    end
+    gbr.equipStave(usable[1], function(ok, message)
+        if not ok then
+            gbr.print("Could not equip replacement stave: " .. tostring(message), "red")
+            return
+        end
+        if manual then
+            after(0.15, "tick", function() gbr.attemptBrandish(true) end)
+        else
+            gbr.scheduleAuto(0.15)
+        end
+    end)
+end
+
+function gbr.switchFrom(depletedId, reason)
+    if gbr.runtime.switching then return end
+    local usable, err = gbr.findUsableStaves(depletedId)
+    if not usable then gbr.print(err, "red"); return end
+    if #usable == 0 then
+        DINV.actions.remove(depletedId, { label = "GBrandish retire depleted stave" })
+        gbr.runtime.activeId = nil
+        gbr.config.enabled = false
+        gbr.saveSettings()
+        gbr.print("No replacement stave is ready after " .. tostring(reason)
+            .. "; the depleted stave was removed and auto mode stopped.", "red")
+        return
+    end
+    gbr.equipStave(usable[1], function(ok, message)
+        if ok then
+            local _, _, charges = chargeState(usable[1])
+            gbr.print(string.format("Switched to %s (id %s, %s charges).",
+                stripColors(itemName(usable[1])), tostring(usable[1].id), tostring(charges)), "green")
+            gbr.scheduleAuto(gbr.config.interval)
+        else
+            gbr.config.enabled = false
+            gbr.saveSettings()
+            gbr.print("Replacement switch failed: " .. tostring(message) .. ". Auto mode stopped.", "red")
+        end
+    end)
+end
+
+function gbr.onChargeLine(name, charges)
+    local pending = gbr.runtime.pendingUse
+    if not pending then return end
+    local outputName = normalized(name)
+    if outputName ~= pending.name then
+        gbr.debug("Ignored charge line for " .. outputName .. "; pending " .. pending.name)
+        return
+    end
+    local count = tonumber(charges)
+    if not count then return end
+
+    killTimerField("resultTimeout")
+    gbr.runtime.pendingUse = nil
+    local result = DINV.actions.observeStaveCharges(pending.id, count, {
+        source = "brandish-confirmation",
+        expectedRevision = pending.revision,
+    })
+    if not result or not result.ok then
+        DINV.actions.markStaveChargesUnknown(pending.id, { source = "rejected-brandish-confirmation" })
+        gbr.print("DINV rejected the charge confirmation for item " .. pending.id .. ".", "red")
+        return
+    end
+
+    gbr.invalidateRoom("brandish completed")
+    if count <= gbr.config.chargeFloor then
+        -- The server has confirmed the last safe use. Switch now, before any
+        -- future request can encounter a one-charge stave.
+        gbr.switchFrom(pending.id, tostring(count) .. " charge remaining")
+    else
+        gbr.scheduleAuto(gbr.config.interval)
+    end
+end
+
+function gbr.onStatus()
+    local nowCombat = gbr.inCombat()
+    local wasCombat = gbr.runtime.inCombat == true
+    gbr.runtime.inCombat = nowCombat
+    if nowCombat and not wasCombat and gbr.config.enabled then
+        gbr.invalidateRoom("combat started")
+        gbr.scheduleAuto(0.5)
+    elseif not nowCombat and wasCombat then
+        killTimerField("tick")
+        gbr.runtime.manualQueued = false
+    end
+end
+
+function gbr.onRoomInfo()
+    gbr.invalidateRoom("GMCP room changed")
+end
+
+function gbr.onPopulationChange()
+    if gbr.inCombat() then gbr.invalidateRoom("room population changed") end
+end
+
+function gbr.refresh()
+    local staves, err = gbr.getStaves(true)
+    if not staves then gbr.print(err, "red"); return end
+    local ids = {}
+    for _, item in ipairs(staves) do table.insert(ids, tostring(item.id)) end
+    if #ids == 0 then
+        gbr.print("No staves match selector '" .. gbr.config.selector .. "'.", "orange_red")
+        return
+    end
+    local result = DINV.actions.identify(ids, { source = "GBrandish refresh" })
+    if result and result.ok then
+        gbr.print(string.format("Queued %d matching stave(s) for forced DINV identification.", result.count), "green")
+        if #(result.rejected or {}) > 0 then
+            gbr.print(string.format("%d stave(s) were not queued; use gbr refresh again after DINV is idle.",
+                #(result.rejected or {})), "orange_red")
+        end
+    else
+        gbr.print("Refresh failed: " .. tostring(result and (result.message or result.code) or "unknown error"), "red")
+    end
+end
+
+function gbr.resync()
+    local current = gbr.currentStave()
+    if not current then
+        gbr.print("No matching held/active stave is known to DINV.", "orange_red")
+        return
+    end
+    local result = DINV.actions.identify(current.id, { source = "GBrandish resync" })
+    if result and result.ok then
+        gbr.print("Queued item " .. tostring(current.id) .. " for authoritative identification.", "green")
+    else
+        gbr.print("Resync failed: " .. tostring(result and (result.message or result.code) or "unknown error"), "red")
+    end
+end
+
+local function oneChargeTargets()
+    local staves, err = gbr.getStaves(false)
+    if not staves then return nil, err end
+    local targets = {}
+    for _, item in ipairs(staves) do
+        local known, dirty, charges = chargeState(item)
+        if known and not dirty and charges == gbr.config.chargeFloor and not itemIsKept(item) then
+            table.insert(targets, item)
+        end
+    end
+    table.sort(targets, function(a, b) return tostring(a.id) < tostring(b.id) end)
+    return targets
+end
+
+local function verifyTopInventory(ids)
+    local ready, missing = {}, {}
+    for _, id in ipairs(ids) do
+        local result = DINV.api.getItem(id, { detail = "full", source = "live" })
+        local item = result and result.ok and result.item or nil
+        if item and normalized(item.location) == "inventory" and not item.isWorn then
+            table.insert(ready, id)
+        else
+            table.insert(missing, id)
+        end
+    end
+    return ready, missing
+end
+
+function gbr.collect(callback)
+    callback = callback or function() end
+    if not gbr.dinvReady() then gbr.print("DINV API v3 is not ready.", "red"); callback({}); return end
+    local targets, err = oneChargeTargets()
+    if not targets then gbr.print(err, "red"); callback({}); return end
+    if #targets == 0 then
+        gbr.print("No known, unkept one-charge staves need collecting.", "cyan")
+        callback({})
+        return
+    end
+
+    local ids, wornIds = {}, {}
+    for _, item in ipairs(targets) do
+        table.insert(ids, tostring(item.id))
+        if item.isWorn or itemIsHeld(item) then table.insert(wornIds, tostring(item.id)) end
+    end
+
+    local function retrieve()
+        local result = DINV.actions.retrieve(ids, {
+            label = "GBrandish collect",
+            report = false,
+            onFinish = function()
+                local ready, missing = verifyTopInventory(ids)
+                gbr.print(string.format("Collected %d/%d one-charge stave(s) into inventory.", #ready, #ids),
+                    #missing == 0 and "green" or "orange_red")
+                if #missing > 0 then gbr.print("Unconfirmed ids: " .. table.concat(missing, ", "), "orange_red") end
+                callback(ready, missing)
+            end,
+        })
+        if not result or not result.ok then
+            gbr.print("Collect failed: " .. tostring(result and (result.message or result.code) or "unknown error"), "red")
+            callback({})
+        elseif number(result.commandCount, 0) == 0 then
+            local ready, missing = verifyTopInventory(ids)
+            gbr.print(string.format("%d/%d one-charge stave(s) are already in inventory.", #ready, #ids),
+                #missing == 0 and "green" or "orange_red")
+            callback(ready, missing)
+        end
+    end
+
+    if #wornIds > 0 then
+        local removeResult = DINV.actions.remove(wornIds, {
+            label = "GBrandish remove depleted",
+            report = false,
+            onFinish = retrieve,
+        })
+        if not removeResult or not removeResult.ok then
+            gbr.print("Could not remove a depleted stave before collecting.", "red")
+            callback({})
+        elseif number(removeResult.commandCount, 0) == 0 then
+            retrieve()
+        end
+    else
+        retrieve()
+    end
+end
+
+function gbr.sell()
+    if gbr.inCombat() then
+        gbr.print("gbr sell is disabled in combat.", "red")
+        return
+    end
+    gbr.collect(function(ids)
+        if #ids == 0 then return end
+        for _, id in ipairs(ids) do sendCommand("sell " .. id) end
+        local started = os.time()
+        local function verifySales()
+            local sold, remaining = {}, {}
+            for _, id in ipairs(ids) do
+                local result = DINV.api.getItem(id, { source = "live" })
+                if not result or not result.ok then table.insert(sold, id) else table.insert(remaining, id) end
+            end
+            if #remaining > 0 and os.time() - started < 7 then
+                after(0.5, "sellVerify", verifySales)
+                return
+            end
+            gbr.print(string.format("Sold %d/%d exact one-charge stave id(s).", #sold, #ids),
+                #remaining == 0 and "green" or "orange_red")
+            if #remaining > 0 then gbr.print("Not confirmed sold: " .. table.concat(remaining, ", "), "orange_red") end
+        end
+        after(0.5, "sellVerify", verifySales)
+    end)
+end
+
+function gbr.status()
+    local staves, err = gbr.getStaves(true)
+    local known, usable, depleted, unknown = 0, 0, 0, 0
+    if staves then
+        for _, item in ipairs(staves) do
+            local isKnown, dirty, charges = chargeState(item)
+            if not isKnown or dirty then unknown = unknown + 1
+            else
+                known = known + 1
+                if charges > gbr.config.chargeFloor then usable = usable + 1
+                elseif charges == gbr.config.chargeFloor then depleted = depleted + 1 end
+            end
+        end
+    end
+    local current = staves and gbr.currentStave() or nil
+    local _, _, currentCharges = chargeState(current)
+    local snapshot = gbr.runtime.roomSnapshot
+    local safe, unsafe = gbr.roomSafety(snapshot)
+    gbr.print(string.format("%s | selector='%s' | aoe >= %d NPC | interval %.1fs",
+        gbr.config.enabled and "ON" or "OFF", gbr.config.selector, gbr.config.aoe, gbr.config.interval),
+        gbr.config.enabled and "green" or "cyan")
+    if err then
+        gbr.print(err, "red")
+        return
+    end
+    gbr.print(string.format("pool: %d matching, %d known, %d usable, %d at one, %d unknown",
+        #(staves or {}), known, usable, depleted, unknown), "cyan")
+    gbr.print(string.format("active: %s | id %s | charges %s | pending %s",
+        current and stripColors(itemName(current)) or "none",
+        current and tostring(current.id) or "-",
+        currentCharges and tostring(currentCharges) or "unknown",
+        gbr.runtime.pendingUse and "yes" or "no"), "cyan")
+    gbr.print(string.format("roomchars: %s | NPC %s | players %d | safety %s%s",
+        gbr.roomSnapshotReady() and "fresh" or "dirty/missing",
+        snapshot and tostring(snapshot.npcCount) or "?",
+        snapshot and #(snapshot.players or {}) or 0,
+        safe and "safe" or "blocked",
+        not safe and (" (" .. table.concat(unsafe, ", ") .. ")") or ""), safe and "green" or "orange_red")
+end
+
+function gbr.help()
+    gbr.print("Commands:", "cyan")
+    gbr.print("  gbr on|off              enable or disable automatic guarded brandish", "white")
+    gbr.print("  gbr <name>              set the stave selector (example: gbr breath)", "white")
+    gbr.print("  gbr aoe <number>        require at least this many NPC roomchars", "white")
+    gbr.print("  gbr interval <seconds>  set confirmed-use cadence (minimum 0.5)", "white")
+    gbr.print("  gbr brandish            guarded one-shot; bypasses only the AOE threshold", "white")
+    gbr.print("  gbr status              show pool, active charge, and room safety state", "white")
+    gbr.print("  gbr resync              force-identify the active/held matching stave", "white")
+    gbr.print("  gbr refresh             force-identify every matching stave", "white")
+    gbr.print("  gbr collect             retrieve all known unkept one-charge staves", "white")
+    gbr.print("  gbr sell                collect then sell those exact ids (not in combat)", "white")
+end
+
+function gbr.command(arguments)
+    local line = trim(arguments)
+    local command, rest = line:match("^(%S+)%s*(.-)$")
+    command = normalized(command)
+    rest = trim(rest)
+    if command == "" or command == "help" then gbr.help(); return end
+    if command == "on" then
+        gbr.config.enabled = true
+        gbr.saveSettings()
+        gbr.print("Automatic brandish enabled.", "green")
+        if gbr.inCombat() then gbr.invalidateRoom("auto enabled"); gbr.scheduleAuto(0.5) end
+    elseif command == "off" then
+        gbr.config.enabled = false
+        gbr.saveSettings()
+        killTimerField("tick")
+        gbr.print("Automatic brandish disabled.", "cyan")
+    elseif command == "aoe" then
+        local value = tonumber(rest)
+        if not value or value < 1 then gbr.print("Usage: gbr aoe <number >= 1>", "orange_red"); return end
+        gbr.config.aoe = math.floor(value)
+        gbr.saveSettings()
+        gbr.print("AOE threshold set to " .. tostring(gbr.config.aoe) .. " NPC(s).", "green")
+    elseif command == "interval" then
+        local value = tonumber(rest)
+        if not value or value < 0.5 then gbr.print("Usage: gbr interval <seconds >= 0.5>", "orange_red"); return end
+        gbr.config.interval = value
+        gbr.saveSettings()
+        gbr.print(string.format("Brandish interval set to %.1f seconds.", value), "green")
+    elseif command == "brandish" then
+        gbr.attemptBrandish(true)
+    elseif command == "status" then
+        gbr.status()
+    elseif command == "resync" then
+        gbr.resync()
+    elseif command == "refresh" then
+        gbr.refresh()
+    elseif command == "collect" then
+        gbr.collect()
+    elseif command == "sell" then
+        gbr.sell()
+    elseif command == "debug" then
+        gbr.config.debug = normalized(rest) == "on"
+        gbr.print("Debug " .. (gbr.config.debug and "enabled" or "disabled") .. ".", "cyan")
+    elseif command == "set" then
+        if rest == "" then gbr.print("Usage: gbr set <stave name>", "orange_red"); return end
+        gbr.config.selector = rest
+        gbr.saveSettings()
+        gbr.runtime.activeId = nil
+        gbr.print("Stave selector set to '" .. rest .. "'.", "green")
+    else
+        -- The compact form requested by the user: `gbr breath` selects the
+        -- matching stave pool without adding a separate attack command.
+        gbr.config.selector = line
+        gbr.saveSettings()
+        gbr.runtime.activeId = nil
+        gbr.print("Stave selector set to '" .. line .. "'.", "green")
+    end
+end
+
+function gbr.shutdownRuntime()
+    local timerNames = {}
+    for name in pairs(gbr.timers or {}) do table.insert(timerNames, name) end
+    for _, name in ipairs(timerNames) do killTimerField(name) end
+    for _, id in pairs(gbr.triggers or {}) do
+        if id and type(killTrigger) == "function" then pcall(killTrigger, id) end
+    end
+    for _, id in pairs(gbr.aliases or {}) do
+        if id and type(killAlias) == "function" then pcall(killAlias, id) end
+    end
+    for _, id in pairs(gbr.handlers or {}) do
+        if id and type(killAnonymousEventHandler) == "function" then pcall(killAnonymousEventHandler, id) end
+    end
+    gbr.triggers, gbr.aliases, gbr.handlers, gbr.timers = {}, {}, {}, {}
+end
+
+function gbr.installRuntime()
+    gbr.shutdownRuntime()
+    gbr.loadSettings()
+    gbr.runtime = {
+        inCombat = gbr.inCombat(),
+        roomDirty = true,
+    }
+
+    gbr.triggers.charge = tempRegexTrigger("^(.+?) has (\\d+) charges? remaining\\.$", function()
+        if matches then gbr.onChargeLine(matches[2], matches[3]) end
+    end)
+    gbr.triggers.roomStart = tempRegexTrigger("^\\{roomchars\\}$", gbr.roomcharsStart)
+    gbr.triggers.roomEnd = tempRegexTrigger("^\\{/roomchars\\}$", gbr.roomcharsEnd)
+    gbr.triggers.roomLine = tempRegexTrigger("^(.*)$", function()
+        if gbr.runtime.roomCapture and matches then gbr.roomcharsLine(matches[2]) end
+    end)
+    gbr.triggers.population = tempRegexTrigger(
+        "(?i)\\b(arrives|enters|leaves|has arrived|fades into existence)\\b", gbr.onPopulationChange)
+
+    gbr.handlers.status = registerAnonymousEventHandler("gmcp.char.status", gbr.onStatus)
+    gbr.handlers.room = registerAnonymousEventHandler("gmcp.room.info", gbr.onRoomInfo)
+    gbr.handlers.group = registerAnonymousEventHandler("gmcp.group", function() end)
+
+    if type(sendGMCP) == "function" then
+        pcall(sendGMCP, "group on")
+        after(0.6, "groupRequest", function() pcall(sendGMCP, "request group") end)
+    end
+    sendCommand("tags roomchars on")
+    gbr.print("Loaded v" .. gbr.version .. ". Use 'gbr status' or 'gbr help'.", "green")
+    if gbr.config.enabled and gbr.inCombat() then gbr.scheduleAuto(0.5) end
+end
+
+gbr.installRuntime()
+]]></script>
+        <eventHandlerList/>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

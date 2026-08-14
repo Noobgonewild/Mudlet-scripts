@@ -79,6 +79,7 @@ GCH.defaults = {
   gchan_color = GCH.gchan_default_color,
   gchan_echo = false,
   sound_enabled = true,
+  required_tags_configured = false,
 }
 GCH.sound_channels = { clan = true, group = true, say = true, spouse = true, tell = true }
 GCH.tab_order = { "All", "Clan", "Question", "Group", "Tell", "Say", "Spouse", "Gchan" }
@@ -557,6 +558,50 @@ function GCH.clean_message(text)
   return s
 end
 
+-- Normalize the transport envelope once so event consumers do not each need
+-- to understand Aardwolf's rendered channel sentences. The original message
+-- is still retained for display/history/debugging.
+function GCH.extract_channel_fields(text, sender_hint)
+  local clean = GCH.clean_message(text):match("^%s*(.-)%s*$")
+  local hinted = tostring(sender_hint or ""):match("^%s*(.-)%s*$")
+  local parsed_sender, body
+
+  body = clean:match("^%[GCHAN%]%s+(.+)$")
+
+  if not body then
+    parsed_sender, body = clean:match("^%([^)]+%)%s*([A-Za-z]+):%s*'(.-)'%s*$")
+  end
+  if not body then
+    parsed_sender, body = clean:match("^([A-Za-z]+)%s+%([^)]+%)%s+tells? the [^:]+:%s*'(.-)'%s*$")
+  end
+  if not body then
+    parsed_sender, body = clean:match("^([A-Za-z]+)%s+tells? the [^:]+:%s*'(.-)'%s*$")
+  end
+  if not body then
+    parsed_sender, body = clean:match("^([A-Za-z]+)%s+%([^)]+%)%s+tells you '(.-)'%s*$")
+  end
+  if not body then
+    parsed_sender, body = clean:match("^([A-Za-z]+)%s+tells you '(.-)'%s*$")
+  end
+  if not body then
+    parsed_sender, body = clean:match("^([A-Za-z]+)%s+%([^)]+%)%s+[%a]+s?%s+'(.-)'%s*$")
+  end
+  if not body then
+    parsed_sender, body = clean:match("^([A-Za-z]+)%s+[%a]+s?%s+'(.-)'%s*$")
+  end
+  if not body then
+    parsed_sender, body = clean:match("^%([^)]+%)%s*([A-Za-z]+):%s*(.-)%s*$")
+  end
+
+  local sender = hinted:match("^([A-Za-z]+)$")
+    or hinted:match("^([A-Za-z]+)%s+%([^)]+%)$")
+    or parsed_sender
+    or ""
+  if sender:lower() == "you" then sender = "" end
+
+  return sender, tostring(body or clean):match("^%s*(.-)%s*$")
+end
+
 function GCH.history_key_for_tab(tab)
   return GCH.tab_to_history[tab]
 end
@@ -835,17 +880,23 @@ function GCH.render_history_line(msg, ts, channel_key, rendered_decho)
   end
 end
 
-function GCH.emit_channel_message(channel_key, message)
+function GCH.emit_channel_message(channel_key, message, sender, body)
   local ch = tostring(channel_key or ""):lower():match("^%s*(.-)%s*$")
   if ch == "" or ch == "all" then return end
-  raiseEvent("gch.channel_message", { channel = ch, message = tostring(message or "") })
+  raiseEvent("gch.channel_message", {
+    channel = ch,
+    message = tostring(message or ""),
+    sender = tostring(sender or ""):match("^%s*(.-)%s*$"),
+    body = tostring(body or ""):match("^%s*(.-)%s*$"),
+  })
 end
 
-function GCH.add_message(tab, raw_text, ts, source, rendered_decho)
+function GCH.add_message(tab, raw_text, ts, source, rendered_decho, sender)
   GCH.ensure_buffer()
 
   local clean = GCH.clean_message(raw_text)
   if clean == "" then return end
+  local normalized_sender, body = GCH.extract_channel_fields(clean, sender)
 
   local stamp = ts or os.time()
   local origin = source or "unknown"
@@ -866,6 +917,8 @@ function GCH.add_message(tab, raw_text, ts, source, rendered_decho)
     ts = stamp,
     source = origin,
     decho = rendered_decho,
+    sender = normalized_sender,
+    body = body,
   }
 
   GCH.last_append = {
@@ -882,7 +935,7 @@ function GCH.add_message(tab, raw_text, ts, source, rendered_decho)
 
   local channel_key = item.channel_key
   if channel_key and channel_key ~= "all" then
-    GCH.emit_channel_message(channel_key, clean)
+    GCH.emit_channel_message(channel_key, clean, item.sender, item.body)
     GCH.play_channel_sound(channel_key)
   end
   if channel_key and channel_key ~= "all" and GCH.state.history_enabled[channel_key] ~= false then
@@ -890,7 +943,8 @@ function GCH.add_message(tab, raw_text, ts, source, rendered_decho)
     GCH.maybe_drain()
   end
 
-  GCH.debug_log(string.format("append source=%s tab=%s msg='%s' colored=%s", tostring(item.source), tostring(tab or "All"), clean, tostring(item.decho ~= nil)))
+  GCH.debug_log(string.format("append source=%s tab=%s sender='%s' body='%s' msg='%s' colored=%s",
+    tostring(item.source), tostring(tab or "All"), tostring(item.sender), tostring(item.body), clean, tostring(item.decho ~= nil)))
   GCH.refresh_windows()
 end
 function GCH.timestamp_prefix(ts)
@@ -1275,6 +1329,7 @@ function GCH.on_gmcp_channel()
 
   local raw_chan = comm.chan or comm.channel or comm.name or ""
   local raw_msg = comm.msg or comm.text or comm.message or ""
+  local sender = comm.player or comm.sender or comm.from or ""
   local tab = GCH.normalize_channel(raw_chan)
   local msg = tostring(raw_msg or "")
   local colored
@@ -1286,7 +1341,8 @@ function GCH.on_gmcp_channel()
     end
   end
 
-  GCH.debug_log(string.format("detected chan='%s' tab='%s' msg='%s' colored=%s", tostring(raw_chan or ""), tostring(tab or "nil"), msg, tostring(colored ~= nil)))
+  GCH.debug_log(string.format("detected chan='%s' tab='%s' sender='%s' msg='%s' colored=%s",
+    tostring(raw_chan or ""), tostring(tab or "nil"), tostring(sender or ""), msg, tostring(colored ~= nil)))
 
   if msg == "" then
     GCH.debug_log("message was empty; skipping append")
@@ -1297,7 +1353,7 @@ function GCH.on_gmcp_channel()
     GCH.debug_log("channel was not mapped to a dedicated tab; appending to All only")
   end
 
-  GCH.add_message(tab, msg, os.time(), "gmcp", colored)
+  GCH.add_message(tab, msg, os.time(), "gmcp", colored, sender)
 end
 
 function GCH.send_gchan(text)
@@ -1370,9 +1426,14 @@ function GCH.command(arg)
     GCH.save_settings()
     return GCH.print_main("g_channels: window hidden")
   elseif lcmd == "reset" then
+    local required_tags_configured = GCH.state.required_tags_configured
     GCH.state = {}
     GCH.merge_defaults()
+    GCH.state.required_tags_configured = required_tags_configured == true
     if GCH.ui and GCH.ui.container then
+      if type(GCH.ui.container.restore) == "function" then
+        pcall(function() GCH.ui.container:restore() end)
+      end
       GCH.ui.container:move(GCH.state.x, GCH.state.y)
       GCH.ui.container:resize(GCH.state.width, GCH.state.height)
     end
@@ -1527,11 +1588,39 @@ function GCH.on_exit()
   GCH.close_db()
 end
 
+function GCH.configure_required_tags_once()
+  if GCH.state.required_tags_configured == true then return true end
+  if type(send) ~= "function" then return false end
+
+  if type(getConnectionInfo) == "function" then
+    local _, _, connected = getConnectionInfo()
+    if connected == false then return false end
+  end
+
+  send("tags channels on", false)
+  send("tags tells on", false)
+  send("tags says on", false)
+  GCH.state.required_tags_configured = true
+  GCH.save_settings()
+
+  if GCH.tag_config_handler and type(killAnonymousEventHandler) == "function" then
+    pcall(killAnonymousEventHandler, GCH.tag_config_handler)
+    GCH.tag_config_handler = nil
+  end
+
+  return true
+end
+
 function GCH.init()
   GCH.load_settings()
   GCH.open_db()
   GCH.drain_pending()
   GCH.ensure_ui()
+
+  if GCH.state.required_tags_configured ~= true and not GCH.tag_config_handler then
+    GCH.tag_config_handler = registerAnonymousEventHandler("sysConnectionEvent", "GCH.configure_required_tags_once")
+  end
+  GCH.configure_required_tags_once()
 
   for _, con in pairs(GCH.ui.consoles or {}) do
     con:setFontSize(tonumber(GCH.state.fontsize) or 9)

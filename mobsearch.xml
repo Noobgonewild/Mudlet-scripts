@@ -216,6 +216,10 @@ local function report_message_channel(row)
   return string.format("@W%s @wis found in @g%s @win @y%s @w(@cmapper goto %s@w)", row[1], row[4], row[2], row[3])
 end
 
+local function report_message_clipboard(row)
+  return "@C[MobSearcher] " .. report_message_channel(row)
+end
+
 local function area_level_label(minLvl, maxLvl)
   local minN = tonumber(minLvl)
   local maxN = tonumber(maxLvl)
@@ -226,37 +230,48 @@ local function area_level_label(minLvl, maxLvl)
 end
 
 local function parse_search_input(rawInput)
-  local input = tostring(rawInput or ""):gsub("^%s+", ""):gsub("%s+$", "")
-  local zone = "all"
-
-  local maybeZone, rest = input:match("^(%S+)%s+(.+)$")
-  if maybeZone and (maybeZone:lower() == "here" or maybeZone:lower() == "all") then
-    zone = maybeZone
-    input = rest
+  local function trim(value)
+    return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
   end
 
-  local levelToken = input:match("%s+(%d+%s*%-%s*%d+)%s*$") or input:match("%s+(%d+)%s*$")
-  local lvlFilter = nil
-  if levelToken then
-    input = input:sub(1, #input - #levelToken):gsub("%s+$", "")
-    local minLevel, maxLevel = levelToken:match("^(%d+)%s*%-%s*(%d+)$")
-    if minLevel and maxLevel then
-      lvlFilter = { min = tonumber(minLevel), max = tonumber(maxLevel) }
-    else
-      local exact = tonumber(levelToken)
-      if exact then
-        lvlFilter = exact
-      end
+  local function unquote(value)
+    value = trim(value)
+    return value:match('^"(.-)"$') or value:match("^'(.-)'$") or value
+  end
+
+  local input = trim(rawInput)
+  local zone = "all"
+  local mobName = input
+
+  -- Search syntax always starts with the mob name. A trailing scope selects
+  -- either a named area or the character's current GMCP area.
+  local areaMob, areaName = input:match("^(.*)%s+[Aa][Rr][Ee][Aa]%s+(.+)$")
+  if areaMob then
+    mobName = trim(areaMob)
+    zone = unquote(areaName)
+  elseif input:match("%s+[Aa][Rr][Ee][Aa]%s*$") then
+    return nil, nil, "Specify an area key or name after 'area'."
+  else
+    local hereMob = input:match("^(.*)%s+[Hh][Ee][Rr][Ee]%s*$")
+    if hereMob then
+      mobName = trim(hereMob)
+      zone = "here"
     end
   end
 
-  local mobName = input
-  local quotedName = mobName:match('^"(.-)"$') or mobName:match("^'(.-)'$")
-  if quotedName then
-    mobName = quotedName
+  return zone, unquote(mobName), nil
+end
+
+function MobSearcher.copyReportLine(line)
+  if type(setClipboardText) ~= "function" then
+    msg("red", "This version of Mudlet does not provide clipboard access.")
+    return
   end
 
-  return zone, mobName, lvlFilter
+  local ok, err = pcall(setClipboardText, tostring(line or ""))
+  if not ok then
+    msg("red", "Could not copy the report: " .. tostring(err))
+  end
 end
 
 function MobSearcher.reportRow(idx)
@@ -270,7 +285,27 @@ function MobSearcher.reportRow(idx)
   local channel = tostring(MobSearcher.config.channel or ""):gsub("^%s+", ""):gsub("%s+$", "")
 
   if channel == "" or channel:lower() == "echo" then
-    cecho(string.format("<cyan>[MobSearcher] %s\n", report_message_colored(row)))
+    local clipboardLine = report_message_clipboard(row)
+    local hint = "Copy this report with Aardwolf @ color codes"
+    local linked = false
+
+    if type(cechoLink) == "function" then
+      linked = pcall(cechoLink, "<cyan>[MobSearcher]", function()
+        MobSearcher.copyReportLine(clipboardLine)
+      end, hint, true)
+
+      -- Function callbacks require Mudlet 4.11+, so retain compatibility with
+      -- older versions that accept a Lua command string instead.
+      if not linked then
+        linked = pcall(cechoLink, "<cyan>[MobSearcher]",
+          string.format("MobSearcher.copyReportLine(%q)", clipboardLine), hint, true)
+      end
+    end
+
+    if not linked then
+      cecho("<cyan>[MobSearcher]")
+    end
+    cecho(string.format(" %s\n", report_message_colored(row)))
   elseif type(expandAlias) == "function" then
     expandAlias(channel .. " " .. line, false)
   else
@@ -313,7 +348,7 @@ function MobSearcher.setDebugAlias(matches)
   msg("cyan", "Debug is currently " .. (MobSearcher.config.debug and "ON" or "OFF") .. ". Use: msearch debug on|off")
 end
 
-function MobSearcher.searchMobs(mobn, areaz, lvl)
+function MobSearcher.searchMobs(mobn, areaz)
   local db = open_db()
   if not db then return end
 
@@ -321,44 +356,34 @@ function MobSearcher.searchMobs(mobn, areaz, lvl)
   areaz = tostring(areaz or "all")
   mobn = tostring(mobn or "")
 
-  if areaz:upper() == "HERE" then
+  if areaz:lower() == "here" then
     areaz = tostring(gmcp_value("room.info.zone") or "")
+    if areaz:gsub("^%s+", ""):gsub("%s+$", "") == "" then
+      msg("orange", "The current area is unavailable from GMCP.")
+      db:close()
+      return
+    end
   end
 
   local function esc(v)
     return tostring(v or ""):gsub("'", "''")
   end
 
-  local minLvl, maxLvl
-  if type(lvl) == "table" then
-    minLvl = tonumber(lvl.min)
-    maxLvl = tonumber(lvl.max)
-  elseif tonumber(lvl) then
-    minLvl = tonumber(lvl)
-    maxLvl = tonumber(lvl)
-  end
-
   local query = [[
 SELECT mobs.mob, mobs.room, mobs.roomid, mobs.zone, mobs.seen_count, mobs.kill_count,
        area.minlvl AS area_minlvl, area.maxlvl AS area_maxlvl
 FROM mobs
-LEFT JOIN area ON (area.key = mobs.zone OR area.name = mobs.zone)
+LEFT JOIN area ON ((area.key COLLATE NOCASE) = mobs.zone OR (area.name COLLATE NOCASE) = mobs.zone)
 WHERE mobs.mob LIKE '%]] .. esc(mobn) .. [[%'
 ]]
   local searchmsg = "Searching for " .. mobn
 
-  if areaz:upper() ~= "ALL" and areaz ~= "" then
-    query = query .. " AND (mobs.zone = '" .. esc(areaz) .. "' OR mobs.zone IN (SELECT key FROM area WHERE name = '" .. esc(areaz) .. "'))"
+  if areaz:lower() ~= "all" and areaz ~= "" then
+    local escapedArea = esc(areaz)
+    query = query .. " AND ((mobs.zone COLLATE NOCASE) = '" .. escapedArea
+      .. "' OR (mobs.zone COLLATE NOCASE) IN (SELECT area.key FROM area WHERE (area.key COLLATE NOCASE) = '"
+      .. escapedArea .. "' OR (area.name COLLATE NOCASE) = '" .. escapedArea .. "'))"
     searchmsg = searchmsg .. " in " .. areaz
-  end
-
-  if minLvl and maxLvl then
-    query = query .. " AND mobs.zone IN (SELECT key FROM area WHERE minlvl <= " .. maxLvl .. " AND maxlvl >= " .. minLvl .. ")"
-    if minLvl == maxLvl then
-      searchmsg = searchmsg .. " at level " .. tostring(minLvl)
-    else
-      searchmsg = searchmsg .. string.format(" for level range %d-%d", minLvl, maxLvl)
-    end
   end
 
   query = query .. " ORDER BY COALESCE(mobs.seen_count, 0) DESC, mobs.mob ASC, mobs.room ASC"
@@ -450,28 +475,31 @@ function MobSearcher.onSearch(matches)
 
   if p1:upper() == "HELP" then
     cecho("<sky_blue>[MobSearcher] Commands:\n")
-    cecho("<white>  msearch <mob>\n")
-    cecho("<white>  msearch <mob> <level>\n")
-    cecho("<white>  msearch <mob> <min-max>\n")
-    cecho("<white>  msearch <here|all> <mob>\n")
-    cecho("<white>  msearch <here|all> <mob> <level|min-max>\n")
+    cecho("<white>  msearch <mob name>\n")
+    cecho("<white>  msearch <mob name> area <area key or name>\n")
+    cecho("<white>  msearch <mob name> here\n")
     cecho("<white>  msearch channel <chat command>\n")
     cecho("<white>  msearch channel default\n")
     cecho("<white>  msearch debug on|off\n")
     cecho("<white>  mreport <row#>  (report row to channel/default output)\n")
     cecho("<white>  mgo <row#>      (mapper goto that row's room)\n")
-    cecho("<light_grey>Examples: msearch \"demonic soldier\" | msearch demonic soldier 45 | msearch here soldier 40-55\n")
+    cecho("<light_grey>Examples: ms girl | ms small girl area masq | ms small girl here\n")
     return
   end
 
-  local zone, name, lvlFilter = parse_search_input(rawInput)
+  local zone, name, parseError = parse_search_input(rawInput)
+
+  if parseError then
+    msg("orange", parseError)
+    return
+  end
 
   if #name < 2 then
     msg("orange", "You need at least 2 characters of the mob name.")
     return
   end
 
-  MobSearcher.searchMobs(name, zone, lvlFilter)
+  MobSearcher.searchMobs(name, zone)
 end
 
 function MobSearcher.mobShow(matches)

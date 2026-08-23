@@ -750,6 +750,9 @@ function GCH.xterm_index_to_cecho(value)
     return nil
   end
 
+  -- The completed message is rendered with decho, whose exact RGB syntax is
+  -- <R,G,B>. Hex tags are not valid cecho markup and would print literally.
+
   local system_colors = {
     "ansi_black", "ansi_red", "ansi_green", "ansi_yellow",
     "ansi_blue", "ansi_magenta", "ansi_cyan", "ansi_white",
@@ -762,34 +765,23 @@ function GCH.xterm_index_to_cecho(value)
   end
 
   if index >= 232 then
-    local grey = index - 232
-    if grey < 8 then return "<ansi_black>" end
-    if grey < 16 then return "<ansi_light_black>" end
-    return "<white>"
+    local grey = 8 + ((index - 232) * 10)
+    return string.format("<%d,%d,%d>", grey, grey, grey)
   end
 
-  do
-    local cube_index = index - 16
-    local blue = cube_index % 6
-    local green = math.floor(cube_index / 6) % 6
-    local red = math.floor(cube_index / 36)
-    local bright = math.max(red, green, blue) >= 3
-
-    if red > green and red > blue then return bright and "<ansi_light_red>" or "<ansi_red>" end
-    if green > red and green > blue then return bright and "<ansi_light_green>" or "<ansi_green>" end
-    if blue > red and blue > green then return bright and "<ansi_light_blue>" or "<ansi_blue>" end
-    if red == green and red > blue then return bright and "<ansi_light_yellow>" or "<ansi_yellow>" end
-    if red == blue and red > green then return bright and "<ansi_light_magenta>" or "<ansi_magenta>" end
-    if green == blue and green > red then return bright and "<ansi_light_cyan>" or "<ansi_cyan>" end
-    return bright and "<white>" or "<ansi_white>"
-  end
+  local cube_index = index - 16
+  local levels = { 0, 95, 135, 175, 215, 255 }
+  local blue = levels[(cube_index % 6) + 1]
+  local green = levels[(math.floor(cube_index / 6) % 6) + 1]
+  local red = levels[math.floor(cube_index / 36) + 1]
+  return string.format("<%d,%d,%d>", red, green, blue)
 end
 
 function GCH.expand_aard_codes_to_cecho(text)
   local escaped_at = "\1GCH_ESCAPED_AT\1"
   local expanded = tostring(text or ""):gsub("@@", escaped_at)
 
-  expanded = expanded:gsub("@x(%d%d%d)", function(index)
+  expanded = expanded:gsub("@x(%d%d?%d?)", function(index)
     return GCH.xterm_index_to_cecho(index) or ("@x" .. index)
   end)
 
@@ -851,14 +843,100 @@ function GCH.play_channel_sound(channel_key)
 end
 
 function GCH.echo_gchan_main(rendered_decho, plain_text)
-  if rendered_decho and rendered_decho ~= "" and type(decho) == "function" then
-    decho(rendered_decho .. "\n")
+  local rendered = tostring(rendered_decho or "")
+  local tag_decho = GCH.gchan_tag_decho()
+  if rendered ~= ""
+    and rendered:sub(1, #tag_decho) == tag_decho
+    and type(dechoPopup) == "function"
+    and type(decho) == "function"
+    and type(GCH.gchan_report_popup_menu) == "function" then
+    local item = { channel_key = "gchan", msg = tostring(plain_text or ""), decho = rendered }
+    local commands, hints = GCH.gchan_report_popup_menu(item)
+    dechoPopup(tag_decho, commands, hints, true)
+    decho(rendered:sub(#tag_decho + 1) .. "\n")
+  elseif rendered ~= "" and type(decho) == "function" then
+    decho(rendered .. "\n")
   else
     echo(tostring(plain_text or "") .. "\n")
   end
   if type(resetFormat) == "function" then
     pcall(resetFormat)
   end
+end
+
+function GCH.gchan_report_text(item)
+  local text = item
+  if type(item) == "table" then text = item.msg end
+  local report_text = tostring(text or ""):gsub("[\r\n]+", " "):match("^%s*(.-)%s*$")
+  return report_text:gsub("^%[GCHAN%]%s*", "")
+end
+
+function GCH.report_gchan(item, target)
+  local report_text = GCH.gchan_report_text(item)
+  if report_text == "" then return false end
+
+  local channel = tostring(target or "echo"):lower():match("^%s*(.-)%s*$")
+  if channel == "group" then channel = "gtell" end
+
+  if channel == "copy" then
+    if type(setClipboardText) ~= "function" then
+      GCH.print_main("g_channels: clipboard support requires setClipboardText")
+      return false
+    end
+    local ok, err = pcall(setClipboardText, report_text)
+    if not ok then
+      GCH.print_main("g_channels: could not copy report text: " .. tostring(err))
+      return false
+    end
+    GCH.print_main("Copied gchan report text to clipboard")
+    return true
+  end
+
+  if channel == "echo" then
+    local rendered = type(item) == "table" and item.decho or nil
+    if not rendered or rendered == "" then
+      rendered = GCH.message_markup_to_decho(report_text, GCH.state.gchan_color)
+    end
+    GCH.echo_gchan_main(rendered, report_text)
+    return true
+  end
+
+  if channel ~= "clan" and channel ~= "say" and channel ~= "gtell" then
+    GCH.print_main("g_channels: unsupported report target " .. tostring(target or ""))
+    return false
+  end
+  if type(send) ~= "function" then
+    GCH.print_main("g_channels: send is unavailable")
+    return false
+  end
+
+  send(channel .. " " .. report_text, false)
+  return true
+end
+
+function GCH.gchan_report_popup_menu(item)
+  return {
+    function() GCH.report_gchan(item, "echo") end,
+    "",
+    function() GCH.report_gchan(item, "clan") end,
+    "",
+    function() GCH.report_gchan(item, "say") end,
+    "",
+    function() GCH.report_gchan(item, "gtell") end,
+    "",
+    function() GCH.report_gchan(item, "copy") end,
+  }, {
+    "Left-click: echo this gchan line\nRight-click for channels or copy",
+    "Echo",
+    "",
+    "Clan",
+    "",
+    "Say",
+    "",
+    "Group",
+    "",
+    "Copy",
+  }
 end
 
 function GCH.render_history_line(msg, ts, channel_key, rendered_decho)
@@ -965,12 +1043,36 @@ function GCH.timestamp_prefix(ts)
   return prefix, prefix_decho
 end
 
+function GCH.echo_gchan_report_popup(con, item, prefix_decho)
+  if type(dechoPopup) ~= "function" then return false end
+
+  local rendered = item.decho
+  if not rendered or rendered == "" then
+    rendered = GCH.message_markup_to_decho(item.msg, GCH.state.gchan_color)
+  end
+  if not rendered or rendered == "" then return false end
+
+  local commands, hints = GCH.gchan_report_popup_menu(item)
+  dechoPopup(
+    con.name,
+    tostring(prefix_decho or "") .. rendered,
+    commands,
+    hints,
+    true
+  )
+  if con.decho then con:decho("\n")
+  else decho(con.name, "\n") end
+  return true
+end
+
 function GCH.console_echo(con, item)
   if not con or not item then return end
 
   local prefix_plain, prefix_decho = GCH.timestamp_prefix(item.ts)
 
-  if item.decho and con.decho then
+  if item.channel_key == "gchan" and GCH.echo_gchan_report_popup(con, item, prefix_decho) then
+    -- Popup renderer wrote the complete line.
+  elseif item.decho and con.decho then
     con:decho(prefix_decho .. item.decho .. "\n")
   elseif item.decho then
     decho(con.name, prefix_decho .. item.decho .. "\n")

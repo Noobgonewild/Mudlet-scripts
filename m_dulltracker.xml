@@ -31,7 +31,7 @@
       <name>m_dulltracker_main</name>
       <packageName>m_dulltracker</packageName>
       <script><![CDATA[DULL = DULL or {}
-DULL.version = "1.3.0"
+DULL.version = "1.3.2"
 DULL.ids = DULL.ids or { triggers = {}, timers = {} }
 DULL.ids.triggers = DULL.ids.triggers or {}
 DULL.ids.handlers = DULL.ids.handlers or {}
@@ -86,14 +86,6 @@ end
 
 function DULL.today_key()
   return os.date("%Y-%m-%d")
-end
-
-function DULL.seconds_until_next_day()
-  local now = os.time()
-  local t = os.date("*t", now)
-  t.hour, t.min, t.sec = 0, 0, 0
-  t.day = t.day + 1
-  return math.max(60, os.difftime(os.time(t), now) + 2)
 end
 
 function DULL.reset_session_data()
@@ -735,6 +727,7 @@ function DULL.capture_kill_method(info, m)
   kill.finish_method = method
   if method ~= "" then kill[method] = 1 end
   if info.mob_index and DULL.trim(m[info.mob_index]) ~= "" then kill.mob_name = DULL.trim(m[info.mob_index]) end
+  if info.weapon_index and DULL.trim(m[info.weapon_index]) ~= "" then kill.wielded_weapon = DULL.trim(m[info.weapon_index]) end
   DULL.bump_kill_finalize()
 end
 
@@ -2424,7 +2417,7 @@ function DULL.auto_clear_session_if_needed()
   if DULL.sessionDay == today then return false end
 
   DULL.reset_session_data()
-  DULL.save_state_now()
+  DULL.schedule_save(0.25)
   DULL.note("Session auto-cleared for " .. today)
   return true
 end
@@ -2434,11 +2427,9 @@ function DULL.schedule_session_rollover()
   DULL.ids.session_rollover = nil
   if DULL.settings.sessionMode ~= "auto" then return end
 
-  DULL.ids.session_rollover = tempTimer(DULL.seconds_until_next_day(), function()
-    DULL.ids.session_rollover = nil
+  DULL.ids.session_rollover = tempTimer(60, function()
     DULL.auto_clear_session_if_needed()
-    DULL.schedule_session_rollover()
-  end)
+  end, true)
 end
 
 function DULL.set_session_mode(mode)
@@ -2449,7 +2440,7 @@ function DULL.set_session_mode(mode)
   if not cleared then DULL.save_state_now() end
   DULL.schedule_session_rollover()
   if mode == "auto" then
-    DULL.note("session mode set to: auto (daily clear at local midnight)")
+    DULL.note("session mode set to: auto (daily clear just after local midnight)")
   else
     DULL.note("session mode set to: manual")
   end
@@ -2488,7 +2479,7 @@ end
 
 function DULL.clear_session()
   DULL.reset_session_data()
-  DULL.save_state_now()
+  DULL.schedule_save(0.25)
   DULL.note("Session cleared")
 end
 
@@ -2610,7 +2601,9 @@ function DULL.install_triggers()
     { id = "db_kill_blessing", pattern = "^You receive ([0-9,]+) bonus experience points? from your daily blessing\\.$", action = "kill_part", kill_field = "xp_blessing" },
     { id = "db_kill_gold", pattern = "^You get ([0-9,]+) gold coins? from .* of (.*)\\.$", action = "kill_part", kill_field = "gold", mob_index = 3, raw_index = 2 },
     { id = "db_kill_tp", pattern = "^You killed a Trivia Point bonus mob!! Trivia point added\\.$", action = "kill_part", kill_field = "tp", amount = 1 },
-    { id = "db_kill_vorpal", pattern = "^Deep magic stirs within .* and a strange glow surrounds .*!$", action = "kill_method", method = "vorpal" },
+    -- The preceding "Deep magic stirs within your weapon" line is only an
+    -- announcement. The actual vorpal proc is the decapitation line below.
+    { id = "db_kill_vorpal", pattern = "^Your (.+) glows brightly and almost decapitates (.+)\\.$", action = "kill_method", method = "vorpal", weapon_index = 2, mob_index = 3 },
     { id = "db_kill_banish", pattern = "^You look at (.*) very strangely\\.$", action = "kill_method", method = "banishment", mob_index = 2 },
     { id = "db_kill_assassinate", pattern = "^You assassinate (.*) with cold efficiency\\.$", action = "kill_method", method = "assassinate", mob_index = 2 },
     { id = "db_kill_slit", pattern = "^You sneak behind (.*) and slit (?:his|her|its) throat\\.$", action = "kill_method", method = "slit", mob_index = 2 },
@@ -2818,7 +2811,7 @@ DULL.help_sections = {
       { cmd = "dull reports", desc = "Show the master switch and every activity report setting." },
       { cmd = "dull highlight y|n", desc = "Toggle highlight triggers." },
       { cmd = "dull mode normal|focused", desc = "Select the active gag profile." },
-      { cmd = "dull session manual|auto", desc = "Manual keeps the current session until cleared; auto clears it daily at local midnight." },
+      { cmd = "dull session manual|auto", desc = "Manual keeps the current session until cleared; auto clears it within a minute after local midnight." },
       { cmd = "dull timestamp on|off", desc = "Show or hide timestamps on timer history rows and clicked history reports." },
       { cmd = "dull <normal|focused> <xp|gold|tax|loot|sac|rare> y|n", desc = "Set a gag in a profile." },
       { cmd = "dull settings", desc = "Show current settings." },

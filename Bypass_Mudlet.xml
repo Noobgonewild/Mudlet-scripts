@@ -242,18 +242,18 @@ local function commands_for_level(level, slots)
     end
     return { "cougarian", "cataclysm" }
   elseif level >= 150 and level <= 174 then
-    if slots == 4 then
+    if slots >= 4 then
       return { "cataclysm", "cougarian", "deadlights", "helegear" }
     end
     return { "cataclysm", "cougarian" }
   elseif level >= 175 and level <= 179 then
-    if slots == 4 then
-      return { "deadlights", "cataclysm", "deadlights", "helegear" }
+    if slots >= 4 then
+      return { "deadlights", "cataclysm", "shadowsend", "helegear" }
     end
     return { "deadlights", "cataclysm" }
   elseif level >= 180 and level <= 200 then
-    if slots == 4 then
-      return { "partroxis", "nine hells", "deadlights", "helegear" }
+    if slots >= 4 then
+      return { "partroxis", "nine hells", "deadlights", "shadowsend" }
     end
     return { "partroxis", "nine hells" }
   elseif level == 201 then

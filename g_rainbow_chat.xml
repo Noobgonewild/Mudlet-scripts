@@ -2,8 +2,8 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!--
-    Rainbow Chat v1.0
-    Automatically adds Aardwolf @ color codes to outgoing chat messages.
+    Rainbow Chat v2.0
+    Automatically adds Aardwolf xterm color codes to outgoing chat.
   -->
 
   <AliasPackage>
@@ -54,24 +54,66 @@ RainbowChat = RainbowChat or {}
 local DEFAULT_ENABLED = true
 local DEFAULT_MODE = "rainbow"
 
--- Hue order for the cycling styles.
+-- Palettes contain xterm-256 indexes and are emitted as the recommended
+-- three-digit @xNNN form. The hue palettes wrap smoothly at their ends.
 local RAINBOW_PALETTE = {
-  "@r", "@R", "@y", "@Y", "@g", "@G",
-  "@c", "@C", "@b", "@B", "@m", "@M",
+  196, 202, 208, 214, 220, 226,
+  190, 154, 118, 82, 46,
+  47, 48, 49, 50, 51,
+  45, 39, 33, 27, 21,
+  57, 93, 129, 165, 201,
+  200, 199, 198, 197,
 }
 
-local BRIGHT_PALETTE = { "@R", "@Y", "@G", "@C", "@B", "@M" }
-local DARK_PALETTE = { "@r", "@y", "@g", "@c", "@b", "@m" }
+local BRIGHT_PALETTE = {
+  203, 209, 215, 221, 227,
+  191, 155, 119, 83, 47,
+  48, 49, 50, 51, 45,
+  39, 33, 69, 99, 135,
+  171, 207, 206, 205, 204,
+}
 
--- Approximate perceived luminance, darkest to lightest. The reverse is
--- used by fadedown. These twelve colors deliberately omit white and gray.
+local DARK_PALETTE = {
+  124, 130, 136, 142, 106, 70,
+  34, 35, 36, 37, 31, 25,
+  19, 55, 91, 127, 126, 125,
+}
+
+-- Chromatic colors arranged by approximate perceived luminance. fadedown
+-- uses the reverse. This gives short messages the whole dark-to-light range.
 local FADEUP_PALETTE = {
-  "@b", "@B", "@r", "@m", "@R", "@M",
-  "@g", "@c", "@y", "@G", "@C", "@Y",
+  52, 55, 124, 125, 93, 128, 163, 165,
+  200, 25, 28, 29, 63, 32, 132, 133,
+  168, 100, 67, 68, 36, 207, 172, 70,
+  174, 40, 209, 41, 74, 75, 143, 178,
+  179, 77, 78, 47, 148, 114, 115, 116,
+  51, 220, 118, 85, 154, 121, 190, 191,
 }
+
+-- Gradient mode rotates between families. Each individual message stays in
+-- one family instead of crossing the full rainbow. Avoid the very dark
+-- 16-21 range and the overly saturated 160-165 and 196-201 ranges.
+local GRADIENT_PALETTES = {
+  { name = "green", colors = { 193, 157, 120, 84, 46, 41 } },
+  { name = "yellow", colors = { 136, 142, 178, 184, 220, 221 } },
+  { name = "sunset", colors = { 208, 209, 210, 211, 212, 213 } },
+  { name = "blue", colors = { 153, 117, 81, 45, 39, 33 } },
+  { name = "purple", colors = { 183, 177, 171, 135, 99, 63 } },
+}
+
+-- Chaos uses every usable part of the xterm cube except the ranges already
+-- excluded for being too dark or overly saturated. Colors are shuffled anew
+-- for each message and dealt without replacement.
+local CHAOS_PALETTE = {}
+for index = 22, 231 do
+  if not (index >= 160 and index <= 165)
+    and not (index >= 196 and index <= 201) then
+    CHAOS_PALETTE[#CHAOS_PALETTE + 1] = index
+  end
+end
 
 local BASE_MODES = {
-  "rainbow", "words", "bright", "dark", "fadeup", "fadedown",
+  "rainbow", "words", "bright", "dark", "fadeup", "fadedown", "gradient", "chaos",
 }
 
 local VALID_MODES = {
@@ -81,6 +123,8 @@ local VALID_MODES = {
   dark = true,
   fadeup = true,
   fadedown = true,
+  gradient = true,
+  chaos = true,
   random = true,
 }
 
@@ -184,9 +228,13 @@ local function utf8CharacterLength(firstByte)
   return 1
 end
 
+local function xtermCode(index)
+  return string.format("@x%03d", index)
+end
+
 -- Break the message into visible UTF-8 characters. Existing Aardwolf color
--- tags are removed because this addon replaces them. @@ remains one visible
--- literal-at token so generated tags never split it apart.
+-- tags, including @xNNN, are removed because this addon replaces them. @@
+-- remains one visible literal-at token so generated tags never split it apart.
 local function tokenize(message)
   local tokens = {}
   local index = 1
@@ -198,6 +246,15 @@ local function tokenize(message)
     if first == "@" and second == "@" then
       tokens[#tokens + 1] = { text = "@@", space = false }
       index = index + 2
+    elseif first == "@" and second == "x" then
+      local digits = message:sub(index + 2):match("^(%d%d?%d?)")
+      local colorIndex = tonumber(digits)
+      if colorIndex and colorIndex >= 0 and colorIndex <= 256 then
+        index = index + 2 + #digits
+      else
+        tokens[#tokens + 1] = { text = first, space = false }
+        index = index + 1
+      end
     elseif first == "@" and AARD_COLOR_CODES[second] then
       index = index + 2
     else
@@ -235,7 +292,7 @@ local function colorCharacters(tokens, palette)
     else
       position = position + 1
       local paletteIndex = ((position - 1) % #palette) + 1
-      output[#output + 1] = palette[paletteIndex]
+      output[#output + 1] = xtermCode(palette[paletteIndex])
       output[#output + 1] = token.text
     end
   end
@@ -256,7 +313,7 @@ local function colorWords(tokens, palette)
       if atWordStart then
         word = word + 1
         local paletteIndex = ((word - 1) % #palette) + 1
-        output[#output + 1] = palette[paletteIndex]
+        output[#output + 1] = xtermCode(palette[paletteIndex])
         atWordStart = false
       end
       output[#output + 1] = token.text
@@ -279,8 +336,8 @@ local function fadePaletteIndex(position, count, paletteSize)
     return 1
   end
 
-  -- Short messages still span the complete dark/light range. At twelve
-  -- characters all twelve colors are used; at twenty-four each is used twice.
+  -- Short messages still span the complete palette. Longer messages divide
+  -- their characters into balanced color runs instead of repeating it.
   if count <= paletteSize then
     return math.floor(((position - 1) * (paletteSize - 1)) / (count - 1)) + 1
   end
@@ -300,7 +357,31 @@ local function colorFade(tokens, palette)
       position = position + 1
       local paletteIndex = fadePaletteIndex(position, count, #palette)
       if paletteIndex ~= lastPaletteIndex then
-        output[#output + 1] = palette[paletteIndex]
+        output[#output + 1] = xtermCode(palette[paletteIndex])
+        lastPaletteIndex = paletteIndex
+      end
+      output[#output + 1] = token.text
+    end
+  end
+
+  return table.concat(output)
+end
+
+-- Gradient position includes whitespace even though whitespace does not get a
+-- color tag. This keeps the visual transition continuous across the complete
+-- line and naturally aligns color runs at word boundaries in short phrases.
+local function colorGradient(tokens, palette)
+  local output = {}
+  local count = #tokens
+  local lastPaletteIndex = nil
+
+  for position, token in ipairs(tokens) do
+    if token.space then
+      output[#output + 1] = token.text
+    else
+      local paletteIndex = fadePaletteIndex(position, count, #palette)
+      if paletteIndex ~= lastPaletteIndex then
+        output[#output + 1] = xtermCode(palette[paletteIndex])
         lastPaletteIndex = paletteIndex
       end
       output[#output + 1] = token.text
@@ -319,6 +400,47 @@ local function nextRandomIndex(maximum)
   return (RainbowChat.randomState % maximum) + 1
 end
 
+local function shuffledChaosPalette()
+  local shuffled = {}
+  for index, color in ipairs(CHAOS_PALETTE) do
+    shuffled[index] = color
+  end
+
+  for index = #shuffled, 2, -1 do
+    local swapIndex = nextRandomIndex(index)
+    shuffled[index], shuffled[swapIndex] = shuffled[swapIndex], shuffled[index]
+  end
+  return shuffled
+end
+
+local function colorChaos(tokens)
+  local output = {}
+  local shuffled = shuffledChaosPalette()
+  local colorPosition = #shuffled
+  local previousColor = nil
+
+  for _, token in ipairs(tokens) do
+    if token.space then
+      output[#output + 1] = token.text
+    else
+      if colorPosition == 0 then
+        shuffled = shuffledChaosPalette()
+        colorPosition = #shuffled
+      end
+      if shuffled[colorPosition] == previousColor and colorPosition > 1 then
+        shuffled[colorPosition], shuffled[colorPosition - 1] =
+          shuffled[colorPosition - 1], shuffled[colorPosition]
+      end
+      previousColor = shuffled[colorPosition]
+      output[#output + 1] = xtermCode(previousColor)
+      output[#output + 1] = token.text
+      colorPosition = colorPosition - 1
+    end
+  end
+
+  return table.concat(output)
+end
+
 local function randomMode()
   local selected = BASE_MODES[nextRandomIndex(#BASE_MODES)]
 
@@ -335,6 +457,17 @@ local function randomMode()
   return selected
 end
 
+local function nextGradientPalette()
+  local index = (tonumber(RainbowChat.gradientIndex) or 0) + 1
+  if index > #GRADIENT_PALETTES then
+    index = 1
+  end
+
+  RainbowChat.gradientIndex = index
+  RainbowChat.lastGradientName = GRADIENT_PALETTES[index].name
+  return GRADIENT_PALETTES[index].colors
+end
+
 
 function RainbowChat.colorize(message, requestedMode)
   local mode = tostring(requestedMode or RainbowChat.state.mode or DEFAULT_MODE):lower()
@@ -346,19 +479,30 @@ function RainbowChat.colorize(message, requestedMode)
   end
 
   local tokens = tokenize(tostring(message or ""))
+  local colored
   if mode == "words" then
-    return colorWords(tokens, RAINBOW_PALETTE), mode
+    colored = colorWords(tokens, RAINBOW_PALETTE)
   elseif mode == "bright" then
-    return colorCharacters(tokens, BRIGHT_PALETTE), mode
+    colored = colorCharacters(tokens, BRIGHT_PALETTE)
   elseif mode == "dark" then
-    return colorCharacters(tokens, DARK_PALETTE), mode
+    colored = colorCharacters(tokens, DARK_PALETTE)
   elseif mode == "fadeup" then
-    return colorFade(tokens, FADEUP_PALETTE), mode
+    colored = colorFade(tokens, FADEUP_PALETTE)
   elseif mode == "fadedown" then
-    return colorFade(tokens, reversedCopy(FADEUP_PALETTE)), mode
+    colored = colorFade(tokens, reversedCopy(FADEUP_PALETTE))
+  elseif mode == "gradient" then
+    colored = colorGradient(tokens, nextGradientPalette())
+  elseif mode == "chaos" then
+    colored = colorChaos(tokens)
+  else
+    colored = colorCharacters(tokens, RAINBOW_PALETTE)
+    mode = "rainbow"
   end
 
-  return colorCharacters(tokens, RAINBOW_PALETTE), "rainbow"
+  if visibleCount(tokens) > 0 then
+    colored = colored .. "@w"
+  end
+  return colored, mode
 end
 
 local function sendChat(prefix, message)
@@ -388,7 +532,9 @@ end
 
 local function mudletPreview(message, mode)
   local colored, selectedMode = RainbowChat.colorize(message, mode)
-  local rendered = colored:gsub("@([%a])", function(code)
+  local rendered = colored:gsub("@x(%d%d%d)", function(index)
+    return string.format("<ansi_%03d>", tonumber(index))
+  end):gsub("@([%a])", function(code)
     local color = AARD_TO_MUDLET_COLOR[code]
     return color and ("<" .. color .. ">") or ("@" .. code)
   end)
@@ -403,12 +549,24 @@ local function showHelp()
   note("rainbow raw <complete command> - send one command without coloring")
   note("Modes: " .. table.concat(BASE_MODES, ", ") .. ", random")
   note("Mode examples:")
-  for _, mode in ipairs(BASE_MODES) do
-    local preview = mudletPreview("Rainbow chat example", mode)
-    note(string.format("  %-8s - %s", mode, preview))
-  end
   local previousRandomState = RainbowChat.randomState
   local previousLastRandomMode = RainbowChat.lastRandomMode
+  for _, mode in ipairs(BASE_MODES) do
+    if mode == "gradient" then
+      local previousGradientIndex = RainbowChat.gradientIndex
+      local previousGradientName = RainbowChat.lastGradientName
+      for index, gradient in ipairs(GRADIENT_PALETTES) do
+        RainbowChat.gradientIndex = index - 1
+        local preview = mudletPreview("Rainbow chat example", mode)
+        note(string.format("  gradient/%-6s - %s", gradient.name, preview))
+      end
+      RainbowChat.gradientIndex = previousGradientIndex
+      RainbowChat.lastGradientName = previousGradientName
+    else
+      local preview = mudletPreview("Rainbow chat example", mode)
+      note(string.format("  %-8s - %s", mode, preview))
+    end
+  end
   local randomPreview, selectedMode = mudletPreview("Rainbow chat example", "random")
   RainbowChat.randomState = previousRandomState
   RainbowChat.lastRandomMode = previousLastRandomMode

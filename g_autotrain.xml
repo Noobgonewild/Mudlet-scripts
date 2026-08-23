@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!-- ============================================================
-       Gizmmo_AutoTrainer v6.6 – Mudlet Port
+       Gizmmo_AutoTrainer v6.7 – Mudlet Port
        Original Author: Gizmmo (MUSHclient plugin)
        Ported to Mudlet format
 
@@ -199,9 +199,9 @@
         <name>AutoTrainerScript</name>
         <script><![CDATA[
 ---------------------------------------------------------------------------
--- AutoTrainer v6.6 (Mudlet Port)
--- Changes from v6.6:
--- 1. Persistence migrated to file-based state stored in the Mudlet home dir.
+-- AutoTrainer v6.7 (Mudlet Port)
+-- Changes from v6.7:
+-- 1. Training profiles are selected per subclass and inherit their class template.
 ---------------------------------------------------------------------------
 
 if not string.trim then
@@ -252,6 +252,25 @@ local CLASS_WEIGHTS = {
   paladin = { Constitution = 90, Intelligence = 90, Wisdom = 60, Strength = 30, Dexterity = 30, Luck = 25 },
 }
 local CLASSES = { "warrior", "thief", "mage", "cleric", "psi", "ranger", "paladin" }
+
+local SUBCLASSES_BY_CLASS = {
+  warrior = { "barbarian", "soldier", "blacksmith" },
+  thief   = { "assassin", "ninja", "bandit", "venomist" },
+  mage    = { "sorcerer", "elementalist", "enchanter" },
+  cleric  = { "priest", "oracle", "harmer" },
+  psi     = { "mentalist", "necromancer", "navigator" },
+  ranger  = { "crafter", "hunter", "shaman" },
+  paladin = { "guardian", "knight", "avenger" },
+}
+
+local SUBCLASS_TO_CLASS = {}
+local SUBCLASSES = {}
+for _, class_name in ipairs(CLASSES) do
+  for _, subclass_name in ipairs(SUBCLASSES_BY_CLASS[class_name]) do
+    SUBCLASS_TO_CLASS[subclass_name] = class_name
+    table.insert(SUBCLASSES, subclass_name)
+  end
+end
 
 -- Cost brackets
 local COST_BRACKETS = {
@@ -418,16 +437,22 @@ local function persist_load()
     if type(loaded[1]) == "table"
       and type(loaded.primary) ~= "string"
       and type(loaded.primary_manual) ~= "boolean"
+      and type(loaded.subclass) ~= "string"
+      and type(loaded.subclass_manual) ~= "boolean"
       and type(loaded.debug_on) ~= "boolean"
       and type(loaded.custom_weights) ~= "table"
+      and type(loaded.subclass_weights) ~= "table"
     then
       loaded = resolve_table_save_refs(loaded[1], loaded, {})
     end
 
     if type(loaded.primary) == "string"
       or type(loaded.primary_manual) == "boolean"
+      or type(loaded.subclass) == "string"
+      or type(loaded.subclass_manual) == "boolean"
       or type(loaded.debug_on) == "boolean"
       or type(loaded.custom_weights) == "table"
+      or type(loaded.subclass_weights) == "table"
     then
       return loaded
     end
@@ -474,11 +499,14 @@ end
 state = {
   primary        = "warrior",
   primary_manual = false,     -- true when user explicitly set via "autotrain primary"
+  subclass       = "",
+  subclass_manual = false,    -- true when user explicitly set via "autotrain subclass"
   debug_on       = true,
-  convert_pracs  = false,     -- when true, send "train convertall" before autotrain run/check
+  convert_pracs  = false,     -- when true, send "train convertall" before a live autotrain run
   loop_trains    = 0,
   exec_mode      = "run",
-  custom_weights = {},
+  custom_weights = {},        -- legacy/custom class templates inherited by subclasses
+  subclass_weights = {},      -- persisted subclass-specific profiles
   _timer_id      = 0,
   _fb_tries      = 0,
 }
@@ -498,6 +526,12 @@ local function normalize_class(s)
   return map[s]
 end
 
+local function normalize_subclass(s)
+  s = (s or ""):lower()
+  s = s:gsub("^%s+", ""):gsub("%s+$", "")
+  return SUBCLASS_TO_CLASS[s] and s or nil
+end
+
 local function gmcp_class_via_handler()
   if type(gmcp) ~= "table" then return nil end
   if type(gmcp.char) ~= "table" then return nil end
@@ -509,15 +543,27 @@ local function gmcp_class_via_handler()
   return nil
 end
 
+local function gmcp_subclass_via_handler()
+  if type(gmcp) ~= "table" then return nil end
+  if type(gmcp.char) ~= "table" then return nil end
+  if type(gmcp.char.base) ~= "table" then return nil end
+  local subclass = gmcp.char.base.subclass or gmcp.char.base.Subclass or gmcp.char.base.SUBCLASS
+  if type(subclass) == "string" and subclass ~= "" then
+    return normalize_subclass(subclass)
+  end
+  return nil
+end
+
 local function debug_gmcp_snapshot(context)
   if not (state and state.debug_on) then return end
   local has_gmcp = (type(gmcp) == "table")
   local has_char = has_gmcp and (type(gmcp.char) == "table")
   local has_base = has_char and (type(gmcp.char.base) == "table")
   local class = has_base and (gmcp.char.base.class or "nil") or "nil"
-  dbg(string.format("GMCP snapshot (%s): gmcp=%s char=%s base=%s class=%s",
+  local subclass = has_base and (gmcp.char.base.subclass or "nil") or "nil"
+  dbg(string.format("GMCP snapshot (%s): gmcp=%s char=%s base=%s class=%s subclass=%s",
     context or "unknown",
-    tostring(has_gmcp), tostring(has_char), tostring(has_base), tostring(class)))
+    tostring(has_gmcp), tostring(has_char), tostring(has_base), tostring(class), tostring(subclass)))
 end
 
 -- =======================================================================================
@@ -530,13 +576,17 @@ function save_all_settings()
   persist_save({
     primary = state.primary,
     primary_manual = state.primary_manual,
+    subclass = state.subclass,
+    subclass_manual = state.subclass_manual,
     debug_on = state.debug_on,
     convert_pracs = (state.convert_pracs == true),
     custom_weights = state.custom_weights or {},
+    subclass_weights = state.subclass_weights or {},
   })
 
-  dbg(string.format("Settings saved: primary=%s manual=%s debug=%s",
-    state.primary, tostring(state.primary_manual), tostring(state.debug_on)))
+  dbg(string.format("Settings saved: primary=%s manual=%s subclass=%s subclass_manual=%s debug=%s",
+    state.primary, tostring(state.primary_manual), tostring(state.subclass),
+    tostring(state.subclass_manual), tostring(state.debug_on)))
 end
 
 function load_all_settings()
@@ -544,9 +594,12 @@ function load_all_settings()
 
   state.primary        = (type(loaded.primary) == "string" and loaded.primary ~= "") and loaded.primary or "warrior"
   state.primary_manual = (loaded.primary_manual == true)
+  state.subclass       = normalize_subclass(loaded.subclass) or ""
+  state.subclass_manual = (loaded.subclass_manual == true and state.subclass ~= "")
   state.debug_on       = (loaded.debug_on == nil) and true or (loaded.debug_on == true)
   state.convert_pracs  = (loaded.convert_pracs == true)
   state.custom_weights = type(loaded.custom_weights) == "table" and loaded.custom_weights or {}
+  state.subclass_weights = type(loaded.subclass_weights) == "table" and loaded.subclass_weights or {}
 
   local file_debug = load_debug_state_file()
   if type(file_debug) == "boolean" then
@@ -561,8 +614,21 @@ function load_all_settings()
     end
   end
 
-  dbg(string.format("Settings loaded: primary=%s manual=%s debug=%s",
-    state.primary, tostring(state.primary_manual), tostring(state.debug_on)))
+  if not state.subclass_manual then
+    local gs = gmcp_subclass_via_handler()
+    if gs and SUBCLASS_TO_CLASS[gs] == state.primary then
+      state.subclass = gs
+    else
+      state.subclass = ""
+    end
+  elseif SUBCLASS_TO_CLASS[state.subclass] ~= state.primary then
+    state.primary = SUBCLASS_TO_CLASS[state.subclass]
+    state.primary_manual = true
+  end
+
+  dbg(string.format("Settings loaded: primary=%s manual=%s subclass=%s subclass_manual=%s debug=%s",
+    state.primary, tostring(state.primary_manual), tostring(state.subclass),
+    tostring(state.subclass_manual), tostring(state.debug_on)))
 end
 
 -- =======================================================================================
@@ -572,6 +638,7 @@ end
 function AutoTrain_OnGMCP()
   debug_gmcp_snapshot("gmcp event")
   local gc = gmcp_class_via_handler()
+  local gs = gmcp_subclass_via_handler()
   if not gc then
     local raw = (type(gmcp) == "table" and type(gmcp.char) == "table"
       and type(gmcp.char.base) == "table") and gmcp.char.base.class or nil
@@ -583,18 +650,49 @@ function AutoTrain_OnGMCP()
     return
   end
 
-  -- If user manually set a primary, GMCP does NOT override
+  local changed = false
+
+  -- If user manually set a primary, GMCP does NOT override it.
   if state.primary_manual then
     dbg("GMCP class confirmed: " .. gc .. " (manual override active: " .. state.primary .. ")")
-    return
-  end
-
-  if gc ~= state.primary then
+  elseif gc ~= state.primary then
     state.primary = gc
-    save_all_settings()
-    okm("Primary class updated from GMCP: " .. gc)
+    changed = true
   else
     dbg("GMCP class confirmed: " .. gc)
+  end
+
+  if not gs then
+    local raw = (type(gmcp) == "table" and type(gmcp.char) == "table"
+      and type(gmcp.char.base) == "table") and gmcp.char.base.subclass or nil
+    if type(raw) == "string" and raw ~= "" then
+      warn("GMCP subclass not recognized: " .. raw .. ". Set with 'autotrain subclass <subclass>'.")
+    else
+      dbg("GMCP subclass not available yet.")
+    end
+    if not state.subclass_manual and state.subclass ~= "" then
+      state.subclass = ""
+      changed = true
+    end
+  elseif state.subclass_manual then
+    dbg("GMCP subclass confirmed: " .. gs .. " (manual override active: " .. state.subclass .. ")")
+  elseif SUBCLASS_TO_CLASS[gs] ~= state.primary then
+    if state.subclass ~= "" then
+      state.subclass = ""
+      changed = true
+    end
+    warn(string.format("GMCP subclass %s does not belong to active class %s.", gs, state.primary))
+  elseif gs ~= state.subclass then
+    state.subclass = gs
+    changed = true
+  else
+    dbg("GMCP subclass confirmed: " .. gs)
+  end
+
+  if changed then
+    save_all_settings()
+    okm(string.format("Training profile updated from GMCP: %s / %s",
+      state.primary, state.subclass ~= "" and state.subclass or "unknown subclass"))
   end
 end
 
@@ -602,19 +700,32 @@ end
 -- STAT / WEIGHT HELPERS
 -- =======================================================================================
 
-local function get_weights_for_class(class_name)
+local function get_class_template(class_name)
   if state.custom_weights and state.custom_weights[class_name] then
-    return state.custom_weights[class_name]
+    return state.custom_weights[class_name], "custom class template"
   end
-  return CLASS_WEIGHTS[class_name] or CLASS_WEIGHTS["warrior"]
+  return CLASS_WEIGHTS[class_name] or CLASS_WEIGHTS["warrior"], "class template"
 end
 
-local function is_customized(class_name)
-  return (state.custom_weights and state.custom_weights[class_name] ~= nil)
+local function get_weights_for_subclass(subclass_name)
+  local subclass = normalize_subclass(subclass_name)
+  if not subclass then return nil, nil, nil end
+
+  local class_name = SUBCLASS_TO_CLASS[subclass]
+  if state.subclass_weights and state.subclass_weights[subclass] then
+    return state.subclass_weights[subclass], "customized", class_name
+  end
+
+  local template, source = get_class_template(class_name)
+  return template, "inherited " .. source, class_name
+end
+
+local function is_subclass_customized(subclass_name)
+  return state.subclass_weights and state.subclass_weights[subclass_name] ~= nil
 end
 
 local function weights()
-  return get_weights_for_class(state.primary)
+  return get_weights_for_subclass(state.subclass)
 end
 
 local function get_primaries_for_class(class_name)
@@ -633,6 +744,32 @@ local function is_primary_for_class(stat, class_name)
     if s == stat then return true end
   end
   return false
+end
+
+local function get_primaries_for_subclass(subclass_name)
+  local class_name = SUBCLASS_TO_CLASS[subclass_name]
+  if not class_name then return {} end
+  return get_primaries_for_class(class_name)
+end
+
+local function is_primary_for_subclass(stat, subclass_name)
+  for _, s in ipairs(get_primaries_for_subclass(subclass_name)) do
+    if s == stat then return true end
+  end
+  return false
+end
+
+local function require_active_subclass()
+  local subclass = normalize_subclass(state.subclass)
+  if not subclass then
+    warn("No active subclass is available. Wait for GMCP or use 'autotrain subclass <subclass>'.")
+    return nil
+  end
+  if SUBCLASS_TO_CLASS[subclass] ~= state.primary then
+    warn(string.format("Active subclass %s does not belong to class %s.", subclass, state.primary))
+    return nil
+  end
+  return subclass
 end
 
 local function bracket_for(val)
@@ -769,12 +906,14 @@ end
 function PlanAndExecuteBatch()
   local is_check = (state.exec_mode == "check")
   local sessions = tonumber(state.loop_trains or 0) or 0
+  local active_subclass = require_active_subclass()
+  if not active_subclass then return end
 
   if is_check then
     safe_cecho("<cyan>------------------------------------------------------\n")
     sim_msg("ANALYSIS START")
     sim_msg("Trains Available: " .. sessions)
-    sim_msg("Strategy: " .. state.primary)
+    sim_msg(string.format("Strategy: %s (%s template)", active_subclass, state.primary))
   end
 
   if sessions <= 0 then
@@ -798,7 +937,7 @@ function PlanAndExecuteBatch()
     caps[s] = mx
   end
 
-  local primary_stats = get_primaries_for_class(state.primary)
+  local primary_stats = get_primaries_for_subclass(active_subclass)
   local benchmark_cost = 999
   for _, ps in ipairs(primary_stats) do
     local p_cost = eff_cost(ps, sim[ps], adj[ps])
@@ -820,7 +959,7 @@ function PlanAndExecuteBatch()
     local cur = sim[stat]
     local cost_now, bracket_end = eff_cost(stat, cur, adj[stat])
 
-    if not is_primary_for_class(stat, state.primary) and cost_now > benchmark_cost then
+    if not is_primary_for_subclass(stat, active_subclass) and cost_now > benchmark_cost then
       temp_caps[stat] = cur
     else
       if sessions < cost_now then
@@ -901,19 +1040,19 @@ end
 -- WEIGHTS MANAGEMENT
 -- =======================================================================================
 
-function DisplayWeights(class_name)
-  local class = normalize_class(class_name)
-  if not class then warn("Unknown class: " .. class_name) return end
+function DisplayWeights(subclass_name)
+  local subclass = normalize_subclass(subclass_name)
+  if not subclass then warn("Unknown subclass: " .. tostring(subclass_name)) return end
 
-  local w = get_weights_for_class(class)
-  local custom_str = is_customized(class) and "Customized" or "Default"
+  local w, source, class = get_weights_for_subclass(subclass)
+  if not w then warn("No weight template is available for subclass: " .. subclass) return end
 
-  note(string.format("-- Weights for %s (%s) --", class, custom_str))
+  note(string.format("-- Weights for %s (%s; parent: %s) --", subclass, source, class))
   note(string.format("  %-13s %-8s %s", "Stat", "Weight", "Primary"))
   note(string.rep("-", 33))
   for _, stat in ipairs(STATS) do
-    local primary_marker = is_primary_for_class(stat, class) and "*" or ""
-    note(string.format("  %-13s %-8d %s", stat, w[stat], primary_marker))
+    local primary_marker = is_primary_for_subclass(stat, subclass) and "*" or ""
+    note(string.format("  %-13s %-8d %s", stat, tonumber(w[stat]) or 0, primary_marker))
   end
 end
 
@@ -924,10 +1063,11 @@ function HandleWeights(args)
   if sub == "show" then
     local target = string.trim(rest)
     if target == "" then
-      DisplayWeights(state.primary)
+      if not require_active_subclass() then return end
+      DisplayWeights(state.subclass)
     elseif target == "all" then
-      for _, class in ipairs(CLASSES) do
-        DisplayWeights(class)
+      for _, subclass in ipairs(SUBCLASSES) do
+        DisplayWeights(subclass)
         note("")
       end
     else
@@ -935,40 +1075,41 @@ function HandleWeights(args)
     end
 
   elseif sub == "set" then
-    local class_str, stat_str, val_str = string.match(rest, "^(%S+)%s+(%S+)%s+(%S+)$")
-    local class = normalize_class(class_str)
+    local subclass_str, stat_str, val_str = string.match(rest, "^(%S+)%s+(%S+)%s+(%S+)$")
+    local subclass = normalize_subclass(subclass_str)
 
     local stat_map = { str = "Strength", int = "Intelligence", wis = "Wisdom", dex = "Dexterity", con = "Constitution", lck = "Luck", luck = "Luck" }
     local stat = stat_map[(stat_str or ""):lower()] or (CLASS_WEIGHTS.warrior[stat_str] and stat_str)
 
     local val = tonumber(val_str)
-    if not (class and stat and val) then
-      warn("Usage: autotrain weights set <class> <stat> <value>")
+    if not (subclass and stat and val) then
+      warn("Usage: autotrain weights set <subclass> <stat> <value>")
       return
     end
 
-    if not state.custom_weights[class] then
-      state.custom_weights[class] = table.deepcopy(CLASS_WEIGHTS[class])
+    if not state.subclass_weights[subclass] then
+      local template = get_weights_for_subclass(subclass)
+      state.subclass_weights[subclass] = table.deepcopy(template)
     end
-    state.custom_weights[class][stat] = val
+    state.subclass_weights[subclass][stat] = val
     save_all_settings()
-    okm(string.format("Weight for %s -> %s set to %d.", class, stat, val))
+    okm(string.format("Weight for %s -> %s set to %d.", subclass, stat, val))
 
   elseif sub == "reset" then
     local target = string.trim(rest)
     if target == "all" then
-      state.custom_weights = {}
+      state.subclass_weights = {}
       save_all_settings()
-      okm("All class weights have been reset to default.")
+      okm("All subclass weights have been reset to their parent class templates.")
     else
-      local class = normalize_class(target)
-      if not class then warn("Unknown class: " .. target) return end
-      if state.custom_weights[class] then
-        state.custom_weights[class] = nil
+      local subclass = normalize_subclass(target)
+      if not subclass then warn("Unknown subclass: " .. target) return end
+      if is_subclass_customized(subclass) then
+        state.subclass_weights[subclass] = nil
         save_all_settings()
-        okm(class .. " weights have been reset to default.")
+        okm(subclass .. " weights have been reset to the " .. SUBCLASS_TO_CLASS[subclass] .. " template.")
       else
-        msg(class .. " is already using default weights.")
+        msg(subclass .. " is already inheriting the " .. SUBCLASS_TO_CLASS[subclass] .. " template.")
       end
     end
   else
@@ -982,22 +1123,25 @@ end
 
 function ShowHelp()
   local ok, err = pcall(function()
-    local prims = table.concat(get_primaries_for_class(state.primary), ", ")
+    local prims = table.concat(get_primaries_for_subclass(state.subclass), ", ")
 
     safe_cecho(string.format("\n<gold>-- %s --\n", "AutoTrainer Commands"))
     safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain",                       "Spends available trains based on weights."))
     safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain check",                  "Dry run. Shows what WOULD be trained."))
-    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain convertpracs on|off",    "Toggle sending 'train convertall' before run/check."))
-    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain weights show",           "Shows the weights for your current class."))
-    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain weights set <c> <st> <v>", "Sets a stat weight for a class."))
-    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain weights reset <c>",      "Resets a class's weights to default."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain convertpracs on|off",    "Toggle sending 'train convertall' before live runs."))
+    safe_cecho(string.format("<cyan>%-40s<ansiWhite>%s\n", "autotrain weights show [subclass|all]", "Shows subclass weights and their template source."))
+    safe_cecho(string.format("<cyan>%-40s<ansiWhite>%s\n", "autotrain weights set <sub> <st> <v>", "Sets a stat weight for one subclass."))
+    safe_cecho(string.format("<cyan>%-40s<ansiWhite>%s\n", "autotrain weights reset <sub|all>", "Resets subclass weights to parent templates."))
     safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain primary <class>",        "Sets your primary class (overrides GMCP)."))
+    safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain subclass <subclass>",    "Sets the active subclass (or use 'auto')."))
     safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain debug on|off",           "Toggles blue debug logs."))
     safe_cecho(string.format("<cyan>%-30s<ansiWhite>%s\n", "autotrain help",                   "Shows this help message."))
 
     safe_cecho(string.format("\n<gold>-- %s --\n", "Status"))
     local manual_tag = state.primary_manual and " [manual]" or " [gmcp]"
-    safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Primary Class :", state.primary .. " (Primaries: " .. prims .. ")" .. manual_tag))
+    local subclass_tag = state.subclass_manual and " [manual]" or " [gmcp]"
+    safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Primary Class :", state.primary .. manual_tag))
+    safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Subclass :", (state.subclass ~= "" and state.subclass or "unknown") .. " (Primaries: " .. prims .. ")" .. subclass_tag))
     safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Debug Mode :",   state.debug_on and "ON" or "OFF"))
     safe_cecho(string.format("<gold>%-15s<ansiWhite>%s\n", "Convert Pracs :", state.convert_pracs and "ON" or "OFF"))
   end)
@@ -1014,6 +1158,7 @@ function Cmd_AutoTrain(matches)
   local params = string.trim((matches and matches[2]) or "")
 
   if params == "" then
+    if not require_active_subclass() then return end
     if state.convert_pracs then
       send_no_echo("train convertall")
     end
@@ -1026,9 +1171,7 @@ function Cmd_AutoTrain(matches)
   b = string.trim((b or ""):lower())
 
   if a == "check" then
-    if state.convert_pracs then
-      send_no_echo("train convertall")
-    end
+    if not require_active_subclass() then return end
     StartTrainSnapshot("check")
     return
   end
@@ -1055,6 +1198,10 @@ function Cmd_AutoTrain(matches)
       local previous = state.primary
       state.primary = class
       state.primary_manual = true   -- mark as manually overridden
+      if SUBCLASS_TO_CLASS[state.subclass] ~= class then
+        state.subclass = ""
+        state.subclass_manual = false
+      end
       save_all_settings()
       if previous == class then
         okm("Primary class confirmed: " .. class .. " (manual override).")
@@ -1066,12 +1213,48 @@ function Cmd_AutoTrain(matches)
         state.primary_manual = false
         local gc = gmcp_class_via_handler()
         if gc then state.primary = gc end
+        if not state.subclass_manual then
+          local gs = gmcp_subclass_via_handler()
+          state.subclass = (gs and SUBCLASS_TO_CLASS[gs] == state.primary) and gs or ""
+        end
         save_all_settings()
         okm("Primary class reset to GMCP auto-detect: " .. state.primary)
       else
         warn("Unknown class. Valid: warrior, thief, mage, cleric, psi, ranger, paladin")
         warn("Use 'autotrain primary auto' to restore GMCP auto-detect.")
       end
+    end
+    return
+  end
+
+  if a == "subclass" then
+    local subclass = normalize_subclass(b)
+    if subclass then
+      local previous = state.subclass
+      state.subclass = subclass
+      state.subclass_manual = true
+      state.primary = SUBCLASS_TO_CLASS[subclass]
+      state.primary_manual = true
+      save_all_settings()
+      if previous == subclass then
+        okm("Subclass confirmed: " .. subclass .. " (manual override).")
+      else
+        okm(string.format("Subclass set to %s (parent: %s; manual override).",
+          subclass, state.primary))
+      end
+    elseif b == "auto" or b == "gmcp" or b == "reset" then
+      state.subclass_manual = false
+      state.primary_manual = false
+      local gc = gmcp_class_via_handler()
+      local gs = gmcp_subclass_via_handler()
+      if gc then state.primary = gc end
+      state.subclass = (gs and SUBCLASS_TO_CLASS[gs] == state.primary) and gs or ""
+      save_all_settings()
+      okm(string.format("Class/subclass reset to GMCP auto-detect: %s / %s",
+        state.primary, state.subclass ~= "" and state.subclass or "unknown"))
+    else
+      warn("Unknown subclass. Use 'autotrain weights show all' to list valid subclasses.")
+      warn("Use 'autotrain subclass auto' to restore GMCP auto-detect.")
     end
     return
   end
@@ -1114,7 +1297,7 @@ function AutoTrainer_Initialize()
     end
   end
 
-  -- Load saved settings (respects primary_manual flag)
+  -- Load saved settings (respects manual class/subclass overrides)
   load_all_settings()
 
   -- Seed defaults on first ever run (if no saved file exists yet)
@@ -1126,30 +1309,14 @@ function AutoTrainer_Initialize()
   -- Deferred init message so Mudlet UI is ready
   if type(tempTimer) == "function" then
     tempTimer(0.1, function()
-      msg("Loaded (v6.6). JSON: " .. json_module_name)
+      msg("Loaded (v6.7). JSON: " .. json_module_name)
       debug_gmcp_snapshot("init")
-
-      -- Auto-detect from GMCP only if not manually overridden
-      if not state.primary_manual then
-        local gc = gmcp_class_via_handler()
-        if gc then
-          if gc ~= state.primary then
-            state.primary = gc
-            save_all_settings()
-            okm("Detected class from GMCP: " .. gc)
-          else
-            dbg("GMCP class matches saved primary: " .. gc)
-          end
-        else
-          warn("GMCP class not detected. Use 'autotrain primary <class>' or check GMCP.")
-        end
-      else
-        dbg("Manual primary override active: " .. state.primary .. " (GMCP skipped)")
-      end
+      AutoTrain_OnGMCP()
     end)
   else
     -- Fallback if tempTimer not available
-    msg("Loaded (v6.6). JSON: " .. json_module_name)
+    msg("Loaded (v6.7). JSON: " .. json_module_name)
+    AutoTrain_OnGMCP()
   end
 
   -- Register GMCP event handler

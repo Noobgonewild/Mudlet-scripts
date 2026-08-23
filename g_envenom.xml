@@ -1,0 +1,1428 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>GEnvenom</name>
+      <script></script>
+      <command></command>
+      <packageName>GEnvenom</packageName>
+      <regex></regex>
+      <Alias isActive="yes" isFolder="no">
+        <name>genv</name>
+        <script><![CDATA[if GENVENOM and GENVENOM.command then
+    GENVENOM.command(matches[2] or "")
+else
+    cecho("<red>[GEnvenom] Startup failed; reinstall g_envenom.xml.<reset>\n")
+end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^genv(?:\s+(.*))?$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>GEnvenom</name>
+      <packageName>GEnvenom</packageName>
+      <script></script>
+      <eventHandlerList/>
+      <Script isActive="yes" isFolder="no">
+        <name>GEnvenom</name>
+        <packageName>GEnvenom</packageName>
+        <script><![CDATA[
+----------------------------------------------------------------------------------------------------
+-- GEnvenom
+-- ID-safe Envenom tracking and maintenance for Aardwolf/Mudlet.
+----------------------------------------------------------------------------------------------------
+
+GENVENOM = GENVENOM or {}
+local genv = GENVENOM
+
+genv.version = "1.0.4"
+genv.config = genv.config or {}
+genv.runtime = genv.runtime or {}
+genv.triggers = genv.triggers or {}
+genv.handlers = genv.handlers or {}
+genv.timers = genv.timers or {}
+genv.recovery = genv.recovery or {}
+
+local defaults = {
+    autoOwn = false,
+    autoBorrowed = false,
+    debug = false,
+    warningSeconds = 30,
+    maxAttempts = 3,
+    identifyTimeout = 7,
+    actionTimeout = 6,
+}
+for key, value in pairs(defaults) do
+    if genv.config[key] == nil then genv.config[key] = value end
+end
+
+local function trim(value)
+    return tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function normalized(value)
+    local text = tostring(value or "")
+    text = text:gsub("@.", "")
+    text = text:gsub("<[^>]+>", "")
+    text = text:gsub("%s+", " ")
+    return trim(text):lower()
+end
+
+local AARD_CECHO_COLORS = {
+    b = "ansi_blue", B = "ansi_light_blue",
+    c = "ansi_cyan", C = "ansi_light_cyan",
+    r = "ansi_red", R = "ansi_light_red",
+    m = "ansi_magenta", M = "ansi_light_magenta",
+    g = "ansi_green", G = "ansi_light_green",
+    y = "ansi_yellow", Y = "ansi_light_yellow",
+    w = "ansi_white", W = "white", D = "ansi_light_black",
+}
+
+local function expandAardColors(value)
+    local escapedAt = "\1GENV_ESCAPED_AT\1"
+    local text = tostring(value or ""):gsub("@@", escapedAt)
+    text = text:gsub("@([A-Za-z])", function(code)
+        local colorName = AARD_CECHO_COLORS[code]
+        return colorName and ("<" .. colorName .. ">") or ("@" .. code)
+    end)
+    return text:gsub(escapedAt, "@")
+end
+
+local function numericId(value)
+    local id = tostring(value or ""):match("^%s*(%d+)%s*$")
+    if id == "0" then return nil end
+    return id
+end
+
+local function truthy(value)
+    return value == true or value == 1 or tostring(value):lower() == "true"
+end
+
+local function now()
+    return os.time()
+end
+
+function genv.print(message, color)
+    color = color or "cyan"
+    if type(cecho) == "function" then
+        cecho(string.format("<%s>[GEnvenom]<reset> <%s>%s\n",
+            color, color, expandAardColors(message)))
+    else
+        print("[GEnvenom] " .. tostring(message or ""))
+    end
+end
+
+function genv.debug(message)
+    if genv.config.debug then genv.print(message, "dim_grey") end
+end
+
+local function sendCommand(command)
+    if type(send) ~= "function" then
+        genv.print("Mudlet send() is unavailable; command not sent: " .. tostring(command), "red")
+        return false
+    end
+    genv.debug("send: " .. tostring(command))
+    send(command, false)
+    return true
+end
+
+local function killTimerField(name)
+    local id = genv.timers[name]
+    if id and type(killTimer) == "function" then pcall(killTimer, id) end
+    genv.timers[name] = nil
+end
+
+local function after(seconds, name, callback)
+    killTimerField(name)
+    if type(tempTimer) ~= "function" then
+        callback()
+        return nil
+    end
+    genv.timers[name] = tempTimer(math.max(0, tonumber(seconds) or 0), function()
+        genv.timers[name] = nil
+        callback()
+    end)
+    return genv.timers[name]
+end
+
+local function settingsDir()
+    local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+    local dir = home .. "/GEnvenom"
+    if type(mkdir) == "function" then pcall(mkdir, dir) end
+    if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+    return dir
+end
+
+local function settingsPath()
+    return settingsDir() .. "/settings.lua"
+end
+
+function genv.saveSettings()
+    local file = io.open(settingsPath(), "w")
+    if not file then
+        genv.print("Could not save settings.", "orange_red")
+        return false
+    end
+    file:write("return {\n")
+    file:write("  autoOwn = ", tostring(genv.config.autoOwn == true), ",\n")
+    file:write("  autoBorrowed = ", tostring(genv.config.autoBorrowed == true), ",\n")
+    file:write("  debug = ", tostring(genv.config.debug == true), ",\n")
+    if numericId(genv.recovery.id) and (genv.recovery.slot == "wielded" or genv.recovery.slot == "second") then
+        file:write("  recovery = { id = ", string.format("%q", tostring(genv.recovery.id)),
+            ", slot = ", string.format("%q", tostring(genv.recovery.slot)), " },\n")
+    end
+    file:write("}\n")
+    file:close()
+    return true
+end
+
+function genv.loadSettings()
+    local chunk = loadfile(settingsPath())
+    if not chunk then return false end
+    local ok, saved = pcall(chunk)
+    if not ok or type(saved) ~= "table" then return false end
+    if saved.autoOwn ~= nil then genv.config.autoOwn = saved.autoOwn == true end
+    if saved.autoBorrowed ~= nil then genv.config.autoBorrowed = saved.autoBorrowed == true end
+    if saved.debug ~= nil then genv.config.debug = saved.debug == true end
+    if type(saved.recovery) == "table" and numericId(saved.recovery.id)
+        and (saved.recovery.slot == "wielded" or saved.recovery.slot == "second") then
+        genv.recovery = { id = tostring(saved.recovery.id), slot = saved.recovery.slot }
+    else
+        genv.recovery = {}
+    end
+    return true
+end
+
+local function gmcpChar()
+    if type(gmcp) ~= "table" then return {}, {}, {} end
+    local root = gmcp.char or gmcp.Char or {}
+    return root, root.base or root.Base or {}, root.status or root.Status or {}
+end
+
+function genv.characterState()
+    local _, base, status = gmcpChar()
+    local level = tonumber(status.level or base.level)
+    local tier = tonumber(base.tier or status.tier)
+    return {
+        name = trim(base.name or status.name),
+        race = trim(base.race or status.race),
+        subclass = trim(base.subclass or status.subclass),
+        level = level,
+        tier = tier,
+        combatState = tonumber(status.state or status.pos or status.position),
+    }
+end
+
+function genv.isEligible()
+    local state = genv.characterState()
+    local race = normalized(state.race)
+    local subclass = normalized(state.subclass)
+    if race == "naga" or subclass == "venomist" then return true end
+    if race == "" and subclass == "" then return false, "race/subclass is not available from GMCP" end
+    return false, "character is neither Naga nor Venomist"
+end
+
+function genv.tierLevel()
+    local state = genv.characterState()
+    if state.level == nil or state.tier == nil then return nil, state.level, state.tier end
+    local level = math.max(0, math.floor(state.level))
+    local tier = math.max(0, math.floor(state.tier))
+    return level + (tier * 10), level, tier
+end
+
+function genv.inCombat()
+    return genv.characterState().combatState == 8
+end
+
+local function dinvReady()
+    if type(DINV) ~= "table" or type(DINV.api) ~= "table" then return false end
+    if type(DINV.api.getItem) ~= "function" or type(DINV.api.getEquipped) ~= "function" then return false end
+    if type(DINV.api.isReady) == "function" then
+        local ok, ready = pcall(DINV.api.isReady)
+        if not ok or ready ~= true then return false end
+    end
+    return true
+end
+
+local ITEM_FIELDS = {
+    "id", "name", "colorName", "colorname", "type", "level", "location", "worn", "isWorn",
+}
+
+local function dinvItem(id)
+    if not dinvReady() then return nil, false end
+    local ok, result = pcall(DINV.api.getItem, tostring(id), {
+        detail = "full",
+        source = "live",
+        fields = ITEM_FIELDS,
+    })
+    if not ok or type(result) ~= "table" then return nil, false end
+    if result.ok then return result.item, true end
+    if tostring(result.code or ""):upper() == "NOT_FOUND" then return nil, true end
+    return nil, false
+end
+
+local function itemName(item, id)
+    local name = trim(item and (item.colorName or item.colorname or item.name) or "")
+    if name ~= "" then return name end
+    local current = id and dinvItem(id) or nil
+    name = trim(current and (current.colorName or current.colorname or current.name) or "")
+    if name ~= "" then return name end
+    return "weapon " .. tostring(id or "?")
+end
+
+local function itemIsWorn(item)
+    return type(item) == "table" and truthy(item.isWorn)
+end
+
+local function equippedAt(slot)
+    if type(DINV.api.getEquipped) ~= "function" then return nil, false end
+    local ok, result = pcall(DINV.api.getEquipped, slot, {
+        detail = "full",
+        source = "live",
+        fields = ITEM_FIELDS,
+    })
+    if not ok or type(result) ~= "table" or not result.ok then return nil, false end
+    for _, item in ipairs(result.items or {}) do
+        if numericId(item.id) then return item, true end
+    end
+    if type(result.item) == "table" and numericId(result.item.id) then return result.item, true end
+    return nil, true
+end
+
+local function cancelWeaponTimers(id)
+    killTimerField("warning:" .. tostring(id))
+    killTimerField("expiry:" .. tostring(id))
+end
+
+local function markWeaponDirty(weapon, status)
+    if not weapon then return end
+    cancelWeaponTimers(weapon.id)
+    weapon.dirty = true
+    weapon.status = status or "unknown"
+    weapon.expiresAt = nil
+    weapon.warned = false
+end
+
+function genv.syncEquipped()
+    if not dinvReady() then return false, "DINV is not ready" end
+
+    local slotItems = {}
+    local assigned = {}
+
+    -- Once a weapon ID is tracked, its DINV isWorn field is authoritative.
+    -- Do not rediscover it by parsing a Worn label or by trusting an empty slot query.
+    for _, slot in ipairs({ "wielded", "second" }) do
+        local trackedId = genv.runtime.bySlot[slot]
+        local tracked = trackedId and genv.runtime.weapons[trackedId] or nil
+        if tracked then
+            local current, known = dinvItem(trackedId)
+            if current and itemIsWorn(current) then
+                slotItems[slot] = current
+                assigned[trackedId] = true
+            elseif not known and tracked.item then
+                -- BUSY/NOT_READY is not evidence that the weapon was removed.
+                slotItems[slot] = tracked.item
+                assigned[trackedId] = true
+            end
+        end
+    end
+
+    -- Slot queries are used only to discover a new ID for an untracked slot.
+    -- Existing IDs above are never erased by an empty getEquipped() response.
+    for _, slot in ipairs({ "wielded", "second" }) do
+        if not slotItems[slot] then
+            local item, ok = equippedAt(slot)
+            if not ok then return false, "DINV could not read the " .. slot .. " slot" end
+            local id = item and numericId(item.id) or nil
+            if id and itemIsWorn(item) and not assigned[id] then
+                slotItems[slot] = item
+                assigned[id] = true
+            end
+        end
+    end
+
+    -- On a fresh session there are no IDs to query yet. If DINV discovers one
+    -- weapon slot directly but omits the other, get all worn items and assign
+    -- the sole remaining worn weapon to the sole missing weapon slot. This uses
+    -- only public API IDs, type, and isWorn; the human-readable Worn label is ignored.
+    local missingSlots = {}
+    for _, slot in ipairs({ "wielded", "second" }) do
+        if not slotItems[slot] then table.insert(missingSlots, slot) end
+    end
+    if #missingSlots == 1 and type(DINV.api.getEquipment) == "function" then
+        local ok, result = pcall(DINV.api.getEquipment, {
+            detail = "full",
+            source = "live",
+            fields = ITEM_FIELDS,
+        })
+        if ok and type(result) == "table" and result.ok then
+            local candidates = {}
+            for _, item in ipairs(result.items or {}) do
+                local id = numericId(item.id)
+                if id and not assigned[id] and itemIsWorn(item) and normalized(item.type) == "weapon" then
+                    table.insert(candidates, item)
+                end
+            end
+            if #candidates == 1 then
+                local slot = missingSlots[1]
+                local id = numericId(candidates[1].id)
+                slotItems[slot] = candidates[1]
+                assigned[id] = true
+            end
+        end
+    end
+
+    local found = {}
+    local bySlot = {}
+    for _, slot in ipairs({ "wielded", "second" }) do
+        local item = slotItems[slot]
+        if item then
+            local id = numericId(item.id)
+            if id then
+                found[id] = true
+                bySlot[slot] = id
+                local weapon = genv.runtime.weapons[id]
+                if not weapon then
+                    weapon = { id = id, slot = slot, status = "unknown", dirty = true, warned = false }
+                    genv.runtime.weapons[id] = weapon
+                elseif weapon.slot ~= slot then
+                    weapon.slot = slot
+                    markWeaponDirty(weapon, "unknown")
+                end
+                weapon.item = item -- display cache only; never persisted
+            end
+        end
+    end
+
+    for id, weapon in pairs(genv.runtime.weapons) do
+        if not found[id] then
+            cancelWeaponTimers(id)
+            genv.runtime.weapons[id] = nil
+        end
+    end
+    genv.runtime.bySlot = bySlot
+    return true
+end
+
+local function remainingSeconds(weapon)
+    if not weapon or weapon.dirty or not weapon.expiresAt then return nil end
+    return math.max(0, weapon.expiresAt - now())
+end
+
+local function formatDuration(seconds)
+    seconds = math.max(0, math.floor(tonumber(seconds) or 0))
+    return string.format("%d:%02d", math.floor(seconds / 60), seconds % 60)
+end
+
+local function queuedOwn(id)
+    local active = genv.runtime.active
+    if active and active.kind == "own" and active.id == id then return true end
+    for _, job in ipairs(genv.runtime.queue) do
+        if job.kind == "own" and job.id == id then return true end
+    end
+    return false
+end
+
+function genv.enqueue(job)
+    if type(job) ~= "table" then return false end
+    if job.kind == "own" and queuedOwn(job.id) then return false end
+    table.insert(genv.runtime.queue, job)
+    genv.runNext()
+    return true
+end
+
+local function trackedWeaponName(weapon)
+    local item = weapon and weapon.item or nil
+    return normalized(item and (item.name or item.colorName or item.colorname) or "")
+end
+
+local function expiredMessageCandidates(displayName)
+    local wanted = normalized(displayName)
+    local named = {}
+    local due = {}
+    for _, weapon in pairs(genv.runtime.weapons or {}) do
+        local remaining = remainingSeconds(weapon)
+        local nearExpiry = remaining == nil or remaining <= 90
+        if wanted ~= "" and trackedWeaponName(weapon) == wanted then
+            table.insert(named, weapon)
+        end
+        if nearExpiry then table.insert(due, weapon) end
+    end
+
+    if #named == 1 then return named end
+    if #named > 1 then
+        local nearNamed = {}
+        for _, weapon in ipairs(named) do
+            local remaining = remainingSeconds(weapon)
+            if remaining == nil or remaining <= 90 then table.insert(nearNamed, weapon) end
+        end
+        return #nearNamed > 0 and nearNamed or named
+    end
+    return due
+end
+
+function genv.onExpiredMessage(displayName)
+    local eligible = genv.isEligible()
+    if not eligible then return end
+
+    local candidates = expiredMessageCandidates(displayName)
+    if #candidates == 0 then
+        -- Recover IDs on a fresh/previously uncertain session, then match again.
+        genv.syncEquipped()
+        candidates = expiredMessageCandidates(displayName)
+    end
+    table.sort(candidates, function(left, right)
+        local leftRank = left.slot == "wielded" and 1 or 2
+        local rightRank = right.slot == "wielded" and 1 or 2
+        if leftRank ~= rightRank then return leftRank < rightRank end
+        return tostring(left.id) < tostring(right.id)
+    end)
+
+    for _, weapon in ipairs(candidates) do
+        markWeaponDirty(weapon, "expired by Aardwolf")
+        if genv.config.autoOwn then
+            genv.enqueue({ kind = "own", id = weapon.id, slot = weapon.slot, source = "expiry message" })
+        end
+    end
+end
+
+local function setWeaponDuration(weapon, seconds)
+    if not weapon then return end
+    seconds = math.max(0, math.floor(tonumber(seconds) or 0))
+    cancelWeaponTimers(weapon.id)
+    weapon.dirty = false
+    weapon.status = "active"
+    weapon.expiresAt = now() + seconds
+    weapon.warned = false
+
+    local warningAt = seconds - genv.config.warningSeconds
+    after(math.max(0, warningAt), "warning:" .. weapon.id, function()
+        local current = genv.runtime.weapons[weapon.id]
+        if not current or current.dirty or current.warned then return end
+        current.warned = true
+        genv.print(itemName(current.item, current.id) .. " <orange_red>(" .. current.id
+            .. ") has about 30 seconds of Envenom remaining.", "orange_red")
+    end)
+
+    after(seconds + 1, "expiry:" .. weapon.id, function()
+        local current = genv.runtime.weapons[weapon.id]
+        if not current then return end
+        markWeaponDirty(current, "due for verification")
+        if genv.config.autoOwn then
+            genv.enqueue({ kind = "own", id = current.id, slot = current.slot, source = "expiry" })
+        else
+            genv.print(itemName(current.item, current.id) .. " <orange_red>(" .. current.id
+                .. ") is due for an Envenom check.", "orange_red")
+        end
+    end)
+end
+
+local function killOperationTimers()
+    killTimerField("operation")
+    killTimerField("identifyTimeout")
+    killTimerField("identifyQuiet")
+    killTimerField("poll")
+end
+
+function genv.finishActive(delay)
+    killOperationTimers()
+    genv.runtime.identify = nil
+    genv.runtime.active = nil
+    after(delay or 0.1, "nextJob", genv.runNext)
+end
+
+local function returnBorrowed(job, tellMessage)
+    if tellMessage and tellMessage ~= "" then
+        sendCommand("tell " .. job.sender .. " " .. tellMessage)
+    end
+    sendCommand("give " .. job.id .. " " .. job.sender)
+    genv.print("Returned weapon " .. job.id .. " to " .. job.sender .. ".", "green")
+    genv.finishActive(0.2)
+end
+
+local function tooPowerfulBorrowed(job)
+    local cap = genv.tierLevel()
+    local level = tonumber(job.level)
+    local levelText = level and tostring(math.floor(level)) or "an unknown level"
+    local capText = cap and tostring(cap) or "my current tier level"
+    returnBorrowed(job, "Sorry, that weapon is level " .. levelText
+        .. "; I can only envenom up to level " .. capText .. ".")
+end
+
+local function pollItem(job, predicate, onSuccess, onFailure, attempts)
+    attempts = tonumber(attempts) or 0
+    local item = dinvItem(job.id)
+    if item and predicate(item) then
+        onSuccess(item)
+        return
+    end
+    if attempts >= 20 then
+        onFailure(item)
+        return
+    end
+    after(0.25, "poll", function()
+        pollItem(job, predicate, onSuccess, onFailure, attempts + 1)
+    end)
+end
+
+local function restoreOwn(job, callback, preserveStatus)
+    local weapon = genv.runtime.weapons[job.id]
+    local slot = job.slot or (weapon and weapon.slot) or "wielded"
+    job.stage = "restoring"
+    sendCommand("wear " .. job.id .. " " .. slot)
+    pollItem(job, function(item)
+        return itemIsWorn(item)
+    end, function(item)
+        job.removed = false
+        if tostring(genv.recovery.id or "") == tostring(job.id) then
+            genv.recovery = {}
+            genv.saveSettings()
+        end
+        if weapon then weapon.item = item or weapon.item end
+        if not preserveStatus and weapon then markWeaponDirty(weapon, "unknown") end
+        callback(true)
+    end, function()
+        if weapon then markWeaponDirty(weapon, "restore unconfirmed") end
+        genv.print("Could not confirm that " .. job.id .. " was restored to " .. slot .. ".", "red")
+        callback(false)
+    end)
+end
+
+local function failOwned(job, message)
+    local weapon = genv.runtime.weapons[job.id]
+    if weapon then markWeaponDirty(weapon, "error") end
+    if message then genv.print(message, "red") end
+    if job.removed or job.removedRequested then
+        restoreOwn(job, function() genv.finishActive() end, false)
+    else
+        genv.finishActive()
+    end
+end
+
+local function borrowedFailure(job, reason)
+    returnBorrowed(job, "Sorry, I could not envenom that weapon after "
+        .. tostring(genv.config.maxAttempts) .. " attempts, so I am returning it.")
+    genv.debug("Borrowed envenom failed: " .. tostring(reason))
+end
+
+function genv.startEnvenom(job)
+    local eligible, reason = genv.isEligible()
+    if not eligible then
+        if job.kind == "own" then
+            failOwned(job, "Envenom stopped: " .. tostring(reason) .. ".")
+        else
+            returnBorrowed(job, "Sorry, I cannot use Envenom right now, so I am returning your weapon.")
+        end
+        return
+    end
+    if genv.inCombat() then
+        if job.kind == "own" and (job.removed or job.removedRequested) then
+            restoreOwn(job, function()
+                local weapon = genv.runtime.weapons[job.id]
+                if weapon then markWeaponDirty(weapon, "deferred for combat") end
+                genv.finishActive()
+            end, false)
+        else
+            job.stage = "waitingCombatEnv"
+            genv.print("Envenom for " .. job.id .. " deferred until combat ends.", "orange_red")
+        end
+        return
+    end
+
+    job.attempts = (tonumber(job.attempts) or 0) + 1
+    job.stage = "envenoming"
+    if not sendCommand("envenom " .. job.id) then
+        genv.onEnvenomFailure("send() unavailable")
+        return
+    end
+    after(genv.config.actionTimeout, "operation", function()
+        if genv.runtime.active == job and job.stage == "envenoming" then
+            genv.onEnvenomFailure("no result received")
+        end
+    end)
+end
+
+function genv.onEnvenomFailure(reason)
+    local job = genv.runtime.active
+    if not job or job.stage ~= "envenoming" then return end
+    killTimerField("operation")
+    if (tonumber(job.attempts) or 0) < genv.config.maxAttempts then
+        genv.print("Envenom attempt " .. tostring(job.attempts) .. " failed for " .. job.id
+            .. "; trying again.", "orange_red")
+        job.stage = "retryWait"
+        after(1.0, "operation", function()
+            if genv.runtime.active == job then genv.startEnvenom(job) end
+        end)
+        return
+    end
+    if job.kind == "own" then
+        failOwned(job, "Envenom failed three times for weapon " .. job.id .. ".")
+    else
+        borrowedFailure(job, reason)
+    end
+end
+
+function genv.onEnvenomSuccess()
+    local job = genv.runtime.active
+    if not job or job.stage ~= "envenoming" then return end
+    killTimerField("operation")
+    if job.kind == "borrowed" then
+        returnBorrowed(job)
+        return
+    end
+    genv.startIdentify(job, false, "post")
+end
+
+function genv.onTooPowerful()
+    local job = genv.runtime.active
+    if not job or job.stage ~= "envenoming" then return end
+    killTimerField("operation")
+    if job.kind == "borrowed" then
+        tooPowerfulBorrowed(job)
+    else
+        failOwned(job, "Aardwolf rejected owned weapon " .. job.id .. " as too powerful to envenom.")
+    end
+end
+
+function genv.onAlreadyEnvenomed()
+    local job = genv.runtime.active
+    if not job or job.stage ~= "envenoming" then return end
+    killTimerField("operation")
+    if job.kind == "borrowed" then
+        returnBorrowed(job, "That weapon is already envenomed, so I am returning it.")
+    else
+        genv.startIdentify(job, false, "post")
+    end
+end
+
+local function parseIdentifyLine(capture, text)
+    text = tostring(text or "")
+    local isIdentifyOutput = text:match("^%s*|") ~= nil or text:match("^%s*%+%-+%+%s*$") ~= nil
+    local id = text:match("|%s*Id%s*:%s*(%d+)")
+    if id then
+        capture.data.id = id
+        capture.sawTarget = id == tostring(capture.job.id)
+    end
+    if not capture.sawTarget then return isIdentifyOutput end
+
+    local itemType = text:match("|%s*Type%s*:%s*([%a ]-)%s+Level%s*:")
+    if itemType then capture.data.type = trim(itemType) end
+    local level = text:match("Level%s*:%s*([%d,]+)")
+    if level then capture.data.level = tonumber((level:gsub(",", ""))) end
+    local minutes, seconds = text:match("|%s*Envenom%s*:.-%((%d+):(%d+)%)")
+    if minutes and seconds then
+        capture.data.duration = (tonumber(minutes) * 60) + tonumber(seconds)
+    end
+    return isIdentifyOutput
+end
+
+function genv.onIdentifyLine(text)
+    local capture = genv.runtime.identify
+    if not capture then return false end
+    local isIdentifyOutput = parseIdentifyLine(capture, text)
+    if isIdentifyOutput and capture.sawTarget and not capture.tagged then
+        after(0.7, "identifyQuiet", function()
+            if genv.runtime.identify == capture then genv.finishIdentifyCapture(capture) end
+        end)
+    end
+    return isIdentifyOutput
+end
+
+function genv.onIdentifyStart()
+    local capture = genv.runtime.identify
+    if capture then
+        capture.tagged = true
+        capture.gagActive = true
+        if type(deleteLine) == "function" then deleteLine() end
+    end
+end
+
+function genv.onIdentifyEnd()
+    local capture = genv.runtime.identify
+    if not capture then return end
+    if type(deleteLine) == "function" then deleteLine() end
+    capture.gagActive = false
+    if capture.sawTarget then
+        genv.finishIdentifyCapture(capture)
+    else
+        -- Another script may have identified an item while our request was queued.
+        -- Ignore that complete block and continue waiting for our exact ID.
+        capture.tagged = false
+        capture.data = {}
+    end
+end
+
+function genv.startIdentify(job, worn, purpose)
+    killTimerField("identifyTimeout")
+    killTimerField("identifyQuiet")
+    job.stage = "identifying"
+    job.identifyPurpose = purpose
+    local capture = {
+        job = job,
+        purpose = purpose,
+        tagged = false,
+        sawTarget = false,
+        data = {},
+    }
+    genv.runtime.identify = capture
+    local command = "identify " .. job.id .. (worn and " worn" or "")
+    if not sendCommand(command) then
+        genv.failIdentifyCapture(capture, "identify command was not sent")
+        return
+    end
+    after(genv.config.identifyTimeout, "identifyTimeout", function()
+        if genv.runtime.identify == capture then
+            genv.failIdentifyCapture(capture, "identify output timed out")
+        end
+    end)
+end
+
+function genv.failIdentifyCapture(capture, reason)
+    if genv.runtime.identify ~= capture then return end
+    killTimerField("identifyTimeout")
+    killTimerField("identifyQuiet")
+    genv.runtime.identify = nil
+    local job = capture.job
+    if job.kind == "own" then
+        failOwned(job, "Could not refresh Envenom status for " .. job.id .. ": " .. tostring(reason) .. ".")
+    else
+        returnBorrowed(job, "Sorry, I could not identify that weapon safely, so I am returning it.")
+    end
+end
+
+local function identifyTypeAndLevel(job, data)
+    local item = dinvItem(job.id)
+    local itemType = trim(data.type or (item and item.type) or "")
+    local level = tonumber(data.level or (item and item.level))
+    return itemType, level, item
+end
+
+local function startOwnRemove(job)
+    if genv.inCombat() then
+        local weapon = genv.runtime.weapons[job.id]
+        if weapon then weapon.status = "deferred for combat" end
+        genv.runtime.active = nil
+        table.insert(genv.runtime.queue, 1, job)
+        genv.print("Weapon " .. job.id .. " needs Envenom; refresh deferred until combat ends.", "orange_red")
+        return
+    end
+
+    job.stage = "removing"
+    job.removedRequested = true
+    -- This is a recovery journal, not timer persistence. It lets a later load
+    -- restore an exact weapon if the connection dies during our transaction.
+    genv.recovery = { id = tostring(job.id), slot = tostring(job.slot) }
+    genv.saveSettings()
+    if not sendCommand("remove " .. job.id) then
+        failOwned(job, "Could not send remove for weapon " .. job.id .. ".")
+        return
+    end
+    pollItem(job, function(item)
+        return not itemIsWorn(item) and normalized(item.location) == "inventory"
+    end, function(item)
+        job.removed = true
+        job.removedRequested = false
+        local weapon = genv.runtime.weapons[job.id]
+        if weapon then weapon.item = item or weapon.item; weapon.status = "refreshing" end
+        genv.startEnvenom(job)
+    end, function()
+        failOwned(job, "Could not confirm removal of weapon " .. job.id .. "; attempting to restore it.")
+    end)
+end
+
+function genv.finishIdentifyCapture(capture)
+    if genv.runtime.identify ~= capture then return end
+    killTimerField("identifyTimeout")
+    killTimerField("identifyQuiet")
+    local job = capture.job
+    local data = capture.data
+    if not capture.sawTarget or tostring(data.id or "") ~= tostring(job.id) then
+        genv.failIdentifyCapture(capture, "identify output did not contain the expected ID")
+        return
+    end
+    genv.runtime.identify = nil
+
+    local itemType, level, item = identifyTypeAndLevel(job, data)
+    job.level = level
+    job.item = item
+    if normalized(itemType) ~= "weapon" then
+        if job.kind == "borrowed" then
+            genv.print("Received item " .. job.id .. " from " .. job.sender
+                .. " is not a weapon; borrowed mode left it untouched.", "cyan")
+            genv.finishActive()
+        else
+            failOwned(job, "Equipped ID " .. job.id .. " did not identify as a weapon.")
+        end
+        return
+    end
+
+    if job.kind == "borrowed" then
+        local cap = genv.tierLevel()
+        if not cap or not level then
+            returnBorrowed(job, "Sorry, I could not verify that weapon's level safely, so I am returning it.")
+        elseif level > cap then
+            tooPowerfulBorrowed(job)
+        elseif data.duration then
+            returnBorrowed(job, "That weapon is already envenomed, so I am returning it.")
+        else
+            genv.startEnvenom(job)
+        end
+        return
+    end
+
+    local weapon = genv.runtime.weapons[job.id]
+    if not weapon then
+        genv.finishActive()
+        return
+    end
+    weapon.item = item or weapon.item
+    if data.duration then
+        setWeaponDuration(weapon, data.duration)
+        if capture.purpose == "post" and (job.removed or job.removedRequested) then
+            restoreOwn(job, function() genv.finishActive() end, true)
+        else
+            genv.finishActive()
+        end
+    elseif capture.purpose == "post" then
+        markWeaponDirty(weapon, "post-envenom identify was inconclusive")
+        restoreOwn(job, function() genv.finishActive() end, false)
+    else
+        weapon.dirty = false
+        weapon.status = "missing"
+        weapon.expiresAt = nil
+        weapon.warned = false
+        startOwnRemove(job)
+    end
+end
+
+local function startBorrowed(job)
+    -- Identify every borrowed candidate. This authoritatively confirms both type and level before envenoming.
+    genv.startIdentify(job, false, "borrowed")
+end
+
+local function startOwn(job)
+    local weapon = genv.runtime.weapons[job.id]
+    if not weapon or weapon.slot ~= job.slot then
+        genv.finishActive()
+        return
+    end
+    local item = dinvItem(job.id)
+    if not item or not itemIsWorn(item) then
+        genv.syncEquipped()
+        weapon = genv.runtime.weapons[job.id]
+        if not weapon or genv.runtime.bySlot[job.slot] ~= job.id then
+            if weapon then markWeaponDirty(weapon, "no longer equipped") end
+            genv.finishActive()
+            return
+        end
+        item = weapon.item or item
+    end
+    weapon.item = item
+    weapon.status = "checking"
+    genv.startIdentify(job, true, "pre")
+end
+
+function genv.runNext()
+    if genv.runtime.active then return end
+    if genv.runtime.connected == false then return end
+    if genv.runtime.recovering or genv.runtime.recoveryPending then return end
+    if #genv.runtime.queue == 0 then return end
+    local eligible, reason = genv.isEligible()
+    if not eligible then
+        genv.debug("queue paused: " .. tostring(reason))
+        return
+    end
+    if genv.inCombat() then
+        if not genv.runtime.combatNotice then
+            genv.runtime.combatNotice = true
+            genv.print("Envenom queue paused until combat ends.", "orange_red")
+        end
+        return
+    end
+    genv.runtime.combatNotice = false
+    local job = table.remove(genv.runtime.queue, 1)
+    genv.runtime.active = job
+    if job.kind == "borrowed" then startBorrowed(job) else startOwn(job) end
+end
+
+function genv.requestCheck(manual)
+    local eligible, reason = genv.isEligible()
+    if not eligible then
+        genv.print("Check not started: " .. tostring(reason) .. ".", "orange_red")
+        return false
+    end
+    if genv.runtime.recovering or genv.runtime.recoveryPending then
+        genv.recoverInterrupted(function(ok)
+            if ok then
+                genv.requestCheck(manual)
+            elseif manual then
+                genv.print("The interrupted equipment restore is still pending.", "orange_red")
+            end
+        end)
+        return false
+    end
+    if genv.runtime.active and genv.runtime.active.kind == "own"
+        and (genv.runtime.active.removed or genv.runtime.active.removedRequested) then
+        if manual then genv.print("An owned-weapon refresh is already in progress.", "orange_red") end
+        return false
+    end
+    local ok, err = genv.syncEquipped()
+    if not ok then
+        genv.print("Cannot check wielded weapons: " .. tostring(err) .. ".", "red")
+        return false
+    end
+    local count = 0
+    for _, slot in ipairs({ "wielded", "second" }) do
+        local id = genv.runtime.bySlot[slot]
+        local weapon = id and genv.runtime.weapons[id] or nil
+        local remaining = remainingSeconds(weapon)
+        local needsAutomaticCheck = weapon == nil or weapon.dirty == true
+            or weapon.status ~= "active" or remaining == nil or remaining <= 0
+        if id and (manual or needsAutomaticCheck)
+            and genv.enqueue({ kind = "own", id = id, slot = slot, source = manual and "manual" or "auto" }) then
+            count = count + 1
+        end
+    end
+    if manual then
+        genv.print(count > 0 and ("Queued " .. count .. " wielded weapon check(s).")
+            or "No new wielded weapon checks were needed.", "cyan")
+    end
+    return true
+end
+
+local function scheduleAutoCheck(delay)
+    if not genv.config.autoOwn then return end
+    after(delay or 0.6, "autoCheck", function()
+        if genv.config.autoOwn then genv.requestCheck(false) end
+    end)
+end
+
+local function pruneInbound()
+    local cutoff = now() - 5
+    local ids, senders = {}, {}
+    for _, entry in ipairs(genv.runtime.inboundIds) do
+        if entry.at >= cutoff then table.insert(ids, entry) end
+    end
+    for _, entry in ipairs(genv.runtime.inboundSenders) do
+        if entry.at >= cutoff then table.insert(senders, entry) end
+    end
+    genv.runtime.inboundIds = ids
+    genv.runtime.inboundSenders = senders
+end
+
+local function pairInbound()
+    pruneInbound()
+    while #genv.runtime.inboundIds > 0 and #genv.runtime.inboundSenders > 0 do
+        local idEntry = table.remove(genv.runtime.inboundIds, 1)
+        local senderEntry = table.remove(genv.runtime.inboundSenders, 1)
+        genv.enqueue({
+            kind = "borrowed",
+            id = idEntry.id,
+            sender = senderEntry.sender,
+            attempts = 0,
+            source = "received",
+        })
+    end
+end
+
+function genv.onInvmon(payload)
+    payload = tostring(payload or "")
+    if not genv.config.autoBorrowed then return end
+    local eligible = genv.isEligible()
+    if not eligible then return end
+    local id = payload:match("^4,(%d+),%-1,%-1$")
+    if not id then return end
+    table.insert(genv.runtime.inboundIds, { id = id, at = now() })
+    pairInbound()
+end
+
+function genv.onReceived(sender)
+    if not genv.config.autoBorrowed then return end
+    local eligible = genv.isEligible()
+    if not eligible then return end
+    sender = tostring(sender or ""):match("^(%w+)$")
+    if not sender then return end
+    table.insert(genv.runtime.inboundSenders, { sender = sender, at = now() })
+    pairInbound()
+end
+
+function genv.markAllDirty(status)
+    for _, weapon in pairs(genv.runtime.weapons or {}) do markWeaponDirty(weapon, status or "unknown") end
+end
+
+function genv.onDisconnect()
+    genv.markAllDirty("dirty after disconnect")
+    killOperationTimers()
+    killTimerField("autoCheck")
+    killTimerField("nextJob")
+    killTimerField("connectResume")
+    local pendingBorrowed = {}
+    local active = genv.runtime.active
+    if active and active.kind == "borrowed" then
+        active.stage = nil
+        table.insert(pendingBorrowed, active)
+    end
+    for _, job in ipairs(genv.runtime.queue) do
+        if job.kind == "borrowed" then job.stage = nil; table.insert(pendingBorrowed, job) end
+    end
+    genv.runtime.active = nil
+    genv.runtime.identify = nil
+    genv.runtime.queue = pendingBorrowed
+    genv.runtime.connected = false
+end
+
+function genv.onConnect()
+    genv.runtime.connected = true
+    genv.markAllDirty("dirty after reconnect")
+    after(1.0, "connectResume", function()
+        genv.recoverInterrupted(genv.resumeAfterRecovery)
+    end)
+end
+
+function genv.onGMCPStatus()
+    local charState = genv.characterState()
+    if charState.combatState == 1 or charState.combatState == 2 then
+        if not genv.runtime.loginPending then genv.markAllDirty("dirty after relog") end
+        genv.runtime.loginPending = true
+    elseif genv.runtime.loginPending then
+        genv.runtime.loginPending = false
+        genv.markAllDirty("dirty after relog")
+        scheduleAutoCheck(1.0)
+    end
+    local wasCombat = genv.runtime.inCombat == true
+    local inCombat = genv.inCombat()
+    genv.runtime.inCombat = inCombat
+    if inCombat and not wasCombat then
+        local job = genv.runtime.active
+        if job and job.kind == "own" and (job.removed or job.removedRequested) then
+            killOperationTimers()
+            genv.runtime.identify = nil
+            restoreOwn(job, function()
+                local weapon = genv.runtime.weapons[job.id]
+                if weapon then markWeaponDirty(weapon, "deferred for combat") end
+                genv.finishActive()
+            end, false)
+        end
+    elseif not inCombat and wasCombat then
+        genv.runtime.combatNotice = false
+        if numericId(genv.recovery.id) then
+            genv.recoverInterrupted(function(ok)
+                if ok then
+                    genv.runNext()
+                end
+            end)
+            return
+        end
+        local job = genv.runtime.active
+        if job and job.stage == "waitingCombatEnv" then
+            genv.startEnvenom(job)
+        else
+            genv.runNext()
+        end
+    end
+end
+
+function genv.onGMCPBase()
+    local characterName = normalized(genv.characterState().name)
+    local characterChanged = false
+    if characterName ~= "" and genv.runtime.characterName ~= ""
+        and characterName ~= genv.runtime.characterName then
+        characterChanged = true
+        genv.markAllDirty("dirty after character change")
+    end
+    if characterName ~= "" then genv.runtime.characterName = characterName end
+    if genv.runtime.recoveryPending then
+        genv.recoverInterrupted(function(ok)
+            if ok and characterChanged and genv.config.autoOwn then scheduleAutoCheck(0.8) end
+        end)
+        return
+    end
+    if characterChanged and genv.config.autoOwn then scheduleAutoCheck(0.8) end
+    genv.runNext()
+end
+
+function genv.resumeAfterRecovery(ok)
+    if ok == false and numericId(genv.recovery.id) then
+        genv.runtime.recoveryRetries = (tonumber(genv.runtime.recoveryRetries) or 0) + 1
+        if genv.runtime.recoveryRetries <= 8 then
+            after(1.0, "recoveryRetry", function()
+                genv.recoverInterrupted(genv.resumeAfterRecovery)
+            end)
+        else
+            genv.print("Interrupted equipment restore remains pending; use 'genv check' after DINV is ready.",
+                "orange_red")
+        end
+        return
+    end
+    genv.runtime.recoveryRetries = 0
+    if genv.config.autoOwn then genv.requestCheck(false) end
+    genv.runNext()
+end
+
+function genv.recoverInterrupted(callback)
+    callback = callback or function() end
+    local id = numericId(genv.recovery.id)
+    local slot = genv.recovery.slot
+    if not id or (slot ~= "wielded" and slot ~= "second") then
+        genv.recovery = {}
+        callback(true)
+        return
+    end
+    if genv.runtime.connected == false or genv.inCombat() then
+        genv.runtime.recoveryPending = true
+        callback(false)
+        return
+    end
+    if genv.runtime.recovering then
+        callback(false)
+        return
+    end
+    if not dinvReady() then
+        genv.runtime.recoveryPending = true
+        genv.print("Interrupted restore for " .. id .. " is waiting for DINV.", "orange_red")
+        callback(false)
+        return
+    end
+
+    local item = dinvItem(id)
+    if item and itemIsWorn(item) then
+        genv.recovery = {}
+        genv.runtime.recoveryPending = false
+        genv.saveSettings()
+        callback(true)
+        return
+    end
+    if not item or normalized(item.location) ~= "inventory" then
+        genv.runtime.recoveryPending = true
+        genv.print("Interrupted restore for " .. id .. " could not find the weapon in main inventory.", "red")
+        callback(false)
+        return
+    end
+
+    genv.runtime.recovering = true
+    genv.runtime.recoveryPending = false
+    local recoveryJob = { id = id, slot = slot }
+    genv.print("Restoring interrupted weapon " .. id .. " to " .. slot .. ".", "orange_red")
+    sendCommand("wear " .. id .. " " .. slot)
+    pollItem(recoveryJob, function(current)
+        return itemIsWorn(current)
+    end, function()
+        genv.runtime.recovering = false
+        genv.recovery = {}
+        genv.saveSettings()
+        genv.markAllDirty("dirty after interrupted restore")
+        callback(true)
+    end, function()
+        genv.runtime.recovering = false
+        genv.runtime.recoveryPending = true
+        genv.print("Could not confirm interrupted restore for weapon " .. id .. ".", "red")
+        callback(false)
+    end)
+end
+
+local function clearQueued(kind)
+    local kept = {}
+    for _, job in ipairs(genv.runtime.queue) do
+        if job.kind ~= kind then table.insert(kept, job) end
+    end
+    genv.runtime.queue = kept
+end
+
+local function setMode(mode, value)
+    value = normalized(value)
+    if value ~= "on" and value ~= "off" then
+        genv.print("Usage: genv " .. (mode == "own" and "owned" or mode) .. " on|off", "orange_red")
+        return
+    end
+    local enabled = value == "on"
+    if mode == "own" then
+        genv.config.autoOwn = enabled
+        if enabled then scheduleAutoCheck(0.1) else clearQueued("own") end
+    else
+        genv.config.autoBorrowed = enabled
+        if not enabled then
+            genv.runtime.inboundIds = {}
+            genv.runtime.inboundSenders = {}
+            clearQueued("borrowed")
+        end
+    end
+    genv.saveSettings()
+    genv.print("Automatic " .. mode .. "-weapon Envenom is " .. (enabled and "ON." or "OFF."),
+        enabled and "green" or "orange_red")
+end
+
+function genv.status()
+    local state = genv.characterState()
+    local eligible, reason = genv.isEligible()
+    local cap = genv.tierLevel()
+    genv.syncEquipped()
+    genv.print("GEnvenom v" .. genv.version .. " status", "cyan")
+    genv.print("  Character: " .. (state.name ~= "" and state.name or "unknown")
+        .. " | race " .. (state.race ~= "" and state.race or "unknown")
+        .. " | subclass " .. (state.subclass ~= "" and state.subclass or "unknown"), "white")
+    genv.print("  Eligible: " .. (eligible and "yes" or ("no (" .. tostring(reason) .. ")"))
+        .. " | combat: " .. (genv.inCombat() and "yes" or "no")
+        .. " | tier-level cap: " .. tostring(cap or "unknown"), eligible and "white" or "orange_red")
+    genv.print("  Auto own: " .. (genv.config.autoOwn and "ON" or "OFF")
+        .. " | auto borrowed: " .. (genv.config.autoBorrowed and "ON" or "OFF")
+        .. " | queue: " .. tostring(#genv.runtime.queue + (genv.runtime.active and 1 or 0)), "white")
+
+    for _, slot in ipairs({ "wielded", "second" }) do
+        local id = genv.runtime.bySlot[slot]
+        local weapon = id and genv.runtime.weapons[id] or nil
+        if weapon then
+            local remaining = remainingSeconds(weapon)
+            local timerText = remaining and formatDuration(remaining) or (weapon.dirty and "dirty" or "unknown")
+            genv.print(string.format("  %-7s %s [%s] | %s | %s", slot, itemName(weapon.item, id), id,
+                tostring(weapon.status or "unknown"), timerText), "white")
+        else
+            genv.print(string.format("  %-7s (empty)", slot), "dim_grey")
+        end
+    end
+end
+
+function genv.help()
+    genv.print("Commands", "cyan")
+    genv.print("  genv status                 show eligibility, modes, queue, and wielded timers", "white")
+    genv.print("  genv check                  identify and maintain wielded/second weapons now", "white")
+    genv.print("  genv owned on|off           toggle unattended owned-weapon maintenance", "white")
+    genv.print("  genv borrowed on|off        toggle envenom-and-return for every received weapon", "white")
+    genv.print("  genv debug on|off           toggle diagnostic output", "white")
+    genv.print("  genv help                   show this help", "white")
+    genv.print("Timers are session-only and become dirty after disconnect, relog, or reload.", "dim_grey")
+end
+
+function genv.command(input)
+    local line = trim(input)
+    local command, rest = line:match("^(%S+)%s*(.-)$")
+    rest = rest or ""
+    command = normalized(command or "status")
+    if command == "" or command == "status" then
+        genv.status()
+    elseif command == "help" then
+        genv.help()
+    elseif command == "check" then
+        genv.requestCheck(true)
+    elseif command == "auto" then
+        local mode, value = tostring(rest):match("^(%S+)%s+(%S+)%s*$")
+        mode = normalized(mode)
+        if mode ~= "own" and mode ~= "borrowed" then
+            genv.print("Usage: genv auto own|borrowed on|off", "orange_red")
+        else
+            setMode(mode, value)
+        end
+    elseif command == "own" or command == "owned" or command == "borrowed" then
+        setMode(command == "owned" and "own" or command, rest)
+    elseif command == "debug" then
+        local value = normalized(rest)
+        if value ~= "on" and value ~= "off" then
+            genv.print("Usage: genv debug on|off", "orange_red")
+            return
+        end
+        genv.config.debug = value == "on"
+        genv.saveSettings()
+        genv.print("Debug is " .. (genv.config.debug and "ON." or "OFF."), "cyan")
+    else
+        genv.print("Unknown command. Use 'genv help'.", "orange_red")
+    end
+end
+
+function genv.shutdownRuntime()
+    local timerNames = {}
+    for name in pairs(genv.timers or {}) do table.insert(timerNames, name) end
+    for _, name in ipairs(timerNames) do killTimerField(name) end
+    for _, id in pairs(genv.triggers or {}) do
+        if id and type(killTrigger) == "function" then pcall(killTrigger, id) end
+    end
+    for _, id in pairs(genv.handlers or {}) do
+        if id and type(killAnonymousEventHandler) == "function" then pcall(killAnonymousEventHandler, id) end
+    end
+    genv.triggers, genv.handlers, genv.timers = {}, {}, {}
+end
+
+function genv.installRuntime()
+    genv.shutdownRuntime()
+    genv.loadSettings()
+    genv.runtime = {
+        weapons = {},
+        bySlot = {},
+        queue = {},
+        active = nil,
+        identify = nil,
+        inboundIds = {},
+        inboundSenders = {},
+        inCombat = genv.inCombat(),
+        connected = true,
+        characterName = normalized(genv.characterState().name),
+        loginPending = false,
+        recovering = false,
+        recoveryPending = numericId(genv.recovery.id) ~= nil,
+        recoveryRetries = 0,
+    }
+
+    genv.triggers.allLines = tempRegexTrigger("^(.*)$", function()
+        local capture = genv.runtime.identify
+        if capture and matches then
+            local text = matches[2] or matches[1]
+            local isTag = text == "{identify}" or text == "{/identify}"
+            if not capture.gagActive and text:match("^%s*%+%-+%+%s*$") then
+                capture.gagActive = true
+            end
+            local isIdentifyOutput = genv.onIdentifyLine(text)
+            if capture.gagActive and capture.sawTarget and not isIdentifyOutput and not isTag then
+                -- Untagged fallback: the first line after the table belongs to the user/game,
+                -- so finish our capture without deleting that line.
+                capture.gagActive = false
+                genv.finishIdentifyCapture(capture)
+                return
+            end
+            if capture.gagActive and not isTag
+                and type(deleteLine) == "function" then
+                deleteLine()
+            end
+        end
+    end)
+    genv.triggers.identifyStart = tempRegexTrigger("^\\{identify\\}$", genv.onIdentifyStart)
+    genv.triggers.identifyEnd = tempRegexTrigger("^\\{/identify\\}$", genv.onIdentifyEnd)
+    genv.triggers.invmon = tempRegexTrigger("^\\{invmon\\}(.*)$", function()
+        if matches then genv.onInvmon(matches[2]) end
+    end)
+    genv.triggers.received = tempRegexTrigger("^You receive .* from (\\w+)\\.$", function()
+        if matches then genv.onReceived(matches[2]) end
+    end)
+    genv.triggers.success = tempRegexTrigger("^You coat .* with deadly poison\\.$", genv.onEnvenomSuccess)
+    genv.triggers.expired = tempRegexTrigger("^Your (.+) is no longer envenomed\\.$", function()
+        if matches then genv.onExpiredMessage(matches[2]) end
+    end)
+    genv.triggers.tooPowerful = tempRegexTrigger("^.* is too powerful for you to envenom\\.$", genv.onTooPowerful)
+    genv.triggers.already = tempRegexTrigger("(?i)^.*already.*(?:envenom|poison).*$", genv.onAlreadyEnvenomed)
+    genv.triggers.failure = tempRegexTrigger(
+        "(?i)^(?:You failed\\.?|You fail(?:ed)? to .*|You cannot envenom .*|You can't envenom .*|You do not know how to envenom.*|You don't know how to envenom.*)$",
+        function() genv.onEnvenomFailure(matches and matches[1] or "Aardwolf rejected the attempt") end)
+
+    genv.handlers.statusLower = registerAnonymousEventHandler("gmcp.char.status", genv.onGMCPStatus)
+    genv.handlers.statusUpper = registerAnonymousEventHandler("gmcp.Char.Status", genv.onGMCPStatus)
+    genv.handlers.baseLower = registerAnonymousEventHandler("gmcp.char.base", genv.onGMCPBase)
+    genv.handlers.baseUpper = registerAnonymousEventHandler("gmcp.Char.Base", genv.onGMCPBase)
+    genv.handlers.connect = registerAnonymousEventHandler("sysConnectionEvent", genv.onConnect)
+    genv.handlers.disconnect = registerAnonymousEventHandler("sysDisconnectionEvent", genv.onDisconnect)
+
+    sendCommand("tags invmon on")
+    sendCommand("tags identify on")
+    genv.print("Loaded v" .. genv.version .. ". Use 'genv check', 'genv status', or 'genv help'.", "green")
+    after(1.0, "startup", function()
+        genv.recoverInterrupted(genv.resumeAfterRecovery)
+    end)
+end
+
+genv.installRuntime()
+]]></script>
+        <eventHandlerList/>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

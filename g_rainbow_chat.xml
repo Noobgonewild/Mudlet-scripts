@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!--
-    Rainbow Chat v2.0
+    Rainbow Chat v2.4
     Automatically adds Aardwolf xterm color codes to outgoing chat.
   -->
 
@@ -35,7 +35,7 @@
         <script>RainbowChat.handleChannel(matches[2], matches[3])</script>
         <command></command>
         <packageName></packageName>
-        <regex>^(?i:(clan|cla|say|gt|gtell|reply))\s+(.+)$</regex>
+        <regex>^(?i:(clan|cla|say|gt|gtell|reply|epics|epic|barter|tech))\s+(.+)$</regex>
       </Alias>
     </AliasGroup>
   </AliasPackage>
@@ -90,16 +90,28 @@ local FADEUP_PALETTE = {
   51, 220, 118, 85, 154, 121, 190, 191,
 }
 
--- Gradient mode rotates between families. Each individual message stays in
+-- Cool pastel loop modeled after the reference chat style: white fades through
+-- cyan and blue into violet, then returns through lavender to white. Repeated
+-- entries keep the same soft color bands visible in short messages.
+local PASTEL_PALETTE = {
+  231, 195, 159, 123, 81,
+  45, 45, 45, 39, 75,
+  69, 69, 99, 99, 99,
+  141, 141, 147, 183, 183,
+  189, 189, 225, 231, 231, 231,
+}
+
+-- Gradient mode randomly selects between families. Each individual message stays in
 -- one family instead of crossing the full rainbow. Avoid the very dark
 -- 16-21 range and the overly saturated 160-165 and 196-201 ranges.
 local GRADIENT_PALETTES = {
   { name = "green", colors = { 193, 157, 120, 84, 46, 41 } },
-  { name = "yellow", colors = { 136, 142, 178, 184, 220, 221 } },
   { name = "sunset", colors = { 208, 209, 210, 211, 212, 213 } },
   { name = "blue", colors = { 153, 117, 81, 45, 39, 33 } },
   { name = "purple", colors = { 183, 177, 171, 135, 99, 63 } },
 }
+
+local GRADIENT_MODE_NAMES = { "green", "sunset", "blue", "purple" }
 
 -- Chaos uses every usable part of the xterm cube except the ranges already
 -- excluded for being too dark or overly saturated. Colors are shuffled anew
@@ -113,7 +125,7 @@ for index = 22, 231 do
 end
 
 local BASE_MODES = {
-  "rainbow", "words", "bright", "dark", "fadeup", "fadedown", "gradient", "chaos",
+  "rainbow", "words", "bright", "dark", "fadeup", "fadedown", "pastel", "gradient", "chaos",
 }
 
 local VALID_MODES = {
@@ -123,10 +135,27 @@ local VALID_MODES = {
   dark = true,
   fadeup = true,
   fadedown = true,
+  pastel = true,
   gradient = true,
+  ["gradient-green"] = true,
+  ["gradient-sunset"] = true,
+  ["gradient-blue"] = true,
+  ["gradient-purple"] = true,
   chaos = true,
   random = true,
 }
+
+local MODE_ALIASES = {
+  green = "gradient-green",
+  sunset = "gradient-sunset",
+  blue = "gradient-blue",
+  purple = "gradient-purple",
+}
+
+local function canonicalMode(value)
+  local mode = tostring(value or ""):lower()
+  return MODE_ALIASES[mode] or mode
+end
 
 local AARD_COLOR_CODES = {
   b = true, B = true,
@@ -159,7 +188,7 @@ end
 local function note(message)
   local text = "[Rainbow] " .. tostring(message or "") .. "\n"
   if type(cecho) == "function" then
-    cecho("<cyan>" .. text)
+    cecho("<gray>" .. text)
   elseif type(echo) == "function" then
     echo(text)
   end
@@ -198,7 +227,7 @@ local function loadState()
     RainbowChat.state.enabled = saved.enabled
   end
 
-  local mode = tostring(saved.mode or ""):lower()
+  local mode = canonicalMode(saved.mode)
   if VALID_MODES[mode] then
     RainbowChat.state.mode = mode
   end
@@ -457,20 +486,32 @@ local function randomMode()
   return selected
 end
 
-local function nextGradientPalette()
-  local index = (tonumber(RainbowChat.gradientIndex) or 0) + 1
-  if index > #GRADIENT_PALETTES then
-    index = 1
+local function gradientPaletteByName(name)
+  for _, gradient in ipairs(GRADIENT_PALETTES) do
+    if gradient.name == name then
+      return gradient.colors
+    end
+  end
+  return nil
+end
+
+local function randomGradientPalette()
+  local index = nextRandomIndex(#GRADIENT_PALETTES)
+  local selected = GRADIENT_PALETTES[index]
+
+  -- Avoid choosing the same gradient family for two consecutive messages.
+  if #GRADIENT_PALETTES > 1 and selected.name == RainbowChat.lastGradientName then
+    index = (index % #GRADIENT_PALETTES) + 1
+    selected = GRADIENT_PALETTES[index]
   end
 
-  RainbowChat.gradientIndex = index
-  RainbowChat.lastGradientName = GRADIENT_PALETTES[index].name
-  return GRADIENT_PALETTES[index].colors
+  RainbowChat.lastGradientName = selected.name
+  return selected.colors
 end
 
 
 function RainbowChat.colorize(message, requestedMode)
-  local mode = tostring(requestedMode or RainbowChat.state.mode or DEFAULT_MODE):lower()
+  local mode = canonicalMode(requestedMode or RainbowChat.state.mode or DEFAULT_MODE)
   if mode == "random" then
     mode = randomMode()
   end
@@ -480,6 +521,7 @@ function RainbowChat.colorize(message, requestedMode)
 
   local tokens = tokenize(tostring(message or ""))
   local colored
+  local fixedGradientName = mode:match("^gradient%-(.+)$")
   if mode == "words" then
     colored = colorWords(tokens, RAINBOW_PALETTE)
   elseif mode == "bright" then
@@ -490,8 +532,12 @@ function RainbowChat.colorize(message, requestedMode)
     colored = colorFade(tokens, FADEUP_PALETTE)
   elseif mode == "fadedown" then
     colored = colorFade(tokens, reversedCopy(FADEUP_PALETTE))
+  elseif mode == "pastel" then
+    colored = colorFade(tokens, PASTEL_PALETTE)
   elseif mode == "gradient" then
-    colored = colorGradient(tokens, nextGradientPalette())
+    colored = colorGradient(tokens, randomGradientPalette())
+  elseif fixedGradientName then
+    colored = colorGradient(tokens, gradientPaletteByName(fixedGradientName))
   elseif mode == "chaos" then
     colored = colorChaos(tokens)
   else
@@ -541,6 +587,27 @@ local function mudletPreview(message, mode)
   return rendered, selectedMode
 end
 
+local function noteInCurrentMode(message)
+  local text = "[Rainbow] " .. tostring(message or "")
+  if type(cecho) == "function" then
+    local rendered = mudletPreview(text, RainbowChat.state.mode)
+    cecho(rendered .. "\n")
+  elseif type(echo) == "function" then
+    echo(text .. "\n")
+  end
+end
+
+local function announceEnabledState()
+  if RainbowChat.state.enabled then
+    noteInCurrentMode(string.format(
+      "Automatic coloring is now ON. (mode %s)",
+      RainbowChat.state.mode
+    ))
+  else
+    note("Automatic coloring is now OFF.")
+  end
+end
+
 local function showHelp()
   note("Automatic Aardwolf chat gradients")
   note("rainbow on|off|toggle          - enable, disable, or toggle automatic coloring")
@@ -548,20 +615,17 @@ local function showHelp()
   note("rainbow status                 - show the current settings")
   note("rainbow raw <complete command> - send one command without coloring")
   note("Modes: " .. table.concat(BASE_MODES, ", ") .. ", random")
+  note("Gradient: random family; fixed presets: " .. table.concat(GRADIENT_MODE_NAMES, ", ") .. " (gradient- prefixes also work)")
   note("Mode examples:")
   local previousRandomState = RainbowChat.randomState
   local previousLastRandomMode = RainbowChat.lastRandomMode
+  local previousLastGradientName = RainbowChat.lastGradientName
   for _, mode in ipairs(BASE_MODES) do
     if mode == "gradient" then
-      local previousGradientIndex = RainbowChat.gradientIndex
-      local previousGradientName = RainbowChat.lastGradientName
-      for index, gradient in ipairs(GRADIENT_PALETTES) do
-        RainbowChat.gradientIndex = index - 1
-        local preview = mudletPreview("Rainbow chat example", mode)
-        note(string.format("  gradient/%-6s - %s", gradient.name, preview))
+      for _, gradient in ipairs(GRADIENT_PALETTES) do
+        local preview = mudletPreview("Rainbow chat example", "gradient-" .. gradient.name)
+        note(string.format("  gradient-%-6s - %s", gradient.name, preview))
       end
-      RainbowChat.gradientIndex = previousGradientIndex
-      RainbowChat.lastGradientName = previousGradientName
     else
       local preview = mudletPreview("Rainbow chat example", mode)
       note(string.format("  %-8s - %s", mode, preview))
@@ -570,8 +634,9 @@ local function showHelp()
   local randomPreview, selectedMode = mudletPreview("Rainbow chat example", "random")
   RainbowChat.randomState = previousRandomState
   RainbowChat.lastRandomMode = previousLastRandomMode
+  RainbowChat.lastGradientName = previousLastGradientName
   note(string.format("  %-8s - %s (picked %s this time)", "random", randomPreview, selectedMode))
-  note("Watched: clan, cla, say, gt, gtell, tell, reply")
+  note("Watched: clan, cla, say, gt, gtell, tell, reply, epic, epics, barter, tech")
   showStatus()
 end
 
@@ -589,19 +654,19 @@ function RainbowChat.command(arguments)
   if action == "on" or action == "off" then
     RainbowChat.state.enabled = (action == "on")
     saveState()
-    note("Automatic coloring is now " .. (RainbowChat.state.enabled and "ON." or "OFF."))
+    announceEnabledState()
     return
   end
 
   if action == "toggle" then
     RainbowChat.state.enabled = not RainbowChat.state.enabled
     saveState()
-    note("Automatic coloring is now " .. (RainbowChat.state.enabled and "ON." or "OFF."))
+    announceEnabledState()
     return
   end
 
   if action == "mode" then
-    local mode = rest:lower()
+    local mode = canonicalMode(rest)
     if mode == "" then
       note("Current mode: " .. RainbowChat.state.mode)
     elseif VALID_MODES[mode] then
@@ -609,7 +674,7 @@ function RainbowChat.command(arguments)
       saveState()
       note("Mode set to " .. mode .. ".")
     else
-      note("Unknown mode '" .. rest .. "'. Choose: " .. table.concat(BASE_MODES, ", ") .. ", random")
+      note("Unknown mode '" .. rest .. "'. Type 'rainbow help' for the available modes.")
     end
     return
   end

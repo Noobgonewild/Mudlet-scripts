@@ -39,7 +39,7 @@ end]]></script>
 GENVENOM = GENVENOM or {}
 local genv = GENVENOM
 
-genv.version = "1.0.4"
+genv.version = "1.0.11"
 genv.config = genv.config or {}
 genv.runtime = genv.runtime or {}
 genv.triggers = genv.triggers or {}
@@ -53,6 +53,7 @@ local defaults = {
     debug = false,
     warningSeconds = 30,
     maxAttempts = 3,
+    maxReturnAttempts = 5,
     identifyTimeout = 7,
     actionTimeout = 6,
 }
@@ -151,14 +152,14 @@ end
 
 local function settingsDir()
     local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
-    local dir = home .. "/GEnvenom"
+    local dir = home .. "/persistence"
     if type(mkdir) == "function" then pcall(mkdir, dir) end
     if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
     return dir
 end
 
 local function settingsPath()
-    return settingsDir() .. "/settings.lua"
+    return settingsDir() .. "/genvenom.lua"
 end
 
 function genv.saveSettings()
@@ -535,13 +536,65 @@ function genv.finishActive(delay)
     after(delay or 0.1, "nextJob", genv.runNext)
 end
 
-local function returnBorrowed(job, tellMessage)
-    if tellMessage and tellMessage ~= "" then
-        sendCommand("tell " .. job.sender .. " " .. tellMessage)
+local function completeBorrowedReturn(job)
+    killTimerField("operation")
+    if job.returnTell and job.returnTell ~= "" then
+        sendCommand("tell " .. job.sender .. " " .. job.returnTell)
     end
-    sendCommand("give " .. job.id .. " " .. job.sender)
-    genv.print("Returned weapon " .. job.id .. " to " .. job.sender .. ".", "green")
+    if type(cecho) == "function" then cecho("\n") end
+    genv.print("Returned item " .. job.id .. " to " .. job.sender .. ".", "green")
     genv.finishActive(0.2)
+end
+
+function genv.retryBorrowedReturn(job, reason, fromGameLine)
+    if genv.runtime.active ~= job then return end
+    killTimerField("operation")
+    if (tonumber(job.returnAttempts) or 0) < genv.config.maxReturnAttempts then
+        job.stage = "returnRetryWait"
+        after(1.0, "operation", function()
+            if genv.runtime.active == job then genv.startBorrowedReturn(job) end
+        end)
+        return
+    end
+    if fromGameLine and type(cecho) == "function" then cecho("\n") end
+    genv.print("Could not return item " .. job.id .. " to " .. job.sender
+        .. " after " .. tostring(genv.config.maxReturnAttempts) .. " attempts; the item is still with you.", "red")
+    genv.debug("Borrowed return failed: " .. tostring(reason))
+    genv.finishActive(0.2)
+end
+
+function genv.startBorrowedReturn(job)
+    if genv.runtime.active ~= job then return end
+    job.returnAttempts = (tonumber(job.returnAttempts) or 0) + 1
+    job.stage = "returning"
+    if not sendCommand("give " .. job.id .. " " .. job.sender) then
+        genv.retryBorrowedReturn(job, "give command was not sent", false)
+        return
+    end
+    after(genv.config.actionTimeout, "operation", function()
+        if genv.runtime.active == job and job.stage == "returning" then
+            genv.retryBorrowedReturn(job, "give confirmation timed out", false)
+        end
+    end)
+end
+
+local function returnBorrowed(job, tellMessage)
+    job.returnTell = tellMessage
+    job.returnAttempts = 0
+    genv.startBorrowedReturn(job)
+end
+
+function genv.onGiveSuccess(recipient)
+    local job = genv.runtime.active
+    if not job or job.kind ~= "borrowed" or job.stage ~= "returning" then return end
+    if normalized(recipient) ~= normalized(job.sender) then return end
+    completeBorrowedReturn(job)
+end
+
+function genv.onGiveSleeping()
+    local job = genv.runtime.active
+    if not job or job.kind ~= "borrowed" or job.stage ~= "returning" then return end
+    genv.retryBorrowedReturn(job, "character was sleeping", true)
 end
 
 local function tooPowerfulBorrowed(job)
@@ -550,7 +603,7 @@ local function tooPowerfulBorrowed(job)
     local levelText = level and tostring(math.floor(level)) or "an unknown level"
     local capText = cap and tostring(cap) or "my current tier level"
     returnBorrowed(job, "Sorry, that weapon is level " .. levelText
-        .. "; I can only envenom up to level " .. capText .. ".")
+        .. "; I can only envenom up to level " .. capText .. ". I have returned it.")
 end
 
 local function pollItem(job, predicate, onSuccess, onFailure, attempts)
@@ -605,7 +658,7 @@ end
 
 local function borrowedFailure(job, reason)
     returnBorrowed(job, "Sorry, I could not envenom that weapon after "
-        .. tostring(genv.config.maxAttempts) .. " attempts, so I am returning it.")
+        .. tostring(genv.config.maxAttempts) .. " attempts. I have returned it.")
     genv.debug("Borrowed envenom failed: " .. tostring(reason))
 end
 
@@ -615,7 +668,7 @@ function genv.startEnvenom(job)
         if job.kind == "own" then
             failOwned(job, "Envenom stopped: " .. tostring(reason) .. ".")
         else
-            returnBorrowed(job, "Sorry, I cannot use Envenom right now, so I am returning your weapon.")
+            returnBorrowed(job, "Sorry, I cannot use Envenom right now. I have returned your weapon.")
         end
         return
     end
@@ -651,6 +704,7 @@ function genv.onEnvenomFailure(reason)
     if not job or job.stage ~= "envenoming" then return end
     killTimerField("operation")
     if (tonumber(job.attempts) or 0) < genv.config.maxAttempts then
+        if type(cecho) == "function" then cecho("\n") end
         genv.print("Envenom attempt " .. tostring(job.attempts) .. " failed for " .. job.id
             .. "; trying again.", "orange_red")
         job.stage = "retryWait"
@@ -693,7 +747,7 @@ function genv.onAlreadyEnvenomed()
     if not job or job.stage ~= "envenoming" then return end
     killTimerField("operation")
     if job.kind == "borrowed" then
-        returnBorrowed(job, "That weapon is already envenomed, so I am returning it.")
+        returnBorrowed(job, "That weapon is already envenomed. I have returned it.")
     else
         genv.startIdentify(job, false, "post")
     end
@@ -713,9 +767,15 @@ local function parseIdentifyLine(capture, text)
     if itemType then capture.data.type = trim(itemType) end
     local level = text:match("Level%s*:%s*([%d,]+)")
     if level then capture.data.level = tonumber((level:gsub(",", ""))) end
-    local minutes, seconds = text:match("|%s*Envenom%s*:.-%((%d+):(%d+)%)")
-    if minutes and seconds then
-        capture.data.duration = (tonumber(minutes) * 60) + tonumber(seconds)
+    local durationText = text:match("|%s*Envenom%s*:.-%(([%d:]+)%)")
+    if durationText then
+        local hours, minutes, seconds = durationText:match("^(%d+):(%d+):(%d+)$")
+        if hours then
+            capture.data.duration = (tonumber(hours) * 3600) + (tonumber(minutes) * 60) + tonumber(seconds)
+        else
+            minutes, seconds = durationText:match("^(%d+):(%d+)$")
+            if minutes then capture.data.duration = (tonumber(minutes) * 60) + tonumber(seconds) end
+        end
     end
     return isIdentifyOutput
 end
@@ -790,7 +850,7 @@ function genv.failIdentifyCapture(capture, reason)
     if job.kind == "own" then
         failOwned(job, "Could not refresh Envenom status for " .. job.id .. ": " .. tostring(reason) .. ".")
     else
-        returnBorrowed(job, "Sorry, I could not identify that weapon safely, so I am returning it.")
+        returnBorrowed(job, "Sorry, I could not identify that weapon safely. I have returned it.")
     end
 end
 
@@ -851,9 +911,7 @@ function genv.finishIdentifyCapture(capture)
     job.item = item
     if normalized(itemType) ~= "weapon" then
         if job.kind == "borrowed" then
-            genv.print("Received item " .. job.id .. " from " .. job.sender
-                .. " is not a weapon; borrowed mode left it untouched.", "cyan")
-            genv.finishActive()
+            returnBorrowed(job, "Sorry, that item is not a weapon, so I could not envenom it. I have returned it.")
         else
             failOwned(job, "Equipped ID " .. job.id .. " did not identify as a weapon.")
         end
@@ -863,11 +921,11 @@ function genv.finishIdentifyCapture(capture)
     if job.kind == "borrowed" then
         local cap = genv.tierLevel()
         if not cap or not level then
-            returnBorrowed(job, "Sorry, I could not verify that weapon's level safely, so I am returning it.")
+            returnBorrowed(job, "Sorry, I could not verify that weapon's level safely. I have returned it.")
         elseif level > cap then
             tooPowerfulBorrowed(job)
         elseif data.duration then
-            returnBorrowed(job, "That weapon is already envenomed, so I am returning it.")
+            returnBorrowed(job, "That weapon is already envenomed. I have returned it.")
         else
             genv.startEnvenom(job)
         end
@@ -1395,6 +1453,10 @@ function genv.installRuntime()
         if matches then genv.onReceived(matches[2]) end
     end)
     genv.triggers.success = tempRegexTrigger("^You coat .* with deadly poison\\.$", genv.onEnvenomSuccess)
+    genv.triggers.giveSuccess = tempRegexTrigger("^You give .* to (\\w+)\\.$", function()
+        if matches then genv.onGiveSuccess(matches[2]) end
+    end)
+    genv.triggers.giveSleeping = tempRegexTrigger("^You dream about being able to give\\.$", genv.onGiveSleeping)
     genv.triggers.expired = tempRegexTrigger("^Your (.+) is no longer envenomed\\.$", function()
         if matches then genv.onExpiredMessage(matches[2]) end
     end)
@@ -1411,8 +1473,6 @@ function genv.installRuntime()
     genv.handlers.connect = registerAnonymousEventHandler("sysConnectionEvent", genv.onConnect)
     genv.handlers.disconnect = registerAnonymousEventHandler("sysDisconnectionEvent", genv.onDisconnect)
 
-    sendCommand("tags invmon on")
-    sendCommand("tags identify on")
     genv.print("Loaded v" .. genv.version .. ". Use 'genv check', 'genv status', or 'genv help'.", "green")
     after(1.0, "startup", function()
         genv.recoverInterrupted(genv.resumeAfterRecovery)

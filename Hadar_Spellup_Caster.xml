@@ -554,12 +554,12 @@ hspskillgain()</script>
  <script>-- ============================================================================
 -- Hadar_Spellup_Caster for Mudlet
 -- Ported from MUSHclient plugin by Hadar
- -- Version: 1.30
+ -- Version: 1.33
 -- Purpose: Spellup Script for Aardwolf MUD
 -- ============================================================================
 
 HSP = HSP or {}
-HSP.version = &quot;1.30&quot;
+HSP.version = &quot;1.33&quot;
 HSP.pluginName = &quot;Hadar_Spellup_Caster&quot;
 HSP.combatDefaultsVersion = 2
 local function hsp_persistence_dir()
@@ -674,8 +674,8 @@ end
 
 -- ============================================================================
 -- Optional exact-line suppression for self spellup prose.
--- Protocol tags and failure messages are handled elsewhere and are deliberately
--- not included here.
+-- Protocol tags are handled elsewhere. Exact visible cast failures can be
+-- included here without interfering with their underlying protocol handling.
 -- ============================================================================
 local function hspLineSet(lines)
   local result = {}
@@ -746,6 +746,11 @@ HSP.spellupProse = {
     &quot;Your body softens.&quot;,
     &quot;You are no longer in harmony with yourself.&quot;,
     &quot;You are no longer surrounded by your party shield.&quot;,
+    &quot;You slowly float to the ground.&quot;,
+    &quot;You feel less holy.&quot;,
+    &quot;You feel the loss of your champion&#x27;s strength.&quot;,
+    &quot;You feel more vulnerable as the spirits leave your side.&quot;,
+    &quot;You feel weaker as you question your faith.&quot;,
   }),
   casts = hspLineSet({
     &quot;You now possess magical powers of avoidance.&quot;,
@@ -815,6 +820,14 @@ HSP.spellupProse = {
     &quot;Your muscles surge with heightened power!&quot;,
     &quot;You are completely focused on your inner power.&quot;,
     &quot;You are surrounded by your protective shield.&quot;,
+    &quot;Your feet rise off the ground.&quot;,
+    &quot;You feel protected by The Revolution.&quot;,
+    &quot;You are granted the strength of The Revolution.&quot;,
+    &quot;You feel a weave of awesome spirits surround your body.&quot;,
+    &quot;Your faith drives you to strength beyond your means.&quot;,
+    &quot;You lost your concentration while trying to cast awakening.&quot;,
+    &quot;You lost your concentration while trying to cast channel energy.&quot;,
+    &quot;You can already sense the hidden.&quot;,
   }),
 }
 
@@ -1620,7 +1633,7 @@ function HSP.showSilenceStatus()
   local falloffs = Spellups[&quot;GL&quot;][&quot;silenceFalloffs&quot;] == &quot;yes&quot; and &quot;@GON@w&quot; or &quot;@ROFF@w&quot;
   local casts = Spellups[&quot;GL&quot;][&quot;silenceCasts&quot;] == &quot;yes&quot; and &quot;@GON@w&quot; or &quot;@ROFF@w&quot;
   hadarprint(&quot;Silence falloffs: &quot; .. falloffs, &quot;script&quot;)
-  hadarprint(&quot;Silence successful casts: &quot; .. casts, &quot;script&quot;)
+  hadarprint(&quot;Silence cast responses: &quot; .. casts, &quot;script&quot;)
   hadarprint(&quot;Silenced this session: &quot; .. HSP.silencedCastPromptCount .. &quot; HSP prompts, &quot; .. HSP.silencedBlankCount .. &quot; adjacent blank rows&quot;, &quot;script&quot;)
 end
 

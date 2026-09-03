@@ -59,6 +59,46 @@
           <integer>1</integer>
         </regexCodePropertyList>
       </Trigger>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>g_character_double_xp_start</name>
+        <script><![CDATA[if GSTATS and GSTATS.statusbar_double_xp_start then GSTATS.statusbar_double_xp_start(matches) end]]></script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^For the next ([0-9]+) minutes experience is doubled in honor of the new superhero\.$|^Double experience for ([0-9]+) minutes courtesy of.+$|^\[    ([0-9]+) minutes of double exp started courtesy of donations being open   \]$|^For the next ([0-9]+) minutes all experience is doubled!!$|^INFO: Double experience is running in honor of .* reaching superhero\. - ([0-9]+) minutes left\.?$|^INFO: Double experience is running courtesy of Aardwolf supporters - see 'help donate'\. - ([0-9]+) minutes left$|^INFO: Double experience is running courtesy of .* daily blessing\. - ([0-9]+) minutes left\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
+
+      <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+        <name>g_character_double_xp_end</name>
+        <script><![CDATA[if GSTATS and GSTATS.statusbar_double_xp_end then GSTATS.statusbar_double_xp_end() end]]></script>
+        <conditionLineDelta>0</conditionLineDelta>
+        <mStayOpen>0</mStayOpen>
+        <mCommand></mCommand>
+        <packageName></packageName>
+        <mFgColor></mFgColor>
+        <mBgColor></mBgColor>
+        <mSoundFile></mSoundFile>
+        <colorTriggerFgColor></colorTriggerFgColor>
+        <colorTriggerBgColor></colorTriggerBgColor>
+        <regexCodeList>
+          <string>^INFO: Bonus experience has now expired\.$</string>
+        </regexCodeList>
+        <regexCodePropertyList>
+          <integer>1</integer>
+        </regexCodePropertyList>
+      </Trigger>
     </TriggerGroup>
   </TriggerPackage>
 
@@ -128,6 +168,27 @@ GSTATS.defaults = {
   report_channel = "gt",
   score_mode = "none",
 }
+GSTATS.statusbar_defaults = {
+  x = "12%",
+  y = "62%",
+  width = 700,
+  height = 82,
+  visible = true,
+  layout = "rail",
+  skin = "clean",
+  vertical_bars = false,
+  show_enemy = true,
+  show_mana = true,
+  show_moves = true,
+  show_double_xp = true,
+  show_combat = false,
+  show_needs = false,
+  show_values = true,
+  pulse_mode = "off",
+  fontsize = 9,
+  config_x = "34%",
+  config_y = "18%",
+}
 GSTATS.state = GSTATS.state or {}
 GSTATS.ui = GSTATS.ui or {}
 GSTATS.last = GSTATS.last or nil
@@ -150,6 +211,42 @@ function GSTATS.merge_defaults()
   local score_modes = { none = true, tactical = true, vitals = true, sheet = true, minimal = true }
   local score_mode = tostring(GSTATS.state.score_mode or "none"):lower()
   GSTATS.state.score_mode = score_modes[score_mode] and score_mode or "none"
+
+  if type(GSTATS.state.statusbar) ~= "table" then GSTATS.state.statusbar = {} end
+  if GSTATS.state.statusbar.show_double_xp == nil and GSTATS.state.statusbar.show_tnl ~= nil then
+    GSTATS.state.statusbar.show_double_xp = GSTATS.state.statusbar.show_tnl == true
+  end
+  GSTATS.state.statusbar.show_tnl = nil
+  for k, v in pairs(GSTATS.statusbar_defaults) do
+    if GSTATS.state.statusbar[k] == nil then GSTATS.state.statusbar[k] = v end
+  end
+
+  local statusbar = GSTATS.state.statusbar
+  local layouts = { rail=true, stack=true, pips=true, basic=true }
+  local layout = tostring(statusbar.layout or "rail"):lower()
+  if layout == "duel" or layout == "deck" or layout == "linestack" or layout == "adaptive" then layout = "rail" end
+  statusbar.layout = layouts[layout] and layout or "rail"
+  local skins = { clean=true, capsule=true }
+  local skin = tostring(statusbar.skin or "clean"):lower()
+  statusbar.skin = skins[skin] and skin or "clean"
+  statusbar.vertical_bars = statusbar.vertical_bars == true
+  if statusbar.horizontal_width == nil then statusbar.horizontal_width = statusbar.vertical_bars and 700 or statusbar.width end
+  if statusbar.horizontal_height == nil then statusbar.horizontal_height = statusbar.vertical_bars and 82 or statusbar.height end
+  if statusbar.vertical_width == nil then statusbar.vertical_width = statusbar.vertical_bars and statusbar.width or 220 end
+  if statusbar.vertical_height == nil then statusbar.vertical_height = statusbar.vertical_bars and statusbar.height or 360 end
+  statusbar.resource_focus = nil
+  local statusbar_fontsize = tonumber(statusbar.fontsize) or 9
+  statusbar.fontsize = math.max(8, math.min(16, math.floor(statusbar_fontsize + 0.5)))
+  local pulse_mode = statusbar.pulse_mode
+  if tonumber(pulse_mode) and tonumber(pulse_mode) >= 2 and tonumber(pulse_mode) <= 5 and tonumber(pulse_mode) == math.floor(tonumber(pulse_mode)) then
+    statusbar.pulse_mode = tonumber(pulse_mode)
+  elseif tostring(pulse_mode or "off"):lower() == "auto" then
+    statusbar.pulse_mode = "auto"
+  else
+    statusbar.pulse_mode = "off"
+  end
+  local double_xp_ends_at = tonumber(statusbar.double_xp_ends_at)
+  statusbar.double_xp_ends_at = double_xp_ends_at and double_xp_ends_at > os.time() and double_xp_ends_at or nil
 end
 
 function GSTATS.load_state()
@@ -188,6 +285,26 @@ function GSTATS.save_state()
     if GSTATS.ui.container.get_y then GSTATS.state.y = GSTATS.ui.container:get_y() end
     if GSTATS.ui.container.get_width then GSTATS.state.width = GSTATS.ui.container:get_width() end
     if GSTATS.ui.container.get_height then GSTATS.state.height = GSTATS.ui.container:get_height() end
+  end
+  local statusbar = GSTATS.state and GSTATS.state.statusbar
+  local statusbar_container = GSTATS.ui and GSTATS.ui.statusbar_container
+  if statusbar and statusbar_container then
+    if statusbar_container.get_x then statusbar.x = statusbar_container:get_x() end
+    if statusbar_container.get_y then statusbar.y = statusbar_container:get_y() end
+    if statusbar_container.get_width then statusbar.width = statusbar_container:get_width() end
+    if statusbar_container.get_height then statusbar.height = statusbar_container:get_height() end
+    if statusbar.vertical_bars and statusbar.layout ~= "basic" then
+      statusbar.vertical_width = statusbar.width
+      statusbar.vertical_height = statusbar.height
+    else
+      statusbar.horizontal_width = statusbar.width
+      statusbar.horizontal_height = statusbar.height
+    end
+  end
+  local config_container = GSTATS.ui and GSTATS.ui.statusbar_config
+  if statusbar and config_container then
+    if config_container.get_x then statusbar.config_x = config_container:get_x() end
+    if config_container.get_y then statusbar.config_y = config_container:get_y() end
   end
   if type(table.save) == "function" then
     local ok = pcall(table.save, GSTATS.state_file, GSTATS.state)
@@ -368,6 +485,9 @@ function GSTATS.from_gmcp()
   d.wimpy = GSTATS.safe_number(s.wimpy)
   d.hunger = GSTATS.safe_number(s.hunger)
   d.thirst = GSTATS.safe_number(s.thirst)
+  d.enemy = tostring(s.enemy or s.enemyname or s.enemy_name or "")
+  d.enemypct = GSTATS.safe_number(s.enemypct, s.enemypercent, s.enemy_pct)
+  d.in_combat = standing_num == 8
   d.quest_time = GSTATS.safe_number(s.questtime, s.quest_time, w.questtime, w.quest_time)
   d.goals_done = GSTATS.safe_number(s.goals, s.goalsdone, s.goals_done, w.goals, w.goalsdone, w.goals_done)
   d.age = GSTATS.safe_number(s.age, b.age)
@@ -406,6 +526,1665 @@ function GSTATS.gmcp_has_stats()
   if type(c.status) == "table" and (c.status.level ~= nil or c.status.state ~= nil) then return true end
   if type(c.worth) == "table" and (c.worth.gold ~= nil or c.worth.qp ~= nil or c.worth.tp ~= nil) then return true end
   return false
+end
+
+GSTATS.statusbar_layouts = {
+  { key="rail", name="01 · Tactical rail" },
+  { key="stack", name="02 · Compact stack" },
+  { key="pips", name="03 · Minimal pips" },
+  { key="basic", name="04 · Basic" },
+}
+GSTATS.statusbar_font_sizes = { 8, 9, 10, 11, 12, 13, 14, 15, 16 }
+GSTATS.statusbar_skins = {
+  { key="clean", name="Clean gradient" },
+  { key="capsule", name="Neon capsule" },
+}
+GSTATS.statusbar_config_actions = { "visible", "layout", "skin", "fontsize", "vertical", "enemy", "mana", "moves", "doublexp", "values", "combat", "needs", "pulse" }
+GSTATS.statusbar_config_ui_version = 7
+
+function GSTATS.statusbar_font_size()
+  local value = tonumber(GSTATS.state and GSTATS.state.statusbar and GSTATS.state.statusbar.fontsize) or 9
+  return math.max(8, math.min(16, math.floor(value + 0.5)))
+end
+
+function GSTATS.statusbar_info_row_count()
+  local options = GSTATS.state and GSTATS.state.statusbar or {}
+  if options.layout == "basic" then return 0 end
+  return (options.show_double_xp and 1 or 0) + (options.show_combat and 1 or 0) + (options.show_needs and 1 or 0)
+end
+
+function GSTATS.statusbar_minimum_width_for_font()
+  local options = GSTATS.state and GSTATS.state.statusbar or {}
+  if options.layout == "basic" then return 250 end
+  if options.vertical_bars then return 104 end
+  if options.layout == "pips" then return 280 end
+  return 220
+end
+
+function GSTATS.statusbar_minimum_height_for_font()
+  local font_size = GSTATS.statusbar_font_size()
+  local options = GSTATS.state.statusbar
+  if options.layout == "basic" then return math.max(28, font_size + 18) end
+  local row_height = font_size + 8
+  local resource_count = (options.show_mana and 1 or 0) + (options.show_moves and 1 or 0)
+  local core_height
+  if options.layout == "rail" then
+    local row_count = 1 + resource_count
+    core_height = row_count * row_height + math.max(0, row_count - 1) * 4
+  elseif options.layout == "stack" and resource_count > 0 then
+    core_height = row_height * 2 + 4
+  else
+    core_height = row_height
+  end
+  local info_rows = GSTATS.statusbar_info_row_count()
+  local info_row_height = math.max(20, font_size + 8)
+  local footer_height = info_rows > 0 and info_rows * info_row_height + math.max(0, info_rows - 1) * 3 or 0
+  local footer_gap = info_rows > 0 and 4 or 0
+  if options.vertical_bars then
+    return math.max(300, 7 + 220 + 4 + footer_height + footer_gap)
+  end
+  return math.max(82, 7 + core_height + 4 + footer_height + footer_gap)
+end
+
+function GSTATS.statusbar_ensure_minimum_size()
+  local container = GSTATS.ui and GSTATS.ui.statusbar_container
+  if not container or type(container.resize) ~= "function" then return end
+  local current_width, current_height = GSTATS.statusbar_size()
+  local wanted_width = math.max(current_width, GSTATS.statusbar_minimum_width_for_font())
+  local wanted_height = math.max(current_height, GSTATS.statusbar_minimum_height_for_font())
+  if wanted_width ~= current_width or wanted_height ~= current_height then
+    container:resize(wanted_width, wanted_height)
+    GSTATS.state.statusbar.width = wanted_width
+    GSTATS.state.statusbar.height = wanted_height
+  end
+end
+
+function GSTATS.statusbar_config_dimensions()
+  local font_size = GSTATS.statusbar_font_size()
+  local header_height = math.max(32, font_size + 23)
+  local row_height = math.max(26, font_size + 15)
+  local row_step = row_height + 2
+  local row_start = header_height + 4
+  local footer_font = math.max(8, font_size - 1)
+  local footer_height = math.max(30, footer_font + 17)
+  local footer_y = row_start + #GSTATS.statusbar_config_actions * row_step + 6
+  return {
+    width = 440 + math.max(0, font_size - 9) * 12,
+    height = footer_y + footer_height + 9,
+    header_height = header_height,
+    row_height = row_height,
+    row_step = row_step,
+    row_start = row_start,
+    footer_font = footer_font,
+    footer_height = footer_height,
+    footer_y = footer_y,
+  }
+end
+
+function GSTATS.statusbar_apply_label_font(label, alignment)
+  if not label then return end
+  if type(label.processFormatString) == "function" then
+    label:processFormatString(tostring(alignment or "") .. tostring(GSTATS.statusbar_font_size()))
+  elseif type(label.setFontSize) == "function" then
+    pcall(label.setFontSize, label, GSTATS.statusbar_font_size())
+  end
+end
+
+function GSTATS.statusbar_escape(text)
+  return tostring(text or ""):gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+end
+
+function GSTATS.statusbar_move_resize(object, x, y, width, height)
+  if not object then return end
+  if type(object.move) == "function" then pcall(object.move, object, x, y) end
+  if type(object.resize) == "function" then pcall(object.resize, object, math.max(1, width), math.max(1, height)) end
+end
+
+function GSTATS.statusbar_size()
+  local c = GSTATS.ui and GSTATS.ui.statusbar_container
+  local width = tonumber(GSTATS.state.statusbar.width) or 700
+  local height = tonumber(GSTATS.state.statusbar.height) or 82
+  if c and type(c.get_width) == "function" then
+    local ok, value = pcall(c.get_width, c)
+    if ok and tonumber(value) then width = tonumber(value) end
+  end
+  if c and type(c.get_height) == "function" then
+    local ok, value = pcall(c.get_height, c)
+    if ok and tonumber(value) then height = tonumber(value) end
+  end
+  return math.max(GSTATS.statusbar_minimum_width_for_font(), width), math.max(GSTATS.statusbar_minimum_height_for_font(), height)
+end
+
+function GSTATS.statusbar_epoch_seconds()
+  if type(getEpoch) == "function" then
+    local ok, value = pcall(getEpoch)
+    if ok and tonumber(value) then return tonumber(value) end
+  end
+  return os.clock()
+end
+
+function GSTATS.statusbar_pulse_period()
+  if not (GSTATS.last and GSTATS.last.in_combat) then return nil end
+  local mode = GSTATS.state.statusbar.pulse_mode
+  local override = tonumber(mode)
+  if override and override >= 2 and override <= 5 then return override end
+  if tostring(mode or "off"):lower() ~= "auto" then return nil end
+  local subclass = tostring((GSTATS.last and GSTATS.last.subclass) or ""):lower()
+  return subclass == "navigator" and 2 or 3
+end
+
+function GSTATS.update_statusbar_pulse()
+  local gauge = GSTATS.ui and GSTATS.ui.statusbar_pulse
+  if not gauge then return end
+  local period = GSTATS.statusbar_active_pulse_period
+  if not period or not GSTATS.state.statusbar.visible then
+    gauge:hide()
+    gauge:setValue(0, 100, "")
+    return
+  end
+  gauge:show()
+  local now = GSTATS.statusbar_epoch_seconds()
+  local origin = GSTATS.statusbar_pulse_origin or now
+  local elapsed = now - origin
+  if elapsed < 0 then
+    GSTATS.statusbar_pulse_origin = now
+    elapsed = 0
+  end
+  local remaining = 1 - ((elapsed % period) / period)
+  gauge:setValue(math.max(0, math.min(100, remaining * 100)), 100, "")
+end
+
+function GSTATS.sync_statusbar_pulse(reset)
+  local period = GSTATS.statusbar_pulse_period()
+  if not GSTATS.state.statusbar.visible then period = nil end
+  if not reset and period == GSTATS.statusbar_active_pulse_period and (not period or GSTATS.statusbar_pulse_timer) then
+    GSTATS.update_statusbar_pulse()
+    return
+  end
+
+  if GSTATS.statusbar_pulse_timer and type(killTimer) == "function" then
+    pcall(killTimer, GSTATS.statusbar_pulse_timer)
+  end
+  GSTATS.statusbar_pulse_timer = nil
+  GSTATS.statusbar_active_pulse_period = period
+  GSTATS.statusbar_pulse_origin = GSTATS.statusbar_epoch_seconds()
+  GSTATS.update_statusbar_pulse()
+
+  if period and type(tempTimer) == "function" then
+    GSTATS.statusbar_pulse_timer = tempTimer(0.05, function() GSTATS.update_statusbar_pulse() end, true)
+  end
+end
+
+function GSTATS.statusbar_double_xp_status()
+  local options = GSTATS.state and GSTATS.state.statusbar or {}
+  local ends_at = tonumber(options.double_xp_ends_at)
+  local remaining = ends_at and math.max(0, ends_at - os.time()) or 0
+  if remaining <= 0 then return "DXP OFF", "#8d9aab" end
+  return "DXP " .. tostring(math.ceil(remaining / 60)) .. "min", "#f2c94c"
+end
+
+function GSTATS.statusbar_double_xp_should_display()
+  local options = GSTATS.state and GSTATS.state.statusbar or {}
+  return options.visible == true and options.layout ~= "basic" and options.show_double_xp == true
+end
+
+function GSTATS.statusbar_double_xp_should_tick()
+  if not GSTATS.statusbar_double_xp_should_display() then return false end
+  local ends_at = tonumber(GSTATS.state.statusbar.double_xp_ends_at)
+  return ends_at ~= nil and ends_at > os.time()
+end
+
+function GSTATS.update_statusbar_double_xp_info()
+  if not GSTATS.statusbar_double_xp_should_display() then return end
+  local cell = GSTATS.ui and GSTATS.ui.statusbar_info_cells and GSTATS.ui.statusbar_info_cells[1]
+  if not cell then return end
+  local options = GSTATS.state.statusbar
+  local text, color = GSTATS.statusbar_double_xp_status()
+  local alignment = options.vertical_bars and "c" or "l"
+  local padding = options.vertical_bars and 0 or 5
+  GSTATS.statusbar_apply_label_font(cell, alignment)
+  cell:setStyleSheet(string.format("background-color: transparent; border: 0px; color: %s; font-size: %dpt; font-weight: bold; padding-left: %dpx;", color, GSTATS.statusbar_font_size(), padding))
+  cell:echo(GSTATS.statusbar_escape(text), color, alignment)
+end
+
+function GSTATS.sync_statusbar_double_xp_timer()
+  local wanted = GSTATS.statusbar_double_xp_should_tick()
+  if wanted and not GSTATS.statusbar_double_xp_timer and type(tempTimer) == "function" then
+    GSTATS.statusbar_double_xp_timer = tempTimer(1, function()
+      GSTATS.update_statusbar_double_xp_info()
+      if not GSTATS.statusbar_double_xp_should_tick() then
+        GSTATS.state.statusbar.double_xp_ends_at = nil
+        GSTATS.sync_statusbar_double_xp_timer()
+        GSTATS.schedule_state_save(0.1)
+      end
+    end, true)
+  elseif not wanted and GSTATS.statusbar_double_xp_timer then
+    if type(killTimer) == "function" then pcall(killTimer, GSTATS.statusbar_double_xp_timer) end
+    GSTATS.statusbar_double_xp_timer = nil
+  end
+end
+
+function GSTATS.statusbar_double_xp_start(captures)
+  local minutes
+  for index = 2, 8 do
+    local value = type(captures) == "table" and tonumber(captures[index]) or nil
+    if value and value > 0 then minutes = value; break end
+  end
+  if not minutes then return end
+  GSTATS.state.statusbar.double_xp_ends_at = os.time() + math.floor(minutes * 60)
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) else GSTATS.sync_statusbar_double_xp_timer() end
+  GSTATS.schedule_state_save(0.1)
+end
+
+function GSTATS.statusbar_double_xp_end()
+  GSTATS.state.statusbar.double_xp_ends_at = nil
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) else GSTATS.sync_statusbar_double_xp_timer() end
+  GSTATS.schedule_state_save(0.1)
+end
+
+function GSTATS.statusbar_info_rows(data)
+  local options = GSTATS.state.statusbar
+  local rows = {}
+  if options.show_double_xp then
+    local double_xp_text, double_xp_color = GSTATS.statusbar_double_xp_status()
+    rows[#rows+1] = {
+      { text=double_xp_text, color=double_xp_color },
+    }
+  end
+  if options.show_combat then
+    rows[#rows+1] = {
+      { text=string.format("HR %d", GSTATS.safe_number(data.hitroll)), color="#70b7ed" },
+      { text=string.format("DR %d", GSTATS.safe_number(data.damroll)), color="#e58a92" },
+    }
+  end
+  if options.show_needs then
+    rows[#rows+1] = {
+      { text=string.format("H %d", GSTATS.safe_number(data.hunger)), color="#8fcf87" },
+      { text=string.format("T %d", GSTATS.safe_number(data.thirst)), color="#7fc8d9" },
+    }
+  end
+  return rows
+end
+
+function GSTATS.statusbar_info_entries(data)
+  local parts = {}
+  for _, row in ipairs(GSTATS.statusbar_info_rows(data)) do
+    for _, entry in ipairs(row) do parts[#parts+1] = entry end
+  end
+  return parts
+end
+
+function GSTATS.statusbar_info_text(data)
+  local text = {}
+  for _, entry in ipairs(GSTATS.statusbar_info_entries(data)) do text[#text+1] = "[ " .. entry.text .. " ]" end
+  return table.concat(text, "  ")
+end
+
+function GSTATS.statusbar_gauge_text(label, current, maximum)
+  if not GSTATS.state.statusbar.show_values then
+    local max_value = GSTATS.safe_number(maximum)
+    local pct = max_value > 0 and math.floor(math.max(0, math.min(1, GSTATS.safe_number(current) / max_value)) * 100 + 0.5) or 0
+    return string.format("%s  %d%%", label, pct)
+  end
+  return string.format("%s  %d/%d", label, GSTATS.safe_number(current), GSTATS.safe_number(maximum))
+end
+
+function GSTATS.statusbar_has_enemy_target(data)
+  local name = GSTATS.trim(data.enemy)
+  return name ~= "" and name:lower() ~= "none"
+end
+
+function GSTATS.statusbar_enemy_text(data)
+  local name = GSTATS.trim(data.enemy)
+  if not GSTATS.statusbar_has_enemy_target(data) then return "No Target" end
+  local pct = math.max(0, math.min(100, GSTATS.safe_number(data.enemypct)))
+  return string.format("%s  %d%%", name, pct)
+end
+
+function GSTATS.statusbar_enemy_value(data)
+  if not GSTATS.statusbar_has_enemy_target(data) then return 0 end
+  return math.max(0, math.min(100, GSTATS.safe_number(data.enemypct)))
+end
+
+function GSTATS.statusbar_vertical_gauge_text(label, current, maximum)
+  local safe_label = GSTATS.statusbar_escape(label)
+  if not GSTATS.state.statusbar.show_values then
+    return string.format("%s<br>%d%%", safe_label, GSTATS.statusbar_percent(current, maximum))
+  end
+  return string.format("%s<br>%d<br>/%d", safe_label, GSTATS.safe_number(current), GSTATS.safe_number(maximum))
+end
+
+function GSTATS.statusbar_vertical_enemy_text(data)
+  local name = GSTATS.trim(data.enemy)
+  if not GSTATS.statusbar_has_enemy_target(data) then return "No<br>Target" end
+  name = name:gsub("^[Aa][Nn]%s+", ""):gsub("^[Aa]%s+", ""):gsub("^[Tt][Hh][Ee]%s+", "")
+  name = name:upper()
+  if #name > 10 then name = name:sub(1, 9) .. "…" end
+  return string.format("%s<br>%d%%", GSTATS.statusbar_escape(name), math.max(0, math.min(100, GSTATS.safe_number(data.enemypct))))
+end
+
+function GSTATS.statusbar_apply_gauge(gauge, visible, x, y, width, height, current, maximum, text, color, dark_color, radius, text_is_html)
+  if not gauge then return end
+  if not visible then gauge:hide(); return end
+  gauge:show()
+  gauge.orientation = GSTATS.state.statusbar.vertical_bars and "vertical" or "horizontal"
+  GSTATS.statusbar_move_resize(gauge, x, y, width, height)
+  local capsule = GSTATS.state.statusbar.skin == "capsule"
+  local corner = capsule and math.max(2, math.floor(math.min(width, height) / 2)) or (tonumber(radius) or 2)
+  if gauge.front and type(gauge.front.setStyleSheet) == "function" then
+    local gradient = GSTATS.state.statusbar.vertical_bars and "x1:0,y1:0,x2:1,y2:0" or "x1:0,y1:0,x2:0,y2:1"
+    if capsule then
+      gauge.front:setStyleSheet(string.format(
+        "background-color: qlineargradient(%s,stop:0 rgba(255,255,255,115),stop:0.16 %s,stop:0.72 %s,stop:1 %s); border: 1px solid rgba(255,255,255,75); border-radius: %dpx;",
+        gradient, color, color, dark_color or color, corner
+      ))
+    else
+      gauge.front:setStyleSheet(string.format(
+        "background-color: qlineargradient(%s,stop:0 %s,stop:1 %s); border: 0px; border-radius: %dpx;",
+        gradient, color, dark_color or color, corner
+      ))
+    end
+  end
+  if gauge.back and type(gauge.back.setStyleSheet) == "function" then
+    local back_style = capsule
+      and "background-color: #07111d; border: 1px solid #315476; border-radius: %dpx;"
+      or "background-color: #080a0d; border: 1px solid #303641; border-radius: %dpx;"
+    gauge.back:setStyleSheet(string.format(back_style, corner))
+  end
+  if gauge.text and type(gauge.text.setStyleSheet) == "function" then
+    GSTATS.statusbar_apply_label_font(gauge.text, "c")
+    gauge.text:setStyleSheet(string.format("background-color: transparent; color: #f4f7fb; font-weight: bold; font-size: %dpt;", GSTATS.statusbar_font_size()))
+  end
+  maximum = GSTATS.safe_number(maximum)
+  current = GSTATS.safe_number(current)
+  if maximum <= 0 then maximum, current = 1, 0 end
+  current = math.max(0, math.min(maximum, current))
+  gauge:setValue(current, maximum, text_is_html and tostring(text or "") or GSTATS.statusbar_escape(text))
+end
+
+function GSTATS.statusbar_place_top(data, enemy_visible, x, y, width, height, radius)
+  local gap = 4
+  local hp_width = width
+  if enemy_visible then hp_width = math.floor((width - gap) / 2) end
+  GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_hp, true, x, y, hp_width, height, data.hp, data.maxhp, GSTATS.statusbar_gauge_text("HP", data.hp, data.maxhp), "#d84b55", "#76262d", radius)
+  GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_enemy, enemy_visible, x + hp_width + gap, y, width - hp_width - gap, height, GSTATS.statusbar_enemy_value(data), 100, GSTATS.statusbar_enemy_text(data), "#a23850", "#571d2c", radius)
+end
+
+function GSTATS.statusbar_place_resources(data, x, y, width, height, radius)
+  local options = GSTATS.state.statusbar
+  local mana_visible = options.show_mana == true
+  local moves_visible = options.show_moves == true
+  local gap = 4
+  if not mana_visible and not moves_visible then
+    GSTATS.ui.statusbar_mana:hide()
+    GSTATS.ui.statusbar_moves:hide()
+    return
+  end
+  if mana_visible and not moves_visible then
+    GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_mana, true, x, y, width, height, data.mana, data.maxmana, GSTATS.statusbar_gauge_text("MN", data.mana, data.maxmana), "#3284d6", "#1a4778", radius)
+    GSTATS.ui.statusbar_moves:hide()
+    return
+  end
+  if moves_visible and not mana_visible then
+    GSTATS.ui.statusbar_mana:hide()
+    GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_moves, true, x, y, width, height, data.moves, data.maxmoves, GSTATS.statusbar_gauge_text("MV", data.moves, data.maxmoves), "#38c876", "#1d6f43", radius)
+    return
+  end
+
+  local usable = width - gap
+  local mana_width = math.floor(usable / 2)
+  local moves_width = usable - mana_width
+  GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_mana, true, x, y, mana_width, height, data.mana, data.maxmana, GSTATS.statusbar_gauge_text("MN", data.mana, data.maxmana), "#3284d6", "#1a4778", radius)
+  GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_moves, true, x + mana_width + gap, y, moves_width, height, data.moves, data.maxmoves, GSTATS.statusbar_gauge_text("MV", data.moves, data.maxmoves), "#38c876", "#1d6f43", radius)
+end
+
+function GSTATS.statusbar_hook_container()
+  local c = GSTATS.ui and GSTATS.ui.statusbar_container
+  if not c or c._gstats_statusbar_hooked then return end
+  c._gstats_statusbar_hooked = true
+  if type(c.move) == "function" then
+    local original_move = c.move
+    c.move = function(self, ...)
+      local results = { original_move(self, ...) }
+      GSTATS.schedule_state_save(0.35)
+      return unpack(results)
+    end
+  end
+  if type(c.resize) == "function" then
+    local original_resize = c.resize
+    c.resize = function(self, ...)
+      local results = { original_resize(self, ...) }
+      GSTATS.schedule_state_save(0.35)
+      if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+      return unpack(results)
+    end
+  end
+end
+
+function GSTATS.statusbar_handle_offset(handle)
+  local x, y = 0, 0
+  if handle and type(handle.get_x) == "function" then
+    local ok, value = pcall(handle.get_x, handle)
+    if ok and tonumber(value) then x = tonumber(value) end
+  end
+  if handle and type(handle.get_y) == "function" then
+    local ok, value = pcall(handle.get_y, handle)
+    if ok and tonumber(value) then y = tonumber(value) end
+  end
+  return x, y
+end
+
+function GSTATS.statusbar_mouse_position(handle, event)
+  if type(getMousePosition) == "function" then
+    local ok, x, y = pcall(getMousePosition)
+    if ok and tonumber(x) and tonumber(y) then return tonumber(x), tonumber(y) end
+  end
+  local container = GSTATS.ui and GSTATS.ui.statusbar_container
+  local container_x, container_y = 0, 0
+  if container and type(container.get_x) == "function" then
+    local ok, value = pcall(container.get_x, container)
+    if ok and tonumber(value) then container_x = tonumber(value) end
+  end
+  if container and type(container.get_y) == "function" then
+    local ok, value = pcall(container.get_y, container)
+    if ok and tonumber(value) then container_y = tonumber(value) end
+  end
+  local offset_x, offset_y = GSTATS.statusbar_handle_offset(handle)
+  return container_x + offset_x + GSTATS.safe_number(event and event.x), container_y + offset_y + GSTATS.safe_number(event and event.y)
+end
+
+function GSTATS.statusbar_forward_right_click(handle, event)
+  local container = GSTATS.ui and GSTATS.ui.statusbar_container
+  if not container or not container.adjLabel or type(container.onClick) ~= "function" then return end
+  local forwarded = {}
+  for key, value in pairs(event or {}) do forwarded[key] = value end
+  local offset_x, offset_y = GSTATS.statusbar_handle_offset(handle)
+  forwarded.x = GSTATS.safe_number(forwarded.x) + offset_x
+  forwarded.y = GSTATS.safe_number(forwarded.y) + offset_y
+  pcall(container.onClick, container, container.adjLabel, forwarded)
+end
+
+function GSTATS.statusbar_drag_start(handle, event)
+  if type(event) ~= "table" then return end
+  if event.button == "RightButton" then
+    GSTATS.statusbar_forward_right_click(handle, event)
+    return
+  end
+  if event.button ~= "LeftButton" then return end
+  local container = GSTATS.ui and GSTATS.ui.statusbar_container
+  if not container then return end
+  local x, y = 0, 0
+  if type(container.get_x) == "function" then
+    local ok, value = pcall(container.get_x, container)
+    if ok and tonumber(value) then x = tonumber(value) end
+  end
+  if type(container.get_y) == "function" then
+    local ok, value = pcall(container.get_y, container)
+    if ok and tonumber(value) then y = tonumber(value) end
+  end
+  local mouse_x, mouse_y = GSTATS.statusbar_mouse_position(handle, event)
+  local width, height = GSTATS.statusbar_size()
+  local pointer_x = tonumber(event.x) or math.floor(width / 2)
+  local pointer_y = tonumber(event.y) or math.floor(height / 2)
+  local edges = {
+    left = pointer_x <= 8,
+    right = pointer_x >= width - 8,
+    top = pointer_y <= 6,
+    bottom = pointer_y >= height - 8,
+  }
+  edges.resize = edges.left or edges.right or edges.top or edges.bottom
+  GSTATS.statusbar_drag = { mouse_x=mouse_x, mouse_y=mouse_y, x=x, y=y, width=width, height=height, edges=edges }
+  if handle and type(handle.setCursor) == "function" then
+    local cursor = "ClosedHand"
+    if (edges.top and edges.left) or (edges.bottom and edges.right) then cursor = "ResizeTopLeft"
+    elseif (edges.top and edges.right) or (edges.bottom and edges.left) then cursor = "ResizeTopRight"
+    elseif edges.top or edges.bottom then cursor = "ResizeVertical"
+    elseif edges.left or edges.right then cursor = "ResizeHorizontal" end
+    pcall(handle.setCursor, handle, cursor)
+  end
+end
+
+function GSTATS.statusbar_drag_move(handle, event)
+  local drag = GSTATS.statusbar_drag
+  local container = GSTATS.ui and GSTATS.ui.statusbar_container
+  if not container then return end
+  if not drag then
+    if handle and type(handle.setCursor) == "function" and type(event) == "table" then
+      local width, height = GSTATS.statusbar_size()
+      local pointer_x = tonumber(event.x) or math.floor(width / 2)
+      local pointer_y = tonumber(event.y) or math.floor(height / 2)
+      local left, right = pointer_x <= 8, pointer_x >= width - 8
+      local top, bottom = pointer_y <= 6, pointer_y >= height - 8
+      local cursor = "OpenHand"
+      if (top and left) or (bottom and right) then cursor = "ResizeTopLeft"
+      elseif (top and right) or (bottom and left) then cursor = "ResizeTopRight"
+      elseif top or bottom then cursor = "ResizeVertical"
+      elseif left or right then cursor = "ResizeHorizontal" end
+      pcall(handle.setCursor, handle, cursor)
+    end
+    return
+  end
+  local mouse_x, mouse_y = GSTATS.statusbar_mouse_position(handle, event)
+  local delta_x, delta_y = mouse_x - drag.mouse_x, mouse_y - drag.mouse_y
+  local window_width, window_height = math.huge, math.huge
+  if type(getMainWindowSize) == "function" then
+    local ok, measured_width, measured_height = pcall(getMainWindowSize)
+    if ok and tonumber(measured_width) and tonumber(measured_height) then
+      window_width, window_height = tonumber(measured_width), tonumber(measured_height)
+    end
+  end
+
+  if drag.edges and drag.edges.resize then
+    local left, top = drag.x, drag.y
+    local right, bottom = drag.x + drag.width, drag.y + drag.height
+    local minimum_width = GSTATS.statusbar_minimum_width_for_font()
+    local minimum_height = GSTATS.statusbar_minimum_height_for_font()
+    if drag.edges.left then left = math.max(0, math.min(right - minimum_width, drag.x + delta_x)) end
+    if drag.edges.right then right = math.min(window_width, math.max(left + minimum_width, drag.x + drag.width + delta_x)) end
+    if drag.edges.top then top = math.max(0, math.min(bottom - minimum_height, drag.y + delta_y)) end
+    if drag.edges.bottom then bottom = math.min(window_height, math.max(top + minimum_height, drag.y + drag.height + delta_y)) end
+    container:move(math.floor(left + 0.5), math.floor(top + 0.5))
+    container:resize(math.floor(right - left + 0.5), math.floor(bottom - top + 0.5))
+  else
+    local x = drag.x + delta_x
+    local y = drag.y + delta_y
+    x = math.max(0, math.min(window_width - drag.width, x))
+    y = math.max(0, math.min(window_height - drag.height, y))
+    container:move(math.floor(x + 0.5), math.floor(y + 0.5))
+  end
+end
+
+function GSTATS.statusbar_drag_release(handle, event)
+  if not GSTATS.statusbar_drag then return end
+  GSTATS.statusbar_drag = nil
+  if handle and type(handle.setCursor) == "function" then
+    pcall(handle.setCursor, handle, "OpenHand")
+    GSTATS.statusbar_drag_move(handle, event)
+  end
+  GSTATS.save_state()
+end
+
+function GSTATS.ensure_statusbar_drag_surface()
+  if not Geyser or not GSTATS.ui or not GSTATS.ui.statusbar_container then return end
+  if GSTATS.ui.statusbar_drag_surface then return end
+  GSTATS.ui.statusbar_drag_surface = Geyser.Label:new({
+    name="GSTATSStatusbarDragSurface", x=0, y=0, width="100%", height="100%"
+  }, GSTATS.ui.statusbar_container)
+  GSTATS.ui.statusbar_drag_surface:setStyleSheet("background-color: rgba(0, 0, 0, 0%); border: 0px;")
+end
+
+function GSTATS.ensure_statusbar_info_cells()
+  if not Geyser or not GSTATS.ui or not GSTATS.ui.statusbar_container then return end
+  if GSTATS.ui.statusbar_info_cells then return end
+  GSTATS.ui.statusbar_info_cells = {}
+  for index = 1, 5 do
+    local cell = Geyser.Label:new({
+      name="GSTATSStatusbarInfoCell" .. tostring(index), x=4, y=58, width=80, height=18
+    }, GSTATS.ui.statusbar_container)
+    cell:setStyleSheet("background-color: transparent; border: 0px; color: #c8d1dc; font-size: 8pt; font-weight: bold;")
+    cell:hide()
+    GSTATS.ui.statusbar_info_cells[index] = cell
+  end
+end
+
+function GSTATS.ensure_statusbar_pip_ui()
+  if not Geyser or not GSTATS.ui or not GSTATS.ui.statusbar_container then return end
+  if GSTATS.ui.statusbar_pip_cells then return end
+  GSTATS.ui.statusbar_pip_cells = {}
+  for cell_index = 1, 4 do
+    local cell = {
+      background = Geyser.Label:new({
+        name="GSTATSStatusbarPipCell" .. tostring(cell_index), x=4, y=7, width=100, height=30
+      }, GSTATS.ui.statusbar_container),
+      text = Geyser.Label:new({
+        name="GSTATSStatusbarPipText" .. tostring(cell_index), x=6, y=8, width=96, height=14
+      }, GSTATS.ui.statusbar_container),
+      blocks = {},
+    }
+    cell.background:setStyleSheet("background-color: transparent; border: 0px;")
+    cell.text:setStyleSheet("background-color: transparent; border: 0px; color: #dce3eb; font-size: 8pt; font-weight: bold;")
+    for block_index = 1, 10 do
+      local block = Geyser.Label:new({
+        name="GSTATSStatusbarPipBlock" .. tostring(cell_index) .. "_" .. tostring(block_index),
+        x=6, y=24, width=6, height=8
+      }, GSTATS.ui.statusbar_container)
+      block:setStyleSheet("background-color: #171b21; border: 0px;")
+      cell.blocks[block_index] = block
+    end
+    cell.background:hide()
+    cell.text:hide()
+    for _, block in ipairs(cell.blocks) do block:hide() end
+    GSTATS.ui.statusbar_pip_cells[cell_index] = cell
+  end
+end
+
+function GSTATS.ensure_statusbar_basic_ui()
+  if not Geyser or not GSTATS.ui or not GSTATS.ui.statusbar_container then return end
+  if GSTATS.ui.statusbar_basic then return end
+  GSTATS.ui.statusbar_basic = Geyser.Label:new({
+    name="GSTATSStatusbarBasic", x=4, y=4, width="100%-8px", height=24
+  }, GSTATS.ui.statusbar_container)
+  GSTATS.ui.statusbar_basic:setStyleSheet("background-color: transparent; border: 0px; color: #f4f7fb; font-size: 9pt; font-weight: bold;")
+  GSTATS.ui.statusbar_basic:hide()
+end
+
+function GSTATS.hide_statusbar_pips()
+  for _, cell in ipairs((GSTATS.ui and GSTATS.ui.statusbar_pip_cells) or {}) do
+    cell.background:hide()
+    cell.text:hide()
+    for _, block in ipairs(cell.blocks or {}) do block:hide() end
+  end
+end
+
+function GSTATS.statusbar_percent(current, maximum)
+  local max_value = GSTATS.safe_number(maximum)
+  if max_value <= 0 then return 0 end
+  return math.floor(math.max(0, math.min(1, GSTATS.safe_number(current) / max_value)) * 100 + 0.5)
+end
+
+function GSTATS.statusbar_basic_percent(current, maximum)
+  local max_value = GSTATS.safe_number(maximum)
+  if max_value <= 0 then return 0 end
+  return math.floor(math.max(0, GSTATS.safe_number(current) / max_value) * 100 + 0.5)
+end
+
+function GSTATS.statusbar_basic_value_color(percent)
+  if percent >= 81 then return "<88,214,141>", "#58d68d" end
+  if percent >= 40 then return "<242,201,76>", "#f2c94c" end
+  return "<255,91,110>", "#ff5b6e"
+end
+
+function GSTATS.statusbar_basic_text(data)
+  local options = GSTATS.state.statusbar
+  local entries = {
+    { label="HP:", label_tag="<239,82,100>", value=GSTATS.statusbar_basic_percent(data.hp, data.maxhp) },
+  }
+  if options.show_enemy then
+    entries[#entries+1] = {
+      label="Enemy:", label_tag="<196,61,85>",
+      value=GSTATS.statusbar_has_enemy_target(data) and math.floor(GSTATS.statusbar_enemy_value(data) + 0.5) or nil,
+      empty_text="none",
+    }
+  end
+  if options.show_mana then
+    entries[#entries+1] = { label="Mana:", label_tag="<40,184,218>", value=GSTATS.statusbar_basic_percent(data.mana, data.maxmana) }
+  end
+  if options.show_moves then
+    entries[#entries+1] = { label="MV:", label_tag="<56,200,118>", value=GSTATS.statusbar_basic_percent(data.moves, data.maxmoves) }
+  end
+
+  local rich, plain = {}, {}
+  for index, entry in ipairs(entries) do
+    if index > 1 then rich[#rich+1] = "<83,94,109>&nbsp;&nbsp;&nbsp;&nbsp;" end
+    local value_text = entry.value == nil and (entry.empty_text or "—") or tostring(entry.value) .. "%"
+    local value_tag = "<141,154,171>"
+    if entry.value ~= nil then value_tag = GSTATS.statusbar_basic_value_color(entry.value) end
+    rich[#rich+1] = entry.label_tag .. entry.label .. " <83,94,109>[" .. value_tag .. value_text .. "<83,94,109>]"
+    plain[#plain+1] = entry.label .. " [" .. value_text .. "]"
+  end
+  return table.concat(rich), table.concat(plain, "    ")
+end
+
+function GSTATS.statusbar_pip_value_text(label, current, maximum)
+  if GSTATS.state.statusbar.show_values then return string.format("%s %s", label, GSTATS.format_compact_number(current)) end
+  return string.format("%s %d%%", label, GSTATS.statusbar_percent(current, maximum))
+end
+
+function GSTATS.statusbar_pip_enemy_text(data)
+  if not GSTATS.statusbar_has_enemy_target(data) then return "ENEMY" end
+  local name = GSTATS.trim(data.enemy)
+  name = name:gsub("^[Aa][Nn]%s+", ""):gsub("^[Aa]%s+", ""):gsub("^[Tt][Hh][Ee]%s+", "")
+  if name == "" or name:lower() == "none" then name = "ENEMY" end
+  name = name:upper()
+  if #name > 12 then name = name:sub(1, 11) .. "…" end
+  return string.format("%s %d%%", name, GSTATS.statusbar_enemy_value(data))
+end
+
+function GSTATS.render_statusbar_pip_cell(cell, entry, x, y, width, height)
+  if not cell or not entry then return end
+  cell.background:show()
+  cell.text:show()
+  GSTATS.statusbar_move_resize(cell.background, x, y, width, height)
+  local block_gap = width < 100 and 1 or 2
+  local minimum_blocks_width = 10 + block_gap * 9
+  local blocks_margin = 5
+  local character_width = math.max(6, math.floor(GSTATS.statusbar_font_size() * 0.9 + 0.5))
+  local desired_text_width = math.max(40, math.min(math.floor(width * 0.52), #entry.text * character_width + 8))
+  local text_width = math.min(desired_text_width, math.max(18, width - minimum_blocks_width - blocks_margin))
+  local row_height = math.min(math.max(16, GSTATS.statusbar_font_size() + 6), height)
+  local row_y = y + math.max(0, math.floor((height - row_height) / 2))
+  GSTATS.statusbar_move_resize(cell.text, x, row_y, text_width, row_height)
+  GSTATS.statusbar_apply_label_font(cell.text, "l")
+  cell.text:setStyleSheet(string.format("background-color: transparent; border: 0px; color: %s; font-size: %dpt; font-weight: bold;", entry.color, GSTATS.statusbar_font_size()))
+  cell.text:echo(GSTATS.statusbar_escape(entry.text), entry.color, "l")
+
+  local blocks_x = x + text_width + blocks_margin
+  local blocks_width = math.max(minimum_blocks_width, width - text_width - blocks_margin)
+  local block_height = math.max(3, math.min(12, row_height - 2))
+  local blocks_y = math.min(row_y + math.floor((row_height - block_height) / 2) + 3, y + height - block_height)
+  local block_width = math.max(1, math.floor((blocks_width - block_gap * 9) / 10))
+  local filled = math.floor(math.max(0, math.min(1, tonumber(entry.ratio) or 0)) * 10 + 0.5)
+  for block_index, block in ipairs(cell.blocks) do
+    block:show()
+    GSTATS.statusbar_move_resize(block, blocks_x + (block_index - 1) * (block_width + block_gap), blocks_y, block_width, block_height)
+    local color = block_index <= filled and entry.color or "#171b21"
+    block:setStyleSheet("background-color: " .. color .. "; border: 0px;")
+  end
+end
+
+function GSTATS.render_statusbar_vertical_pip_cell(cell, entry, x, y, width, height)
+  if not cell or not entry then return end
+  cell.background:show()
+  cell.text:show()
+  GSTATS.statusbar_move_resize(cell.background, x, y, width, height)
+  local font_size = GSTATS.statusbar_font_size()
+  local label_height = math.min(math.max(32, font_size * 3 + 4), math.max(32, math.floor(height * 0.32)))
+  GSTATS.statusbar_move_resize(cell.text, x, y, width, label_height)
+  GSTATS.statusbar_apply_label_font(cell.text, "c")
+  cell.text:setStyleSheet(string.format("background-color: transparent; border: 0px; color: %s; font-size: %dpt; font-weight: bold;", entry.color, font_size))
+  local label_text = GSTATS.statusbar_escape(entry.text):gsub(" ", "<br>", 1)
+  cell.text:echo(label_text, entry.color, "c")
+
+  local block_gap = 3
+  local blocks_top = y + label_height
+  local blocks_height = math.max(10, height - label_height - 3)
+  local block_height = math.max(1, math.floor((blocks_height - block_gap * 9) / 10))
+  local filled = math.floor(math.max(0, math.min(1, tonumber(entry.ratio) or 0)) * 10 + 0.5)
+  for block_index, block in ipairs(cell.blocks) do
+    block:show()
+    local block_y = y + height - 2 - block_index * block_height - (block_index - 1) * block_gap
+    if block_y < blocks_top then block_y = blocks_top end
+    GSTATS.statusbar_move_resize(block, x + 3, block_y, math.max(1, width - 6), block_height)
+    local color = block_index <= filled and entry.color or "#171b21"
+    block:setStyleSheet("background-color: " .. color .. "; border: 1px solid #303641;")
+  end
+end
+
+function GSTATS.render_statusbar_vertical_core(data, layout, enemy_visible, pad, top, content_width, core_height, gap)
+  local options = GSTATS.state.statusbar
+  local function apply(gauge, label, current, maximum, color, dark, x, y, width, height, enemy)
+    local text = enemy and GSTATS.statusbar_vertical_enemy_text(data) or GSTATS.statusbar_vertical_gauge_text(label, current, maximum)
+    GSTATS.statusbar_apply_gauge(gauge, true, x, y, width, height, current, maximum, text, color, dark, 2, true)
+  end
+
+  if layout == "pips" then
+    local entries = {
+      { text=GSTATS.statusbar_pip_value_text("HP", data.hp, data.maxhp), ratio=GSTATS.safe_number(data.maxhp) > 0 and GSTATS.safe_number(data.hp) / GSTATS.safe_number(data.maxhp) or 0, color="#d84b55" },
+    }
+    if options.show_enemy then
+      local enemy_value = GSTATS.statusbar_enemy_value(data)
+      entries[#entries+1] = { text=GSTATS.statusbar_pip_enemy_text(data), ratio=enemy_value / 100, color=enemy_value > 0 and "#a23850" or "#626c78" }
+    end
+    if options.show_mana then
+      entries[#entries+1] = { text=GSTATS.statusbar_pip_value_text("MN", data.mana, data.maxmana), ratio=GSTATS.safe_number(data.maxmana) > 0 and GSTATS.safe_number(data.mana) / GSTATS.safe_number(data.maxmana) or 0, color="#3284d6" }
+    end
+    if options.show_moves then
+      entries[#entries+1] = { text=GSTATS.statusbar_pip_value_text("MV", data.moves, data.maxmoves), ratio=GSTATS.safe_number(data.maxmoves) > 0 and GSTATS.safe_number(data.moves) / GSTATS.safe_number(data.maxmoves) or 0, color="#38c876" }
+    end
+    local pip_gap = 6
+    local usable = content_width - pip_gap * (#entries - 1)
+    local x = pad
+    for index, entry in ipairs(entries) do
+      local item_width = index == #entries and (pad + content_width - x) or math.floor(usable / #entries)
+      GSTATS.render_statusbar_vertical_pip_cell(GSTATS.ui.statusbar_pip_cells[index], entry, x, top, item_width, core_height)
+      x = x + item_width + pip_gap
+    end
+    return
+  end
+
+  if layout == "rail" then
+    local entries = {
+      { gauge=GSTATS.ui.statusbar_hp, label="HP", current=data.hp, maximum=data.maxhp, color="#d84b55", dark="#76262d" },
+    }
+    if enemy_visible then entries[#entries+1] = { gauge=GSTATS.ui.statusbar_enemy, label="ENEMY", current=GSTATS.statusbar_enemy_value(data), maximum=100, color="#a23850", dark="#571d2c", enemy=true } end
+    if options.show_mana then entries[#entries+1] = { gauge=GSTATS.ui.statusbar_mana, label="MN", current=data.mana, maximum=data.maxmana, color="#3284d6", dark="#1a4778" } end
+    if options.show_moves then entries[#entries+1] = { gauge=GSTATS.ui.statusbar_moves, label="MV", current=data.moves, maximum=data.maxmoves, color="#38c876", dark="#1d6f43" } end
+    local usable = content_width - gap * (#entries - 1)
+    local x = pad
+    for index, entry in ipairs(entries) do
+      local item_width = index == #entries and (pad + content_width - x) or math.floor(usable / #entries)
+      apply(entry.gauge, entry.label, entry.current, entry.maximum, entry.color, entry.dark, x, top, item_width, core_height, entry.enemy)
+      x = x + item_width + gap
+    end
+    return
+  end
+
+  if layout == "stack" then
+    local entries = {
+      { gauge=GSTATS.ui.statusbar_hp, label="HP", current=data.hp, maximum=data.maxhp, color="#d84b55", dark="#76262d" },
+    }
+    if enemy_visible then entries[#entries+1] = { gauge=GSTATS.ui.statusbar_enemy, label="ENEMY", current=GSTATS.statusbar_enemy_value(data), maximum=100, color="#a23850", dark="#571d2c", enemy=true } end
+    if options.show_mana then entries[#entries+1] = { gauge=GSTATS.ui.statusbar_mana, label="MN", current=data.mana, maximum=data.maxmana, color="#3284d6", dark="#1a4778" } end
+    if options.show_moves then entries[#entries+1] = { gauge=GSTATS.ui.statusbar_moves, label="MV", current=data.moves, maximum=data.maxmoves, color="#38c876", dark="#1d6f43" } end
+    local columns = math.min(2, #entries)
+    local rows = math.ceil(#entries / columns)
+    local cell_width = math.floor((content_width - gap * (columns - 1)) / columns)
+    local cell_height = math.floor((core_height - gap * (rows - 1)) / rows)
+    for index, entry in ipairs(entries) do
+      local column = (index - 1) % columns
+      local row = math.floor((index - 1) / columns)
+      local cell_x = pad + column * (cell_width + gap)
+      local cell_y = top + row * (cell_height + gap)
+      local width = column == columns - 1 and (pad + content_width - cell_x) or cell_width
+      apply(entry.gauge, entry.label, entry.current, entry.maximum, entry.color, entry.dark, cell_x, cell_y, width, cell_height, entry.enemy)
+    end
+    return
+  end
+end
+
+function GSTATS.bind_statusbar_drag_handles()
+  if not GSTATS.ui or GSTATS.ui.statusbar_drag_bind_version == 3 then return end
+  local handles = {
+    GSTATS.ui.statusbar_drag_surface,
+  }
+  for _, handle in ipairs(handles) do
+    if handle then
+      if type(handle.setClickCallback) == "function" then pcall(handle.setClickCallback, handle, "GSTATS.statusbar_drag_start", handle) end
+      if type(handle.setMoveCallback) == "function" then pcall(handle.setMoveCallback, handle, "GSTATS.statusbar_drag_move", handle) end
+      if type(handle.setReleaseCallback) == "function" then pcall(handle.setReleaseCallback, handle, "GSTATS.statusbar_drag_release", handle) end
+      if type(handle.setCursor) == "function" then pcall(handle.setCursor, handle, "OpenHand") end
+    end
+  end
+  GSTATS.ui.statusbar_drag_bind_version = 3
+end
+
+function GSTATS.statusbar_hide_adjustable_chrome(container)
+  if not container then return end
+  local transparent_style = "background-color: rgba(0,0,0,0%); border: 0px; color: rgba(0,0,0,0%);"
+  for _, key in ipairs({ "exitLabel", "minimizeLabel" }) do
+    local label = container[key]
+    if label then
+      if type(label.setStyleSheet) == "function" then pcall(label.setStyleSheet, label, transparent_style) end
+      if type(label.hide) == "function" then pcall(label.hide, label) end
+    end
+  end
+end
+
+function GSTATS.ensure_statusbar_ui()
+  if not Geyser then return false end
+  if type(GSTATS.state) ~= "table" then GSTATS.state = {} end
+  if type(GSTATS.state.statusbar) ~= "table" then GSTATS.merge_defaults() end
+  if GSTATS.ui.statusbar_container then
+    GSTATS.statusbar_hide_adjustable_chrome(GSTATS.ui.statusbar_container)
+    GSTATS.ensure_statusbar_info_cells()
+    GSTATS.ensure_statusbar_pip_ui()
+    GSTATS.ensure_statusbar_basic_ui()
+    GSTATS.ensure_statusbar_drag_surface()
+    GSTATS.bind_statusbar_drag_handles()
+    GSTATS.statusbar_ensure_minimum_size()
+    return true
+  end
+  local options = GSTATS.state.statusbar
+  local container
+  if Adjustable and Adjustable.Container and type(Adjustable.Container.new) == "function" then
+    local ok, result = pcall(function()
+      return Adjustable.Container:new({
+        name="GSTATSStatusbarContainer", x=options.x, y=options.y,
+        width=options.width, height=options.height,
+        autoLoad=false, autoSave=false, padding=0,
+        adjLabelstyle="border: 0px; background-color: rgba(0,0,0,0%);",
+        buttonstyle="background-color: rgba(0,0,0,0%); border: 0px; color: rgba(0,0,0,0%);",
+        lockStyle="border: 0px;", titleText="", titleTxtColor="white",
+      })
+    end)
+    if ok then container = result end
+  end
+  if not container then
+    container = Geyser.Container:new({ name="GSTATSStatusbarContainer", x=options.x, y=options.y, width=options.width, height=options.height })
+    if container.enableDrag then pcall(container.enableDrag, container) end
+  end
+  GSTATS.ui.statusbar_container = container
+  GSTATS.statusbar_hide_adjustable_chrome(container)
+  if type(container.setPadding) == "function" then pcall(container.setPadding, container, 0) end
+
+  GSTATS.ui.statusbar_background = Geyser.Label:new({ name="GSTATSStatusbarBackground", x=0, y=0, width="100%", height="100%" }, container)
+  GSTATS.ui.statusbar_background:setStyleSheet("background-color: transparent; border: 0px;")
+  GSTATS.ui.statusbar_pulse = Geyser.Gauge:new({ name="GSTATSStatusbarPulse", x=1, y=1, width="100%-2px", height=3 }, container)
+  GSTATS.ui.statusbar_hp = Geyser.Gauge:new({ name="GSTATSStatusbarHP", x=4, y=7, width=200, height=24 }, container)
+  GSTATS.ui.statusbar_enemy = Geyser.Gauge:new({ name="GSTATSStatusbarEnemy", x=208, y=7, width=200, height=24 }, container)
+  GSTATS.ui.statusbar_mana = Geyser.Gauge:new({ name="GSTATSStatusbarMana", x=4, y=35, width=200, height=16 }, container)
+  GSTATS.ui.statusbar_moves = Geyser.Gauge:new({ name="GSTATSStatusbarMoves", x=208, y=35, width=200, height=16 }, container)
+  GSTATS.ui.statusbar_info = Geyser.Label:new({ name="GSTATSStatusbarInfo", x=4, y=58, width="100%-8px", height=18 }, container)
+  GSTATS.ui.statusbar_info:setStyleSheet("background-color: transparent; border: 0px; color: #b8c1cc; font-size: 8pt;")
+  GSTATS.ensure_statusbar_info_cells()
+  GSTATS.ensure_statusbar_pip_ui()
+  GSTATS.ensure_statusbar_basic_ui()
+  GSTATS.ensure_statusbar_drag_surface()
+  if type(container.newCustomItem) == "function" then
+    pcall(container.newCustomItem, container, "Configure status bar", function() GSTATS.show_statusbar_config(true) end)
+  end
+  GSTATS.statusbar_ensure_minimum_size()
+  GSTATS.statusbar_hook_container()
+  GSTATS.bind_statusbar_drag_handles()
+  return true
+end
+
+function GSTATS.render_statusbar(data)
+  if not GSTATS.ensure_statusbar_ui() then return false end
+  data = data or GSTATS.last or GSTATS.from_gmcp()
+  local options = GSTATS.state.statusbar
+  local container = GSTATS.ui.statusbar_container
+  if options.visible then container:show() else container:hide() end
+  GSTATS.statusbar_hide_adjustable_chrome(container)
+
+  local width, height = GSTATS.statusbar_size()
+  local layout = options.layout
+  local pad, gap = 4, 4
+  local pulse_visible = options.visible and GSTATS.statusbar_pulse_period() ~= nil
+  local pulse_height = pulse_visible and 3 or 0
+  local info_rows = layout == "basic" and {} or GSTATS.statusbar_info_rows(data)
+  local info_row_height = math.max(20, GSTATS.statusbar_font_size() + 8)
+  local info_gap = 3
+  local footer_height = #info_rows > 0 and #info_rows * info_row_height + math.max(0, #info_rows - 1) * info_gap or 0
+  local footer_gap = footer_height > 0 and gap or 0
+  local top = pulse_height + pad
+  local core_height = math.max(16, height - top - pad - footer_height - footer_gap)
+  local content_width = width - pad * 2
+  local enemy_visible = options.show_enemy == true
+
+  GSTATS.statusbar_move_resize(GSTATS.ui.statusbar_background, 0, 0, width, height)
+  GSTATS.ui.statusbar_background:setStyleSheet("background-color: transparent; border: 0px;")
+  GSTATS.ui.statusbar_info:setStyleSheet("background-color: transparent; border: 0px; color: #b8c1cc;")
+  if container.adjLabel and type(container.adjLabel.setStyleSheet) == "function" then
+    container.adjLabel:setStyleSheet("background-color: rgba(0,0,0,0%); border: 0px;")
+  end
+  if pulse_visible then
+    GSTATS.statusbar_move_resize(GSTATS.ui.statusbar_pulse, 1, 1, width - 2, pulse_height)
+    GSTATS.ui.statusbar_pulse:show()
+    if GSTATS.ui.statusbar_pulse.front then GSTATS.ui.statusbar_pulse.front:setStyleSheet("background-color: #2f9cf4; border: 0px;") end
+    if GSTATS.ui.statusbar_pulse.back then GSTATS.ui.statusbar_pulse.back:setStyleSheet("background-color: #050607; border: 0px;") end
+    if GSTATS.ui.statusbar_pulse.text then GSTATS.ui.statusbar_pulse.text:setStyleSheet("background-color: transparent; border: 0px;") end
+  else
+    GSTATS.ui.statusbar_pulse:hide()
+  end
+
+  GSTATS.ui.statusbar_hp:hide()
+  GSTATS.ui.statusbar_enemy:hide()
+  GSTATS.ui.statusbar_mana:hide()
+  GSTATS.ui.statusbar_moves:hide()
+  GSTATS.hide_statusbar_pips()
+  GSTATS.ui.statusbar_basic:hide()
+
+  if layout == "basic" then
+    local rich_text, plain_text = GSTATS.statusbar_basic_text(data)
+    local label = GSTATS.ui.statusbar_basic
+    label:show()
+    GSTATS.statusbar_move_resize(label, pad, top, content_width, core_height)
+    GSTATS.statusbar_apply_label_font(label, "c")
+    label:setStyleSheet(string.format("background-color: transparent; border: 0px; color: #f4f7fb; font-size: %dpt; font-weight: bold;", GSTATS.statusbar_font_size()))
+    local rendered = type(label.decho) == "function" and pcall(label.decho, label, rich_text)
+    if not rendered then label:echo(GSTATS.statusbar_escape(plain_text), "#f4f7fb", "c" .. tostring(GSTATS.statusbar_font_size())) end
+  elseif options.vertical_bars then
+    GSTATS.render_statusbar_vertical_core(data, layout, enemy_visible, pad, top, content_width, core_height, gap)
+  elseif layout == "pips" then
+    local entries = {
+      {
+        text=GSTATS.statusbar_pip_value_text("HP", data.hp, data.maxhp),
+        ratio=GSTATS.safe_number(data.maxhp) > 0 and GSTATS.safe_number(data.hp) / GSTATS.safe_number(data.maxhp) or 0,
+        color="#d84b55",
+      },
+    }
+    if options.show_enemy then
+      entries[#entries+1] = {
+        text=GSTATS.statusbar_pip_enemy_text(data),
+        ratio=GSTATS.statusbar_enemy_value(data) / 100,
+        color=GSTATS.statusbar_enemy_value(data) > 0 and "#a23850" or "#626c78",
+      }
+    end
+    if options.show_mana then
+      entries[#entries+1] = {
+        text=GSTATS.statusbar_pip_value_text("MN", data.mana, data.maxmana),
+        ratio=GSTATS.safe_number(data.maxmana) > 0 and GSTATS.safe_number(data.mana) / GSTATS.safe_number(data.maxmana) or 0,
+        color="#3284d6",
+      }
+    end
+    if options.show_moves then
+      entries[#entries+1] = {
+        text=GSTATS.statusbar_pip_value_text("MV", data.moves, data.maxmoves),
+        ratio=GSTATS.safe_number(data.maxmoves) > 0 and GSTATS.safe_number(data.moves) / GSTATS.safe_number(data.maxmoves) or 0,
+        color="#38c876",
+      }
+    end
+    local pip_gap = 8
+    local usable = content_width - pip_gap * (#entries - 1)
+    local x = pad
+    for index, entry in ipairs(entries) do
+      local item_width = index == #entries and (pad + content_width - x) or math.floor(usable / #entries)
+      GSTATS.render_statusbar_pip_cell(GSTATS.ui.statusbar_pip_cells[index], entry, x, top, item_width, core_height)
+      x = x + item_width + pip_gap
+    end
+  elseif layout == "stack" then
+    local resource_count = (options.show_mana and 1 or 0) + (options.show_moves and 1 or 0)
+    local row_count = resource_count > 0 and 2 or 1
+    local row_height = math.max(8, math.floor((core_height - gap * (row_count - 1)) / row_count))
+    GSTATS.statusbar_place_top(data, enemy_visible, pad, top, content_width, row_height, 3)
+    if resource_count > 0 then GSTATS.statusbar_place_resources(data, pad, top + row_height + gap, content_width, row_height, 2) end
+  else
+    local resource_count = (options.show_mana and 1 or 0) + (options.show_moves and 1 or 0)
+    local row_count = 1 + resource_count
+    local row_height = math.max(8, math.floor((core_height - gap * (row_count - 1)) / row_count))
+    GSTATS.statusbar_place_top(data, enemy_visible, pad, top, content_width, row_height, 2)
+    local row_y = top + row_height + gap
+    if options.show_mana then
+      GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_mana, true, pad, row_y, content_width, row_height, data.mana, data.maxmana, GSTATS.statusbar_gauge_text("MN", data.mana, data.maxmana), "#3284d6", "#1a4778", 2)
+      row_y = row_y + row_height + gap
+    end
+    if options.show_moves then
+      GSTATS.statusbar_apply_gauge(GSTATS.ui.statusbar_moves, true, pad, row_y, content_width, row_height, data.moves, data.maxmoves, GSTATS.statusbar_gauge_text("MV", data.moves, data.maxmoves), "#38c876", "#1d6f43", 2)
+    end
+  end
+
+  if footer_height > 0 then
+    GSTATS.ui.statusbar_info:show()
+    GSTATS.statusbar_move_resize(GSTATS.ui.statusbar_info, pad, height - pad - footer_height, content_width, footer_height)
+    GSTATS.ui.statusbar_info:echo("", "#b8c1cc", "c")
+    local cell_index = 1
+    local footer_y = height - pad - footer_height
+    for row_index, row in ipairs(info_rows) do
+      local usable_info_width = content_width - info_gap * (#row - 1)
+      local info_x = pad
+      local row_y = footer_y + (row_index - 1) * (info_row_height + info_gap)
+      for entry_index, entry in ipairs(row) do
+        local cell = GSTATS.ui.statusbar_info_cells[cell_index]
+        if cell then
+          local cell_width = entry_index == #row and (pad + content_width - info_x) or math.floor(usable_info_width / #row)
+          cell:show()
+          GSTATS.statusbar_move_resize(cell, info_x, row_y, cell_width, info_row_height)
+          local alignment = options.vertical_bars and "c" or "l"
+          local padding = options.vertical_bars and 0 or 5
+          GSTATS.statusbar_apply_label_font(cell, alignment)
+          cell:setStyleSheet(string.format("background-color: transparent; border: 0px; color: %s; font-size: %dpt; font-weight: bold; padding-left: %dpx;", entry.color, GSTATS.statusbar_font_size(), padding))
+          cell:echo(GSTATS.statusbar_escape(entry.text), entry.color, alignment)
+          info_x = info_x + cell_width + info_gap
+          cell_index = cell_index + 1
+        end
+      end
+    end
+    for index = cell_index, #(GSTATS.ui.statusbar_info_cells or {}) do GSTATS.ui.statusbar_info_cells[index]:hide() end
+  else
+    GSTATS.ui.statusbar_info:hide()
+    for _, cell in ipairs(GSTATS.ui.statusbar_info_cells or {}) do cell:hide() end
+  end
+  if GSTATS.ui.statusbar_drag_surface and type(GSTATS.ui.statusbar_drag_surface.raise) == "function" then
+    pcall(GSTATS.ui.statusbar_drag_surface.raise, GSTATS.ui.statusbar_drag_surface)
+  end
+  GSTATS.sync_statusbar_pulse(false)
+  GSTATS.sync_statusbar_double_xp_timer()
+  return true
+end
+
+function GSTATS.statusbar_layout_name(key)
+  for _, layout in ipairs(GSTATS.statusbar_layouts) do
+    if layout.key == key then return layout.name end
+  end
+  return tostring(key or "rail")
+end
+
+function GSTATS.statusbar_pulse_name()
+  local mode = GSTATS.state.statusbar.pulse_mode
+  if mode == "auto" then
+    return "Auto · Navigator 2s / other subclasses 3s"
+  end
+  if tonumber(mode) then return tostring(tonumber(mode)) .. " seconds" end
+  return "Off"
+end
+
+function GSTATS.statusbar_skin_name(key)
+  local selected = key or GSTATS.state.statusbar.skin
+  for _, skin in ipairs(GSTATS.statusbar_skins) do
+    if skin.key == selected then return skin.name end
+  end
+  return "Clean gradient"
+end
+
+function GSTATS.statusbar_config_set_label(action, text)
+  local label = GSTATS.ui and GSTATS.ui.statusbar_config_rows and GSTATS.ui.statusbar_config_rows[action]
+  if label and type(label.echo) == "function" then
+    if type(label.processFormatString) == "function" then label:processFormatString("l" .. tostring(GSTATS.statusbar_font_size())) end
+    label:echo(GSTATS.statusbar_escape(text), "#dce3eb")
+  end
+end
+
+function GSTATS.statusbar_config_set_toggle(action, value, text)
+  local label = GSTATS.ui and GSTATS.ui.statusbar_config_rows and GSTATS.ui.statusbar_config_rows[action]
+  if not label then return end
+  if type(label.processFormatString) == "function" then label:processFormatString("l" .. tostring(GSTATS.statusbar_font_size())) end
+  local marker = value and "<52,203,185>[<255,90,103>x<52,203,185>]" or "<52,203,185>[ ]"
+  local rendered = false
+  if type(label.decho) == "function" then
+    if not label.fgColor or label.fgColor == "" or label.fgColor == "nocolor" then label.fgColor = "#dce3eb" end
+    rendered = pcall(label.decho, label, marker .. "<220,227,235> " .. tostring(text or ""))
+  end
+  if not rendered and type(label.echo) == "function" then
+    label:echo((value and "[x] " or "[ ] ") .. tostring(text or ""), "#dce3eb")
+  end
+end
+
+function GSTATS.statusbar_config_menu_item_echo(menu_label, action, text)
+  if not menu_label then return end
+  text = tostring(text or "")
+  if type(menu_label.processFormatString) == "function" then
+    menu_label:processFormatString("l" .. tostring(GSTATS.statusbar_font_size()))
+  end
+  local number, remainder = text:match("^(%d+)(.*)$")
+  local rendered = false
+  if number and type(menu_label.decho) == "function" then
+    if not menu_label.fgColor or menu_label.fgColor == "" or menu_label.fgColor == "nocolor" then menu_label.fgColor = "#f4f7fb" end
+    rendered = pcall(menu_label.decho, menu_label, "<52,203,185>" .. number .. "<244,247,251>" .. remainder)
+  end
+  if not rendered and type(menu_label.echo) == "function" then
+    menu_label:echo(GSTATS.statusbar_escape(text), "#f4f7fb")
+  end
+end
+
+function GSTATS.statusbar_config_restyle()
+  local ui = GSTATS.ui or {}
+  local font_size = GSTATS.statusbar_font_size()
+  local dimensions = GSTATS.statusbar_config_dimensions()
+  if ui.statusbar_config then ui.statusbar_config:resize(dimensions.width, dimensions.height) end
+  if ui.statusbar_config_background then
+    GSTATS.statusbar_move_resize(ui.statusbar_config_background, 0, 0, dimensions.width, dimensions.height)
+  end
+  if ui.statusbar_config_header then
+    GSTATS.statusbar_move_resize(ui.statusbar_config_header, 1, 1, dimensions.width - 34, dimensions.header_height)
+    ui.statusbar_config_header:setStyleSheet(string.format("background-color: #1a212a; border: 0px; color: #f3f6fa; font-size: %dpt; font-weight: bold; padding: 5px;", font_size + 2))
+    ui.statusbar_config_header:echo("g_character · status bar", "#f3f6fa", "l" .. tostring(font_size + 2))
+  end
+  if ui.statusbar_config_close then
+    GSTATS.statusbar_move_resize(ui.statusbar_config_close, dimensions.width - 33, 1, 32, dimensions.header_height)
+    ui.statusbar_config_close:setStyleSheet(string.format("background-color: #252d37; border: 0px; color: #cdd5df; font-size: %dpt; font-weight: bold;", font_size + 2))
+    ui.statusbar_config_close:echo("×", "#cdd5df", "c" .. tostring(font_size + 2))
+  end
+  if ui.statusbar_config_drag_surface then
+    GSTATS.statusbar_move_resize(ui.statusbar_config_drag_surface, 1, 1, dimensions.width - 34, dimensions.header_height)
+  end
+  for index, action in ipairs(GSTATS.statusbar_config_actions or {}) do
+    local row = ui.statusbar_config_rows and ui.statusbar_config_rows[action]
+    if row then
+      GSTATS.statusbar_move_resize(row, 8, dimensions.row_start + (index - 1) * dimensions.row_step, dimensions.width - 16, dimensions.row_height)
+      local background_color = index % 2 == 0 and "#151b22" or "#181f27"
+      row:setStyleSheet(string.format("background-color: %s; border: 1px solid #2a343f; color: #dce3eb; font-size: %dpt; padding: 4px;", background_color, font_size))
+      if row.rightClickMenu then
+        local menu_width = action == "layout" and (350 + math.max(0, font_size - 9) * 12) or (action == "skin" and 220 or 150)
+        row.rightClickMenu.MenuFormat = "l" .. tostring(font_size)
+        row.rightClickMenu.MenuWidth = menu_width
+        for _, menu_label in pairs(row.rightClickMenu.MenuLabels or {}) do
+          GSTATS.statusbar_move_resize(menu_label, menu_label:get_x(), menu_label:get_y(), menu_width, 34)
+          GSTATS.statusbar_config_menu_item_echo(menu_label, menu_label._gstats_menu_action or action, menu_label._gstats_menu_text or menu_label.menuName)
+        end
+      end
+    end
+  end
+  if ui.statusbar_config_footer then
+    GSTATS.statusbar_move_resize(ui.statusbar_config_footer, 8, dimensions.footer_y, dimensions.width - 16, dimensions.footer_height)
+    ui.statusbar_config_footer:setStyleSheet(string.format("background-color: transparent; border: 0px; color: #8996a5; font-size: %dpt;", dimensions.footer_font))
+    ui.statusbar_config_footer:echo("Layout, gauge skin and font size open menus; other rows toggle or cycle.", "#8996a5", "c" .. tostring(dimensions.footer_font))
+  end
+end
+
+function GSTATS.render_statusbar_config()
+  if not GSTATS.ui.statusbar_config_rows then return end
+  GSTATS.statusbar_config_restyle()
+  local options = GSTATS.state.statusbar
+  GSTATS.statusbar_config_set_toggle("visible", options.visible, "Status bar enabled")
+  GSTATS.statusbar_config_set_label("layout", "Layout: " .. GSTATS.statusbar_layout_name(options.layout) .. "  ▾")
+  GSTATS.statusbar_config_set_label("skin", "Gauge skin: " .. GSTATS.statusbar_skin_name(options.skin) .. "  ▾")
+  GSTATS.statusbar_config_set_label("fontsize", "Status-bar font: " .. tostring(GSTATS.statusbar_font_size()) .. " pt  ▾")
+  GSTATS.statusbar_config_set_toggle("vertical", options.vertical_bars, "Vertical bars · portrait window")
+  GSTATS.statusbar_config_set_toggle("enemy", options.show_enemy, "Enemy HP · always reserve target slot")
+  GSTATS.statusbar_config_set_toggle("mana", options.show_mana, "Mana gauge")
+  GSTATS.statusbar_config_set_toggle("moves", options.show_moves, "Moves gauge")
+  GSTATS.statusbar_config_set_toggle("doublexp", options.show_double_xp, "Double XP countdown")
+  GSTATS.statusbar_config_set_toggle("values", options.show_values, "Exact values")
+  GSTATS.statusbar_config_set_toggle("combat", options.show_combat, "Hitroll + damroll info")
+  GSTATS.statusbar_config_set_toggle("needs", options.show_needs, "Hunger + thirst info")
+  GSTATS.statusbar_config_set_label("pulse", "Top-edge pulse: " .. GSTATS.statusbar_pulse_name())
+end
+
+function GSTATS.set_statusbar_layout(layout)
+  local selected = tostring(layout or ""):lower()
+  local valid = false
+  for _, item in ipairs(GSTATS.statusbar_layouts) do
+    if item.key == selected then valid = true; break end
+  end
+  if not valid then return false end
+  local options = GSTATS.state.statusbar
+  local previous = options.layout
+  local container = GSTATS.ui and GSTATS.ui.statusbar_container
+  local current_width, current_height = GSTATS.statusbar_size()
+  options.layout = selected
+  if options.vertical_bars and previous ~= selected and (previous == "basic" or selected == "basic") then
+    local target_width, target_height
+    if selected == "basic" then
+      options.vertical_width, options.vertical_height = current_width, current_height
+      target_width = tonumber(options.horizontal_width) or 700
+      target_height = tonumber(options.horizontal_height) or 82
+    else
+      options.horizontal_width, options.horizontal_height = current_width, current_height
+      target_width = tonumber(options.vertical_width) or 220
+      target_height = tonumber(options.vertical_height) or 360
+    end
+    target_width = math.max(target_width, GSTATS.statusbar_minimum_width_for_font())
+    target_height = math.max(target_height, GSTATS.statusbar_minimum_height_for_font())
+    options.width, options.height = target_width, target_height
+    if container and type(container.resize) == "function" then container:resize(target_width, target_height) end
+  end
+  if type(closeAllLevels) == "function" and GSTATS.ui.statusbar_config_rows then
+    pcall(closeAllLevels, GSTATS.ui.statusbar_config_rows.layout)
+  end
+  GSTATS.statusbar_ensure_minimum_size()
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+  GSTATS.render_statusbar_config()
+  GSTATS.save_state()
+  return true
+end
+
+function GSTATS.set_statusbar_skin(skin)
+  local selected = tostring(skin or ""):lower()
+  local valid = false
+  for _, item in ipairs(GSTATS.statusbar_skins) do
+    if item.key == selected then valid = true; break end
+  end
+  if not valid then return false end
+  GSTATS.state.statusbar.skin = selected
+  if type(closeAllLevels) == "function" and GSTATS.ui.statusbar_config_rows then
+    pcall(closeAllLevels, GSTATS.ui.statusbar_config_rows.skin)
+  end
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+  GSTATS.render_statusbar_config()
+  GSTATS.save_state()
+  return true
+end
+
+function GSTATS.set_statusbar_font_size(size)
+  local selected = tonumber(size)
+  local valid = false
+  for _, value in ipairs(GSTATS.statusbar_font_sizes) do
+    if value == selected then valid = true; break end
+  end
+  if not valid then return false end
+  GSTATS.state.statusbar.fontsize = selected
+  if type(closeAllLevels) == "function" and GSTATS.ui.statusbar_config_rows then
+    pcall(closeAllLevels, GSTATS.ui.statusbar_config_rows.fontsize)
+  end
+  GSTATS.statusbar_ensure_minimum_size()
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+  GSTATS.render_statusbar_config()
+  GSTATS.save_state()
+  return true
+end
+
+function GSTATS.set_statusbar_vertical(enabled)
+  local options = GSTATS.state.statusbar
+  local wanted = enabled == true
+  if options.vertical_bars == wanted then return true end
+  local container = GSTATS.ui and GSTATS.ui.statusbar_container
+  local current_width, current_height = GSTATS.statusbar_size()
+  if options.layout == "basic" then
+    options.vertical_bars = wanted
+    options.horizontal_width, options.horizontal_height = current_width, current_height
+    options.width, options.height = current_width, current_height
+    if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+    GSTATS.render_statusbar_config()
+    GSTATS.save_state()
+    return true
+  end
+  if options.vertical_bars then
+    options.vertical_width, options.vertical_height = current_width, current_height
+  else
+    options.horizontal_width, options.horizontal_height = current_width, current_height
+  end
+  options.vertical_bars = wanted
+  local target_width = tonumber(wanted and options.vertical_width or options.horizontal_width) or (wanted and 220 or 700)
+  local target_height = tonumber(wanted and options.vertical_height or options.horizontal_height) or (wanted and 360 or 82)
+  target_width = math.max(target_width, GSTATS.statusbar_minimum_width_for_font())
+  target_height = math.max(target_height, GSTATS.statusbar_minimum_height_for_font())
+  options.width, options.height = target_width, target_height
+  if container and type(container.resize) == "function" then container:resize(target_width, target_height) end
+  if wanted then
+    options.vertical_width, options.vertical_height = target_width, target_height
+  else
+    options.horizontal_width, options.horizontal_height = target_width, target_height
+  end
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+  GSTATS.render_statusbar_config()
+  GSTATS.save_state()
+  return true
+end
+
+function GSTATS.statusbar_config_open_menu(action, event)
+  local row = GSTATS.ui and GSTATS.ui.statusbar_config_rows and GSTATS.ui.statusbar_config_rows[action]
+  if not row or not row.rightClickMenu or type(row.onRightClick) ~= "function" then
+    return GSTATS.statusbar_config_action(action)
+  end
+  local source_event = type(event) == "table" and event or {}
+  local popup_event = {
+    button = "RightButton",
+    x = tonumber(source_event.x) or 0,
+    y = tonumber(source_event.y) or 24,
+  }
+  pcall(row.onRightClick, row, popup_event)
+end
+
+function GSTATS.configure_statusbar_row_menu(action, items, callback_name, width)
+  local row = GSTATS.ui and GSTATS.ui.statusbar_config_rows and GSTATS.ui.statusbar_config_rows[action]
+  if not row or type(row.createRightClickMenu) ~= "function" then return false end
+  local labels = {}
+  for _, item in ipairs(items) do labels[#labels+1] = item.label end
+  if not row.rightClickMenu then
+    local ok = pcall(row.createRightClickMenu, row, {
+      MenuItems=labels,
+      MenuWidth=tonumber(width) or 260,
+      MenuHeight=34,
+      MenuFormat="l" .. tostring(GSTATS.statusbar_font_size()),
+      MenuStyle="QLabel::hover { background-color: #28516a; color: #ffffff; border: 1px solid #4a7892; padding-left: 7px; } QLabel::!hover { background-color: #151a20; color: #f4f7fb; border: 1px solid #293540; padding-left: 7px; }",
+    })
+    if not ok then return false end
+  end
+  for _, item in ipairs(items) do
+    pcall(row.setMenuAction, row, item.label, callback_name, item.value)
+    local ok_element, menu_label = pcall(row.findMenuElement, row, item.label)
+    if ok_element and menu_label then
+      menu_label._gstats_menu_action = action
+      menu_label._gstats_menu_text = item.label
+      GSTATS.statusbar_config_menu_item_echo(menu_label, action, item.label)
+    end
+  end
+  if type(row.setClickCallback) == "function" then
+    pcall(row.setClickCallback, row, "GSTATS.statusbar_config_open_menu", action)
+  end
+  return true
+end
+
+function GSTATS.configure_statusbar_config_menus()
+  local layouts = {}
+  for _, layout in ipairs(GSTATS.statusbar_layouts) do
+    layouts[#layouts+1] = { label=layout.name, value=layout.key }
+  end
+  GSTATS.configure_statusbar_row_menu("layout", layouts, "GSTATS.set_statusbar_layout", 350 + math.max(0, GSTATS.statusbar_font_size() - 9) * 12)
+
+  local skins = {}
+  for _, skin in ipairs(GSTATS.statusbar_skins) do
+    skins[#skins+1] = { label=skin.name, value=skin.key }
+  end
+  GSTATS.configure_statusbar_row_menu("skin", skins, "GSTATS.set_statusbar_skin", 220)
+
+  local sizes = {}
+  for _, size in ipairs(GSTATS.statusbar_font_sizes) do
+    sizes[#sizes+1] = { label=tostring(size) .. " pt", value=size }
+  end
+  GSTATS.configure_statusbar_row_menu("fontsize", sizes, "GSTATS.set_statusbar_font_size", 150)
+end
+
+function GSTATS.statusbar_config_drag_start(event)
+  if type(event) ~= "table" or event.button ~= "LeftButton" then return end
+  local container = GSTATS.ui and GSTATS.ui.statusbar_config
+  if not container then return end
+  local ok_mouse, mouse_x, mouse_y = pcall(getMousePosition)
+  if not ok_mouse or not tonumber(mouse_x) or not tonumber(mouse_y) then return end
+  local x, y = 0, 0
+  if type(container.get_x) == "function" then local ok, value = pcall(container.get_x, container); if ok and tonumber(value) then x = tonumber(value) end end
+  if type(container.get_y) == "function" then local ok, value = pcall(container.get_y, container); if ok and tonumber(value) then y = tonumber(value) end end
+  GSTATS.statusbar_config_drag = { mouse_x=tonumber(mouse_x), mouse_y=tonumber(mouse_y), x=x, y=y }
+  local surface = GSTATS.ui.statusbar_config_drag_surface
+  if surface and type(surface.setCursor) == "function" then pcall(surface.setCursor, surface, "ClosedHand") end
+end
+
+function GSTATS.statusbar_config_drag_move()
+  local drag = GSTATS.statusbar_config_drag
+  local container = GSTATS.ui and GSTATS.ui.statusbar_config
+  if not drag or not container then return end
+  local ok_mouse, mouse_x, mouse_y = pcall(getMousePosition)
+  if not ok_mouse or not tonumber(mouse_x) or not tonumber(mouse_y) then return end
+  local x = drag.x + tonumber(mouse_x) - drag.mouse_x
+  local y = drag.y + tonumber(mouse_y) - drag.mouse_y
+  if type(getMainWindowSize) == "function" then
+    local ok, window_width, window_height = pcall(getMainWindowSize)
+    if ok and tonumber(window_width) and tonumber(window_height) then
+      local width, height = 400, 389
+      if type(container.get_width) == "function" then local got, value = pcall(container.get_width, container); if got and tonumber(value) then width = tonumber(value) end end
+      if type(container.get_height) == "function" then local got, value = pcall(container.get_height, container); if got and tonumber(value) then height = tonumber(value) end end
+      x = math.max(0, math.min(tonumber(window_width) - width, x))
+      y = math.max(0, math.min(tonumber(window_height) - height, y))
+    end
+  end
+  container:move(math.floor(x + 0.5), math.floor(y + 0.5))
+end
+
+function GSTATS.statusbar_config_drag_release()
+  if not GSTATS.statusbar_config_drag then return end
+  GSTATS.statusbar_config_drag = nil
+  local surface = GSTATS.ui and GSTATS.ui.statusbar_config_drag_surface
+  if surface and type(surface.setCursor) == "function" then pcall(surface.setCursor, surface, "OpenHand") end
+  GSTATS.save_state()
+end
+
+function GSTATS.ensure_statusbar_config_drag_surface()
+  if not Geyser or not GSTATS.ui or not GSTATS.ui.statusbar_config then return end
+  if GSTATS.ui.statusbar_config_drag_surface then return end
+  local surface = Geyser.Label:new({
+    name="GSTATSStatusbarConfigDragSurface", x=1, y=1, width="100%-34px", height=32
+  }, GSTATS.ui.statusbar_config)
+  surface:setStyleSheet("background-color: rgba(0, 0, 0, 0%); border: 0px;")
+  GSTATS.ui.statusbar_config_drag_surface = surface
+end
+
+function GSTATS.bind_statusbar_config_drag()
+  if not GSTATS.ui or GSTATS.ui.statusbar_config_drag_bind_version == 1 then return end
+  local surface = GSTATS.ui.statusbar_config_drag_surface
+  if not surface then return end
+  if type(surface.setClickCallback) == "function" then pcall(surface.setClickCallback, surface, "GSTATS.statusbar_config_drag_start") end
+  if type(surface.setMoveCallback) == "function" then pcall(surface.setMoveCallback, surface, "GSTATS.statusbar_config_drag_move") end
+  if type(surface.setReleaseCallback) == "function" then pcall(surface.setReleaseCallback, surface, "GSTATS.statusbar_config_drag_release") end
+  if type(surface.setCursor) == "function" then pcall(surface.setCursor, surface, "OpenHand") end
+  GSTATS.ui.statusbar_config_drag_bind_version = 1
+end
+
+function GSTATS.discard_outdated_statusbar_config()
+  local ui = GSTATS.ui or {}
+  if not ui.statusbar_config or ui.statusbar_config_build_version == GSTATS.statusbar_config_ui_version then return end
+  for _, row in pairs(ui.statusbar_config_rows or {}) do
+    local menu = row and row.rightClickMenu
+    if menu then
+      for _, menu_label in pairs(menu.MenuLabels or {}) do
+        if type(menu_label.delete) == "function" then pcall(menu_label.delete, menu_label) end
+      end
+      if type(menu.delete) == "function" then pcall(menu.delete, menu) end
+      row.rightClickMenu = nil
+    end
+  end
+  if type(ui.statusbar_config.delete) == "function" then
+    pcall(ui.statusbar_config.delete, ui.statusbar_config)
+  else
+    ui.statusbar_config:hide()
+  end
+  ui.statusbar_config = nil
+  ui.statusbar_config_rows = nil
+  ui.statusbar_config_background = nil
+  ui.statusbar_config_header = nil
+  ui.statusbar_config_close = nil
+  ui.statusbar_config_footer = nil
+  ui.statusbar_config_drag_surface = nil
+  ui.statusbar_config_drag_bind_version = nil
+  ui.statusbar_config_build_version = nil
+  GSTATS.statusbar_config_drag = nil
+end
+
+function GSTATS.ensure_statusbar_config()
+  if not Geyser then return false end
+  GSTATS.discard_outdated_statusbar_config()
+  if GSTATS.ui.statusbar_config then
+    GSTATS.ensure_statusbar_config_drag_surface()
+    GSTATS.bind_statusbar_config_drag()
+    GSTATS.configure_statusbar_config_menus()
+    GSTATS.statusbar_config_restyle()
+    return true
+  end
+
+  local options = GSTATS.state.statusbar
+  local dimensions = GSTATS.statusbar_config_dimensions()
+  local container = Geyser.Container:new({ name="GSTATSStatusbarConfig", x=options.config_x, y=options.config_y, width=dimensions.width, height=dimensions.height })
+  if container.enableDrag then pcall(container.enableDrag, container) end
+  GSTATS.ui.statusbar_config = container
+  GSTATS.ui.statusbar_config_build_version = GSTATS.statusbar_config_ui_version
+  GSTATS.ui.statusbar_config_rows = {}
+
+  local background = Geyser.Label:new({ name="GSTATSStatusbarConfigBackground", x=0, y=0, width="100%", height="100%" }, container)
+  background:setStyleSheet("background-color: #11151b; border: 1px solid #46515f;")
+  GSTATS.ui.statusbar_config_background = background
+  local header = Geyser.Label:new({ name="GSTATSStatusbarConfigHeader", x=1, y=1, width="100%-34px", height=32 }, container)
+  header:setStyleSheet("background-color: #1a212a; border: 0px; color: #f3f6fa; font-size: 11pt; font-weight: bold; padding: 5px;")
+  header:echo("g_character · status bar", "#f3f6fa", "l")
+  GSTATS.ui.statusbar_config_header = header
+  local close = Geyser.Label:new({ name="GSTATSStatusbarConfigClose", x="100%-33px", y=1, width=32, height=32 }, container)
+  close:setStyleSheet("background-color: #252d37; border: 0px; color: #cdd5df; font-size: 11pt; font-weight: bold;")
+  close:echo("×", "#cdd5df", "c")
+  GSTATS.ui.statusbar_config_close = close
+  if type(close.setClickCallback) == "function" then close:setClickCallback("GSTATS.statusbar_config_action", "close") end
+
+  for index, action in ipairs(GSTATS.statusbar_config_actions) do
+    local row = Geyser.Label:new({ name="GSTATSStatusbarConfigRow" .. tostring(index), x=8, y=36 + (index - 1) * 28, width="100%-16px", height=26 }, container)
+    local background_color = index % 2 == 0 and "#151b22" or "#181f27"
+    row:setStyleSheet("background-color: " .. background_color .. "; border: 1px solid #2a343f; color: #dce3eb; font-size: 9pt; padding: 4px;")
+    if type(row.setClickCallback) == "function" then row:setClickCallback("GSTATS.statusbar_config_action", action) end
+    GSTATS.ui.statusbar_config_rows[action] = row
+  end
+  local footer = Geyser.Label:new({ name="GSTATSStatusbarConfigFooter", x=8, y=dimensions.footer_y, width="100%-16px", height=dimensions.footer_height }, container)
+  footer:setStyleSheet("background-color: transparent; border: 0px; color: #8996a5; font-size: 8pt;")
+  footer:echo("Layout, gauge skin and font size open menus; other rows toggle or cycle.", "#8996a5", "c")
+  GSTATS.ui.statusbar_config_footer = footer
+  GSTATS.configure_statusbar_config_menus()
+  GSTATS.ensure_statusbar_config_drag_surface()
+  GSTATS.bind_statusbar_config_drag()
+  container:hide()
+  GSTATS.render_statusbar_config()
+  return true
+end
+
+function GSTATS.show_statusbar_config(show)
+  if not GSTATS.ensure_statusbar_config() then return false end
+  if show == nil then show = not GSTATS.ui.statusbar_config_visible end
+  GSTATS.ui.statusbar_config_visible = show == true
+  if GSTATS.ui.statusbar_config_visible then
+    GSTATS.render_statusbar_config()
+    GSTATS.ui.statusbar_config:show()
+  else
+    GSTATS.ui.statusbar_config:hide()
+  end
+  return true
+end
+
+function GSTATS.set_statusbar_visible(visible, silent)
+  GSTATS.state.statusbar.visible = visible == true
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) else GSTATS.render_statusbar(GSTATS.from_gmcp()) end
+  GSTATS.sync_statusbar_pulse(false)
+  GSTATS.render_statusbar_config()
+  GSTATS.save_state()
+  if not silent then
+    cecho(string.format("<cyan>g_character status bar: <white>%s\n", GSTATS.state.statusbar.visible and "on" or "off"))
+  end
+end
+
+function GSTATS.set_statusbar_pulse_mode(mode, silent)
+  local normalized = tostring(mode or ""):lower()
+  local numeric = tonumber(normalized)
+  if numeric and numeric == math.floor(numeric) and numeric >= 2 and numeric <= 5 then
+    GSTATS.state.statusbar.pulse_mode = numeric
+  elseif normalized == "auto" or normalized == "off" then
+    GSTATS.state.statusbar.pulse_mode = normalized
+  else
+    if not silent then cecho("<cyan>Usage: <white>gstats statusbar pulse 2|3|4|5|auto|off\n") end
+    return false
+  end
+  GSTATS.sync_statusbar_pulse(true)
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+  GSTATS.render_statusbar_config()
+  GSTATS.save_state()
+  if not silent then cecho("<cyan>Status-bar pulse: <white>" .. GSTATS.statusbar_pulse_name() .. "\n") end
+  return true
+end
+
+function GSTATS.statusbar_cycle_layout()
+  local current = GSTATS.state.statusbar.layout
+  for index, layout in ipairs(GSTATS.statusbar_layouts) do
+    if layout.key == current then
+      GSTATS.state.statusbar.layout = GSTATS.statusbar_layouts[(index % #GSTATS.statusbar_layouts) + 1].key
+      return
+    end
+  end
+  GSTATS.state.statusbar.layout = "rail"
+end
+
+function GSTATS.statusbar_config_action(action)
+  local options = GSTATS.state.statusbar
+  if action == "close" then GSTATS.show_statusbar_config(false); return end
+  if action == "visible" then
+    GSTATS.set_statusbar_visible(not options.visible, true)
+    return
+  elseif action == "layout" then
+    GSTATS.statusbar_cycle_layout()
+  elseif action == "skin" then
+    local next_skin = options.skin == "capsule" and "clean" or "capsule"
+    return GSTATS.set_statusbar_skin(next_skin)
+  elseif action == "fontsize" then
+    local next_size = GSTATS.statusbar_font_sizes[1]
+    for index, size in ipairs(GSTATS.statusbar_font_sizes) do
+      if size == GSTATS.statusbar_font_size() then
+        next_size = GSTATS.statusbar_font_sizes[(index % #GSTATS.statusbar_font_sizes) + 1]
+        break
+      end
+    end
+    return GSTATS.set_statusbar_font_size(next_size)
+  elseif action == "vertical" then
+    return GSTATS.set_statusbar_vertical(not options.vertical_bars)
+  elseif action == "enemy" then
+    options.show_enemy = not options.show_enemy
+  elseif action == "mana" then
+    options.show_mana = not options.show_mana
+  elseif action == "moves" then
+    options.show_moves = not options.show_moves
+  elseif action == "doublexp" then
+    options.show_double_xp = not options.show_double_xp
+  elseif action == "values" then
+    options.show_values = not options.show_values
+  elseif action == "combat" then
+    options.show_combat = not options.show_combat
+  elseif action == "needs" then
+    options.show_needs = not options.show_needs
+  elseif action == "pulse" then
+    local modes = { "off", "auto", 2, 3, 4, 5 }
+    local next_mode = modes[1]
+    for index, mode in ipairs(modes) do
+      if tostring(mode) == tostring(options.pulse_mode) then next_mode = modes[(index % #modes) + 1]; break end
+    end
+    GSTATS.set_statusbar_pulse_mode(next_mode, true)
+    return
+  else
+    return
+  end
+
+  GSTATS.statusbar_ensure_minimum_size()
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
+  GSTATS.render_statusbar_config()
+  GSTATS.save_state()
+end
+
+function GSTATS.on_statusbar_reposition_finish(_, container_name, width, height, x, y)
+  if tostring(container_name or "") ~= "GSTATSStatusbarContainer" then return end
+  local options = GSTATS.state.statusbar
+  if tonumber(x) then options.x = tonumber(x) end
+  if tonumber(y) then options.y = tonumber(y) end
+  if tonumber(width) then options.width = tonumber(width) end
+  if tonumber(height) then options.height = tonumber(height) end
+  if options.vertical_bars and options.layout ~= "basic" then
+    if tonumber(width) then options.vertical_width = tonumber(width) end
+    if tonumber(height) then options.vertical_height = tonumber(height) end
+  else
+    if tonumber(width) then options.horizontal_width = tonumber(width) end
+    if tonumber(height) then options.horizontal_height = tonumber(height) end
+  end
+  GSTATS.save_state()
+  if GSTATS.last then GSTATS.render_statusbar(GSTATS.last) end
 end
 
 function GSTATS.format_stats(data)
@@ -543,6 +2322,8 @@ function GSTATS.render_from_gmcp(force)
   if not GSTATS.last then
     GSTATS.last = GSTATS.from_gmcp()
   end
+
+  GSTATS.render_statusbar(GSTATS.last)
 
   local console = GSTATS.ui and GSTATS.ui.console
   if not console then return false end
@@ -1987,6 +3768,9 @@ function GSTATS.help()
   cecho("  <white>gchar score none|tactical|vitals|sheet|minimal<grey> - replace sc/score output\n")
   cecho("  <white>gstats help<grey>            - show this help\n")
   cecho("  <white>gstats show|hide<grey>       - toggle window visibility\n")
+  cecho("  <white>gstats statusbar on|off|toggle<grey> - control the draggable status bar\n")
+  cecho("  <white>gchar config<grey>           - open clickable status-bar options\n")
+  cecho("  <white>gstats statusbar pulse 2|3|4|5|auto|off<grey> - set top-edge cycle\n")
   cecho("  <white>gstats horizontal|vertical<grey> - set layout mode\n")
   cecho("  <white>gstats fontsize [size]<grey> - show/set font size\n")
   cecho("  <white>gstats compact on|off<grey>  - compact labels mode\n")
@@ -2003,8 +3787,35 @@ function GSTATS.command(arg)
   GSTATS.ensure_ui()
   local cmd = (arg or ""):match("^%s*(.-)%s*$")
   if cmd == "" then return GSTATS.help() end
+  local lower_cmd = cmd:lower()
 
-  local score_mode = cmd:lower():match("^score%s+(%S+)%s*$")
+  if lower_cmd == "config" then
+    GSTATS.show_statusbar_config(true)
+    return
+  end
+
+  local statusbar_action = lower_cmd:match("^statusbar%s+(%S+)$")
+  if statusbar_action == "on" or statusbar_action == "off" or statusbar_action == "toggle" then
+    if statusbar_action == "toggle" then
+      GSTATS.set_statusbar_visible(not GSTATS.state.statusbar.visible)
+    else
+      GSTATS.set_statusbar_visible(statusbar_action == "on")
+    end
+    return
+  end
+
+  local pulse_mode = lower_cmd:match("^statusbar%s+pulse%s+(%S+)$")
+  if pulse_mode then
+    GSTATS.set_statusbar_pulse_mode(pulse_mode)
+    return
+  elseif lower_cmd == "statusbar" or lower_cmd == "statusbar pulse" then
+    cecho("<cyan>Usage: <white>gstats statusbar on|off|toggle\n")
+    cecho("<cyan>       <white>gstats statusbar pulse 2|3|4|5|auto|off\n")
+    cecho(string.format("<cyan>Current status bar: <white>%s<cyan>; pulse: <white>%s\n", GSTATS.state.statusbar.visible and "on" or "off", GSTATS.statusbar_pulse_name()))
+    return
+  end
+
+  local score_mode = lower_cmd:match("^score%s+(%S+)%s*$")
   if score_mode then
     GSTATS.set_score_mode(score_mode)
     return
@@ -2054,7 +3865,16 @@ function GSTATS.command(arg)
     GSTATS.state = {}
     GSTATS.merge_defaults()
     if GSTATS.ui and GSTATS.ui.container then GSTATS.ui.container:move(GSTATS.state.x, GSTATS.state.y) GSTATS.ui.container:resize(GSTATS.state.width, GSTATS.state.height) end
-    if GSTATS.last then GSTATS.render_from_gmcp() end
+    if GSTATS.ui and GSTATS.ui.statusbar_container then
+      GSTATS.ui.statusbar_container:move(GSTATS.state.statusbar.x, GSTATS.state.statusbar.y)
+      GSTATS.ui.statusbar_container:resize(GSTATS.state.statusbar.width, GSTATS.state.statusbar.height)
+    end
+    if GSTATS.ui and GSTATS.ui.statusbar_config then
+      GSTATS.ui.statusbar_config:move(GSTATS.state.statusbar.config_x, GSTATS.state.statusbar.config_y)
+    end
+    GSTATS.sync_statusbar_pulse(true)
+    GSTATS.render_statusbar_config()
+    if GSTATS.last then GSTATS.render_from_gmcp(true) end
     return GSTATS.save_state()
   elseif cmd == "vertical" or cmd == "horizontal" then
     GSTATS.state.layout = cmd
@@ -2110,6 +3930,9 @@ function GSTATS.command_compact(arg)
   cecho(string.format("<cyan>gcom compact is now: <white>%s\n", GSTATS.state.compact and "on" or "off"))
 end
 
+GSTATS.merge_defaults()
+local gstats_was_initialized = GSTATS.initialized == true
+
 if not GSTATS.initialized then
   GSTATS.initialized = true
   GSTATS.load_state()
@@ -2123,6 +3946,21 @@ if not GSTATS.initialized then
   registerAnonymousEventHandler("gmcp.char.worth", "GSTATS.on_gmcp")
   registerAnonymousEventHandler("sysExitEvent", "GSTATS.save_state")
   GSTATS.install_tell_costs_trigger()
+end
+
+if not GSTATS.statusbar_initialized then
+  GSTATS.statusbar_initialized = true
+  registerAnonymousEventHandler("AdjustableContainerRepositionFinish", "GSTATS.on_statusbar_reposition_finish")
+end
+
+if gstats_was_initialized then
+  GSTATS.ensure_statusbar_ui()
+  if GSTATS.ui and GSTATS.ui.statusbar_config then
+    local config_was_visible = GSTATS.ui.statusbar_config_visible == true
+    GSTATS.ensure_statusbar_config()
+    GSTATS.show_statusbar_config(config_was_visible)
+  end
+  GSTATS.render_from_gmcp(true)
 end]]></script>
       <eventHandlerList/>
     </Script>

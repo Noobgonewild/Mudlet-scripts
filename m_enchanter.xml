@@ -16,7 +16,7 @@
 ----------------------------------------------------------------------------------------------------
 
 m_Enchanter = m_Enchanter or {}
-m_Enchanter.version = "1.1.4"
+m_Enchanter.version = "1.2.2"
 m_Enchanter.aliases = m_Enchanter.aliases or {}
 m_Enchanter.triggers = m_Enchanter.triggers or {}
 m_Enchanter.timers = m_Enchanter.timers or {}
@@ -24,6 +24,7 @@ m_Enchanter.events = m_Enchanter.events or {}
 m_Enchanter.pending_identifies = m_Enchanter.pending_identifies or {}
 m_Enchanter.active_command_queue = m_Enchanter.active_command_queue or nil
 m_Enchanter.next_operation_id = tonumber(m_Enchanter.next_operation_id) or 0
+m_Enchanter.batch = m_Enchanter.batch or { status = "idle" }
 
 m_Enchanter.settings = m_Enchanter.settings or {
     debug = false,
@@ -32,6 +33,9 @@ m_Enchanter.settings = m_Enchanter.settings or {
     quiet = false,
     focus_ignore = false,
 }
+m_Enchanter.settings.batch = m_Enchanter.settings.batch or {}
+m_Enchanter.settings.batch.templates = m_Enchanter.settings.batch.templates or {}
+m_Enchanter.settings.batch.containers = m_Enchanter.settings.batch.containers or {}
 
 m_Enchanter.focus = m_Enchanter.focus or { status = "unknown" }
 m_Enchanter.pending_command = m_Enchanter.pending_command or ""
@@ -68,6 +72,42 @@ local function shallowCopy(t)
         end
     end
     return out
+end
+
+local function deepCopy(value, seen)
+    if type(value) ~= "table" then
+        return value
+    end
+    seen = seen or {}
+    if seen[value] then
+        return seen[value]
+    end
+    local out = {}
+    seen[value] = out
+    for key, item in pairs(value) do
+        out[deepCopy(key, seen)] = deepCopy(item, seen)
+    end
+    return out
+end
+
+local function sortedKeys(t)
+    local keys = {}
+    for key in pairs(t or {}) do
+        table.insert(keys, key)
+    end
+    table.sort(keys, function(a, b) return tostring(a):lower() < tostring(b):lower() end)
+    return keys
+end
+
+local function safeCall(callback, ...)
+    if type(callback) ~= "function" then
+        return true
+    end
+    local ok, err = pcall(callback, ...)
+    if not ok then
+        m_Enchanter.warn("Callback failed: " .. tostring(err))
+    end
+    return ok, err
 end
 
 local function stripColors(text)
@@ -200,8 +240,8 @@ local function sendGameCommand(command)
     end
 end
 
-local function sendReportLine(coloredText)
-    local channel = trim(m_Enchanter.settings.report_channel or "echo")
+local function sendToDestination(destination, coloredText)
+    local channel = trim(destination or "echo")
     if channel == "" then
         channel = "echo"
     end
@@ -241,6 +281,10 @@ local function sendReportLine(coloredText)
     else
         m_Enchanter.warn("Cannot report to custom channel '" .. channel .. "': Mudlet alias expansion is unavailable.")
     end
+end
+
+local function sendReportLine(coloredText)
+    sendToDestination(m_Enchanter.settings.report_channel or "echo", coloredText)
 end
 
 local function niceJoin(list)
@@ -403,6 +447,7 @@ function m_Enchanter.saveSettings()
         report_channel = m_Enchanter.settings.report_channel or "echo",
         quiet = m_Enchanter.settings.quiet and true or false,
         focus_ignore = m_Enchanter.settings.focus_ignore and true or false,
+        batch = deepCopy(m_Enchanter.settings.batch or {}),
     }
     saveLuaTable(m_Enchanter.getSettingsPath(), "m_EnchanterSettings", data)
 end
@@ -418,6 +463,9 @@ function m_Enchanter.loadSettings()
         m_Enchanter.settings[k] = v
     end
     m_Enchanter.settings.report_channel = m_Enchanter.settings.report_channel or "echo"
+    m_Enchanter.settings.batch = m_Enchanter.settings.batch or {}
+    m_Enchanter.settings.batch.templates = m_Enchanter.settings.batch.templates or {}
+    m_Enchanter.settings.batch.containers = m_Enchanter.settings.batch.containers or {}
 end
 
 function m_Enchanter.itemStatePaths()
@@ -1189,6 +1237,16 @@ m_Enchanter - Mudlet/DINV enchanting helper
   @Geqquiet [on|off]@w               Toggle quiet command sending where Mudlet supports it.
   @Geqa debug [on|off]@w             Toggle debug output.
   @Geqa help@w                       Show this help and current settings.
+
+@WBATCH COMMANDS (also available as @Geqenchant batch ...@W):@w
+  @Geqb plan source|container ...@w  Plan a focus-guarded recipe batch.
+  @Geqb cleanup plan ...@w           Plan a free, disenchant-only cleanup batch.
+  @Geqb start|status|pause|resume|abort@w
+  @Geqb source|keeper|reject ...@w    Configure stable container IDs.
+  @Geqb template save|replace|show|list|delete ...@w
+  @Geqb examples@w                   Show complete batch command examples.
+  @Geqb placeholders@w               Show pass/fail action variables.
+  @Geqb help@w                       Show the complete batch help section.
 ]])
 
     local last = m_Enchanter.last
@@ -1205,6 +1263,10 @@ end
 function m_Enchanter.eqSetFlags(arg)
     arg = trim(arg)
     if arg == "confirm" then
+        if m_Enchanter.batchIsActive and m_Enchanter.batchIsActive() then
+            m_Enchanter.warn("A batch plan/job owns the enchanting queue. Abort it before changing item flags.")
+            return
+        end
         if m_Enchanter.pending_command ~= "" then
             local cmd = m_Enchanter.pending_command
             local objId = m_Enchanter.pending_item_id
@@ -1258,7 +1320,7 @@ end
 ----------------------------------------------------------------------------------------------------
 
 local function clearFocusTimers()
-    for _, key in ipairs({ "warn", "expire" }) do
+    for _, key in ipairs({ "warn", "warn60", "cutoff30", "expire" }) do
         local timerId = m_Enchanter.timers and m_Enchanter.timers[key]
         if timerId then
             pcall(killTimer, timerId)
@@ -1267,10 +1329,32 @@ local function clearFocusTimers()
     end
 end
 
+local function warnFocus60(remaining)
+    local batch = m_Enchanter.batch
+    if batch and batch.status == "running" and batch.plan and batch.plan.mode == "recipe" then
+        remaining = math.max(31, math.floor(tonumber(remaining) or 60))
+        m_Enchanter.print("@YFocus expires in " .. remaining .. " seconds; batch enchanting will pause at 30.@w")
+        batch.focusWarned60 = true
+    end
+end
+
 local function warnFocus30()
-    m_Enchanter.print("@YEnchanter's focus @Dis about to expire in @R30 SECONDS!@w")
-    m_Enchanter.print("@YEnchanter's focus @Dis about to expire in @R30 SECONDS!@w")
-    m_Enchanter.print("@YEnchanter's focus @Dis about to expire in @R30 SECONDS!@w")
+    local batch = m_Enchanter.batch
+    if batch and (batch.status == "running" or batch.status == "pausing")
+        and batch.plan and batch.plan.mode == "recipe" then
+        m_Enchanter.print("@RFocus expires in 30 seconds; pausing batch enchanting after the current operation.@w")
+        batch.focusWarned30 = true
+        batch.pauseRequested = true
+        batch.pauseReason = "focus cutoff"
+        batch.stats = batch.stats or {}
+        batch.stats.focusPauses = (batch.stats.focusPauses or 0) + 1
+        if type(m_Enchanter.batchTryPause) == "function" then
+            m_Enchanter.batchTryPause()
+        end
+    elseif not (batch and batch.plan and batch.plan.mode == "cleanup"
+        and batch.status ~= "idle" and batch.status ~= "planned") then
+        m_Enchanter.print("@REnchanter's focus expires in 30 seconds.@w")
+    end
 end
 
 function m_Enchanter.warnFocusDownStatus()
@@ -1285,16 +1369,23 @@ end
 
 function m_Enchanter.markFocusDown()
     m_Enchanter.focus.status = "down"
+    m_Enchanter.focus.expiresAt = nil
     m_Enchanter.warnFocusDownStatus()
 end
 
 function m_Enchanter.scheduleFocus(seconds)
     clearFocusTimers()
     seconds = tonumber(seconds) or 0
+    m_Enchanter.focus.expiresAt = os.time() + math.max(0, seconds)
     if seconds <= 30 then
         warnFocus30()
     else
-        m_Enchanter.timers.warn = tempTimer(seconds - 30, warnFocus30)
+        if seconds <= 60 then
+            warnFocus60(seconds)
+        else
+            m_Enchanter.timers.warn60 = tempTimer(seconds - 60, function() warnFocus60(60) end)
+        end
+        m_Enchanter.timers.cutoff30 = tempTimer(seconds - 30, warnFocus30)
     end
     m_Enchanter.timers.expire = tempTimer(seconds, function() m_Enchanter.markFocusDown() end)
 end
@@ -1319,6 +1410,7 @@ function m_Enchanter.onFocusActivated()
         m_Enchanter.timers.focusCheck = nil
     end
     m_Enchanter.focus.status = "up"
+    m_Enchanter.focus.expiresAt = nil
     m_Enchanter.debug("Focus activation detected from game confirmation.")
 end
 
@@ -1333,6 +1425,7 @@ function m_Enchanter.onNoAffects()
     end
     clearFocusTimers()
     m_Enchanter.focus.status = "down"
+    m_Enchanter.focus.expiresAt = nil
     cecho("\n")
     m_Enchanter.warnFocusDownStatus()
 end
@@ -1340,6 +1433,7 @@ end
 function m_Enchanter.onFocusFaded()
     clearFocusTimers()
     m_Enchanter.focus.status = "down"
+    m_Enchanter.focus.expiresAt = nil
     cecho("\n")
     m_Enchanter.warnFocusDownStatus()
 end
@@ -1460,6 +1554,7 @@ function m_Enchanter.finishPostIdentify(objId, context)
 
     if kind == "disenchant" then
         reportRemovedEnchants(objId, context)
+        safeCall(context.onComplete, m_Enchanter.analyzeId(objId, { display = false, report = false }), context)
         return
     end
 
@@ -1469,8 +1564,11 @@ function m_Enchanter.finishPostIdentify(objId, context)
         enchantDetails = context.enchantDetails,
     })
     if analysis then
-        m_Enchanter.reportAnalysis(analysis)
+        if kind ~= "batch-plan" and kind ~= "batch-recover" and context.reportOperation ~= false then
+            m_Enchanter.reportAnalysis(analysis)
+        end
     end
+    safeCall(context.onComplete, analysis, context)
 end
 
 local function splitCapturedEnchantValue(value)
@@ -1572,6 +1670,7 @@ function m_Enchanter.queuePostIdentifyReport(objId, context)
             m_Enchanter.identify_capture_id = nil
         end
         m_Enchanter.warn("DINV identify completion was not received within 15 seconds for item " .. objId .. "; skipped the post-operation report to avoid stale data.")
+        safeCall(current.context and current.context.onError, "identify timeout", objId)
     end)
     return pending
 end
@@ -1633,6 +1732,7 @@ function m_Enchanter.schedulePostOperationIdentify(objId, delay, context)
             end
         end
         m_Enchanter.warn("Could not start DINV identify for item " .. objId .. ": " .. tostring(reason) .. ".")
+        safeCall(pending.context and pending.context.onError, tostring(reason), objId)
     end)
 end
 
@@ -1700,6 +1800,7 @@ function m_Enchanter.abortCommandQueue(message)
     end
     m_Enchanter.active_command_queue = nil
     m_Enchanter.warn(message or "Command queue stopped; DINV identify was not started.")
+    safeCall(queue.context and queue.context.onError, message or "command queue stopped", queue.objId)
 end
 
 function m_Enchanter.sendNextQueuedCommand(operationId)
@@ -1712,8 +1813,12 @@ function m_Enchanter.sendNextQueuedCommand(operationId)
     local command = queue.commands[queue.index]
     if not command then
         m_Enchanter.active_command_queue = nil
-        if queue.objId then
+        if queue.context and queue.context.skipIdentify then
+            safeCall(queue.context.onComplete, nil, queue.context)
+        elseif queue.objId then
             m_Enchanter.schedulePostOperationIdentify(queue.objId, 0.2, queue.context)
+        else
+            safeCall(queue.context and queue.context.onComplete, nil, queue.context)
         end
         return
     end
@@ -1746,11 +1851,13 @@ function m_Enchanter.onCommandPrompt()
     end)
 end
 
-function m_Enchanter.onCommandResponseLine()
+function m_Enchanter.onCommandResponseLine(responseLine)
     local queue = m_Enchanter.active_command_queue
     if not queue or not queue.waitingForPrompt then
         return
     end
+
+    queue.lastResponse = trim(stripColors(responseLine or line or ""))
 
     local operationId = queue.id
     local commandIndex = queue.index
@@ -1802,7 +1909,13 @@ function m_Enchanter.scheduleCommands(commands, label, objId, postIdentifyContex
         context = postIdentifyContext or {},
         waitingForPrompt = false,
     }
-    m_Enchanter.info(label .. ": " .. table.concat(commands, " ; "))
+    if postIdentifyContext and postIdentifyContext.batch then
+        if postIdentifyContext.showCommand ~= false then
+            m_Enchanter.print("@C" .. tostring(label or "Batch operation") .. ":@w " .. table.concat(commands, " ; "))
+        end
+    else
+        m_Enchanter.info(label .. ": " .. table.concat(commands, " ; "))
+    end
     m_Enchanter.sendNextQueuedCommand(operationId)
     return true
 end
@@ -1831,11 +1944,24 @@ function m_Enchanter.resolveForAction(arg)
 end
 
 function m_Enchanter.eqEnchant(arg)
+    arg = trim(arg)
+    if arg:lower() == "help" then
+        m_Enchanter.showHelp()
+        return
+    end
+    local batchArg = arg:match("^[Bb][Aa][Tt][Cc][Hh]%s*(.*)$")
+    if batchArg ~= nil then
+        m_Enchanter.batchCommand(batchArg)
+        return
+    end
+    if m_Enchanter.batchIsActive and m_Enchanter.batchIsActive() then
+        m_Enchanter.warn("A batch plan/job owns the enchanting queue. Abort it before running a single-item enchant.")
+        return
+    end
     if not m_Enchanter.focusAllowsEnchant() then
         return
     end
 
-    arg = trim(arg)
     local fastArg = arg:match("^fast%s+(.+)$")
     if fastArg then
         m_Enchanter.eqEnchantFast(fastArg)
@@ -1878,6 +2004,10 @@ function m_Enchanter.eqEnchant(arg)
 end
 
 function m_Enchanter.eqEnchantFast(arg)
+    if m_Enchanter.batchIsActive and m_Enchanter.batchIsActive() then
+        m_Enchanter.warn("A batch plan/job owns the enchanting queue. Abort it before running a single-item enchant.")
+        return
+    end
     if not m_Enchanter.focusAllowsEnchant() then
         return
     end
@@ -1904,6 +2034,10 @@ function m_Enchanter.eqEnchantFast(arg)
 end
 
 function m_Enchanter.eqDisenchant(rest)
+    if m_Enchanter.batchIsActive and m_Enchanter.batchIsActive() then
+        m_Enchanter.warn("A batch plan/job owns the enchanting queue. Abort it before running a single-item disenchant.")
+        return
+    end
     if not m_Enchanter.focusAllowsEnchant() then
         return
     end
@@ -1985,6 +2119,2355 @@ function m_Enchanter.eqDisenchant(rest)
 end
 
 ----------------------------------------------------------------------------------------------------
+-- Batch enchanting: parsing, templates, DINV inspection, and planning
+----------------------------------------------------------------------------------------------------
+
+local BATCH_KIND_ORDER = { "solidify", "illuminate", "resonate" }
+local BATCH_KIND_LETTER = { solidify = "S", illuminate = "I", resonate = "R" }
+local BATCH_LETTER_KIND = { S = "solidify", I = "illuminate", R = "resonate" }
+local BATCH_KIND_PRETTY = { solidify = "Solidify", illuminate = "Illuminate", resonate = "Resonate" }
+
+function m_Enchanter.batchIsActive()
+    local status = m_Enchanter.batch and m_Enchanter.batch.status or "idle"
+    return status ~= "idle"
+end
+
+local function batchInfo(text)
+    m_Enchanter.print("@C" .. tostring(text or "") .. "@w")
+end
+
+local function batchWarn(text)
+    m_Enchanter.print("@Y" .. tostring(text or "") .. "@w")
+end
+
+local function batchError(text)
+    m_Enchanter.print("@R" .. tostring(text or "") .. "@w")
+end
+
+local function batchTokenize(text)
+    text = tostring(text or "")
+    local tokens = {}
+    local index = 1
+    while index <= #text do
+        while index <= #text and text:sub(index, index):match("%s") do
+            index = index + 1
+        end
+        if index > #text then
+            break
+        end
+
+        if text:sub(index, index) == "{" then
+            local depth = 1
+            local startAt = index + 1
+            index = index + 1
+            while index <= #text and depth > 0 do
+                local ch = text:sub(index, index)
+                if ch == "{" then
+                    depth = depth + 1
+                elseif ch == "}" then
+                    depth = depth - 1
+                end
+                index = index + 1
+            end
+            if depth ~= 0 then
+                return nil, "Unclosed '{' in batch command."
+            end
+            table.insert(tokens, { value = text:sub(startAt, index - 2), braced = true })
+        else
+            local startAt = index
+            while index <= #text and not text:sub(index, index):match("%s") do
+                index = index + 1
+            end
+            table.insert(tokens, { value = text:sub(startAt, index - 1), braced = false })
+        end
+    end
+    return tokens
+end
+
+local function batchParseRecipe(raw, mode)
+    local compact = tostring(raw or ""):upper():gsub("[%s,]+", "")
+    if compact == "" then
+        return nil, "The " .. tostring(mode or "recipe") .. " definition is empty."
+    end
+
+    local entries = {}
+    local remaining = compact
+    while remaining ~= "" do
+        local letter, amount, rest = remaining:match("^([SIR])(%d+)(.*)$")
+        if not letter then
+            return nil, "Invalid enchant token near '" .. remaining .. "'. Use tokens such as I5, S6, or R3."
+        end
+        table.insert(entries, {
+            kind = BATCH_LETTER_KIND[letter],
+            letter = letter,
+            target = tonumber(amount),
+        })
+        remaining = rest
+    end
+
+    if mode == "cleanup" then
+        local seen = {}
+        for _, entry in ipairs(entries) do
+            if seen[entry.kind] then
+                return nil, "Cleanup definitions may contain each enchant family only once."
+            end
+            seen[entry.kind] = true
+        end
+    end
+
+    local families = {}
+    local byKind = {}
+    local lastKind = nil
+    for _, entry in ipairs(entries) do
+        local family = byKind[entry.kind]
+        if not family then
+            family = { kind = entry.kind, letter = entry.letter, targets = {} }
+            byKind[entry.kind] = family
+            table.insert(families, family)
+        elseif lastKind ~= entry.kind then
+            return nil, "Fallback tokens for the same enchant family must be adjacent."
+        end
+        table.insert(family.targets, entry.target)
+        if mode == "recipe" and #family.targets > 2 then
+            return nil, "A recipe supports at most two attempts per enchant family because only one free removal is available."
+        end
+        lastKind = entry.kind
+    end
+
+    return {
+        raw = compact,
+        entries = entries,
+        families = families,
+    }
+end
+
+local function batchParseOptions(tokens, startAt)
+    local options = { policy = "partial", provided = {} }
+    local index = startAt or 1
+    local valueOptions = {
+        recipe = "recipeRaw",
+        cleanup = "cleanupRaw",
+        pass = "passAction",
+        fail = "failAction",
+        ["pass-to"] = "passTo",
+        ["fail-to"] = "failTo",
+        using = "using",
+    }
+
+    while index <= #tokens do
+        local keyword = tostring(tokens[index].value or ""):lower()
+        if keyword == "strict" or keyword == "partial" then
+            options.policy = keyword
+            options.provided.policy = true
+            index = index + 1
+        elseif keyword == "any" then
+            return nil, "The 'any' keyword is not supported. Use 'strict' or 'partial'; partial is the default."
+        elseif valueOptions[keyword] then
+            local nextToken = tokens[index + 1]
+            if not nextToken then
+                return nil, "Missing value after '" .. keyword .. "'."
+            end
+            local field = valueOptions[keyword]
+            options[field] = tostring(nextToken.value or "")
+            options.provided[field] = true
+            if keyword == "recipe" or keyword == "cleanup" then
+                options.mode = keyword == "recipe" and "recipe" or "cleanup"
+                options.provided.mode = true
+            end
+            index = index + 2
+        else
+            return nil, "Unknown batch option '" .. tostring(tokens[index].value or "") .. "'."
+        end
+    end
+    return options
+end
+
+local function batchMergeOptions(template, explicit)
+    local merged = deepCopy(template or {})
+    merged.provided = nil
+    explicit = explicit or {}
+    for key in pairs(explicit.provided or {}) do
+        merged[key] = deepCopy(explicit[key])
+    end
+    if not merged.policy or merged.policy == "" then
+        merged.policy = "partial"
+    end
+    return merged
+end
+
+local function batchContainerLabel(record)
+    if not record then
+        return "(not configured)"
+    end
+    if tostring(record.id) == "inventory" then
+        return "main inventory"
+    end
+    local name = trim(record.name or "")
+    return (name ~= "" and name or "container") .. " [" .. tostring(record.id or "?") .. "]"
+end
+
+local function batchResolveContainer(reference, allowInventory)
+    reference = trim(reference)
+    if allowInventory and reference:lower() == "inventory" then
+        return { id = "inventory", name = "main inventory" }
+    end
+    if reference == "" then
+        return nil, "A container reference is required."
+    end
+    if not (DINV and DINV.api and type(DINV.api.resolveContainer) == "function") then
+        return nil, "DINV.api.resolveContainer is unavailable."
+    end
+
+    local ok, result = pcall(DINV.api.resolveContainer, reference, {
+        source = "live",
+        includeIgnored = true,
+        fields = { "id", "name", "colorName", "type", "location", "container" },
+    })
+    if not ok or type(result) ~= "table" or not result.ok then
+        local reason = ok and result and (result.message or result.code) or result
+        return nil, "Could not resolve container '" .. reference .. "': " .. tostring(reason or "unknown error")
+    end
+
+    local item = result.item or {}
+    local name = cleanDisplayName(stripColors(item.colorName or item.name or "container"))
+    return { id = tostring(result.id), name = name }
+end
+
+local function batchValidateSavedContainer(record, role)
+    if not record or not record.id then
+        local label = role:gsub("^%l", string.upper)
+        if role == "source" then
+            return nil, "Source container is not configured. Use 'eqb source <container>'. No batch was planned."
+        end
+        return nil, label .. " destination is not configured. Use 'eqb " .. role
+            .. " <container>' or provide an explicit container ID. No batch was planned."
+    end
+    local resolved, err = batchResolveContainer(tostring(record.id), true)
+    if not resolved then
+        return nil, "Saved " .. role .. " " .. batchContainerLabel(record) .. " is unavailable: " .. tostring(err)
+    end
+    return resolved
+end
+
+function m_Enchanter.batchConfigureContainer(role, reference)
+    role = tostring(role or ""):lower()
+    local containers = m_Enchanter.settings.batch.containers
+    reference = trim(reference)
+    if reference == "" then
+        batchInfo((role:gsub("^%l", string.upper)) .. ": " .. batchContainerLabel(containers[role]))
+        return
+    end
+    if reference:lower() == "clear" then
+        containers[role] = nil
+        m_Enchanter.saveSettings()
+        batchInfo((role:gsub("^%l", string.upper)) .. " container cleared.")
+        return
+    end
+
+    local resolved, err = batchResolveContainer(reference, true)
+    if not resolved then
+        batchError(err)
+        return
+    end
+    -- Only the canonical id and display name are persisted. Relative input such as 2.bag is never reused.
+    containers[role] = resolved
+    m_Enchanter.saveSettings()
+    batchInfo((role:gsub("^%l", string.upper)) .. " set to " .. batchContainerLabel(resolved) .. ".")
+end
+
+local function batchCanonicalTemplateDestination(reference)
+    reference = trim(reference)
+    local lower = reference:lower()
+    if lower == "keeper" or lower == "reject" then
+        return lower
+    end
+    local resolved, err = batchResolveContainer(reference, true)
+    if not resolved then
+        return nil, err
+    end
+    return tostring(resolved.id)
+end
+
+local function batchTemplateReplaceCommand(name, template)
+    local parts = { "eqb", "template", "replace", tostring(name) }
+    if template.recipeRaw then
+        table.insert(parts, "recipe")
+        table.insert(parts, "{" .. tostring(template.recipeRaw) .. "}")
+    elseif template.cleanupRaw then
+        table.insert(parts, "cleanup")
+        table.insert(parts, "{" .. tostring(template.cleanupRaw) .. "}")
+    end
+    table.insert(parts, tostring(template.policy or "partial"))
+    if template.passAction then
+        table.insert(parts, "pass")
+        table.insert(parts, "{" .. tostring(template.passAction) .. "}")
+    end
+    if template.failAction then
+        table.insert(parts, "fail")
+        table.insert(parts, "{" .. tostring(template.failAction) .. "}")
+    end
+    if template.passTo then
+        table.insert(parts, "pass-to")
+        table.insert(parts, tostring(template.passTo))
+    end
+    if template.failTo then
+        table.insert(parts, "fail-to")
+        table.insert(parts, tostring(template.failTo))
+    end
+    return table.concat(parts, " ")
+end
+
+function m_Enchanter.batchTemplateCommand(action, name, optionText)
+    action = tostring(action or ""):lower()
+    name = trim(name)
+    local templates = m_Enchanter.settings.batch.templates
+
+    if action == "list" then
+        local keys = sortedKeys(templates)
+        if #keys == 0 then
+            batchInfo("No batch templates are saved.")
+            return
+        end
+        batchInfo("Saved batch templates:")
+        for _, key in ipairs(keys) do
+            local template = templates[key]
+            local kind = template.mode and template.mode:upper() or "ACTIONS"
+            local definition = template.recipeRaw or template.cleanupRaw or ""
+            m_Enchanter.print(string.format("@W  %-22s @C%-8s@w %s", key, kind, definition))
+        end
+        return
+    end
+
+    if name == "" then
+        batchError("A template name is required.")
+        return
+    end
+    if action == "show" then
+        local template = templates[name]
+        if not template then
+            batchError("Template '" .. name .. "' does not exist.")
+            return
+        end
+        batchInfo("Template " .. name .. ":")
+        m_Enchanter.print("@W  Type:     @G" .. tostring(template.mode or "actions") .. "@w")
+        if template.recipeRaw then m_Enchanter.print("@W  Recipe:   @G" .. template.recipeRaw .. "@w") end
+        if template.cleanupRaw then m_Enchanter.print("@W  Cleanup:  @G" .. template.cleanupRaw .. "@w") end
+        m_Enchanter.print("@W  Policy:   @G" .. tostring(template.policy or "partial") .. "@w")
+        if template.passAction then m_Enchanter.print("@W  Pass:     @G{" .. template.passAction .. "}@w") end
+        if template.failAction then m_Enchanter.print("@W  Fail:     @G{" .. template.failAction .. "}@w") end
+        if template.passTo then m_Enchanter.print("@W  Pass-to:  @G" .. template.passTo .. "@w") end
+        if template.failTo then m_Enchanter.print("@W  Fail-to:  @G" .. template.failTo .. "@w") end
+        m_Enchanter.print("@W  command: @G" .. batchTemplateReplaceCommand(name, template) .. "@w")
+        return
+    elseif action == "delete" then
+        if not templates[name] then
+            batchError("Template '" .. name .. "' does not exist.")
+            return
+        end
+        templates[name] = nil
+        m_Enchanter.saveSettings()
+        batchInfo("Deleted batch template '" .. name .. "'.")
+        return
+    end
+
+    if action ~= "save" and action ~= "replace" then
+        batchError("Unknown template action '" .. action .. "'.")
+        return
+    end
+    if not name:match("^[%w_.%-]+$") then
+        batchError("Template names may contain only letters, numbers, underscore, dash, and period.")
+        return
+    end
+    if action == "save" and templates[name] then
+        batchError("Template '" .. name .. "' already exists. Use 'eqb template replace " .. name .. " ...' or delete it first.")
+        return
+    end
+    if action == "replace" and not templates[name] then
+        batchError("Template '" .. name .. "' does not exist. Use 'eqb template save " .. name .. " ...'.")
+        return
+    end
+
+    local tokens, tokenErr = batchTokenize(optionText)
+    if not tokens then
+        batchError(tokenErr)
+        return
+    end
+    local options, optionErr = batchParseOptions(tokens, 1)
+    if not options then
+        batchError(optionErr)
+        return
+    end
+    if options.using then
+        batchError("A saved template cannot use another template.")
+        return
+    end
+    if options.recipeRaw and options.cleanupRaw then
+        batchError("A template cannot contain both a recipe and cleanup definition.")
+        return
+    end
+    if not options.recipeRaw and not options.cleanupRaw and not options.passAction and not options.failAction
+        and not options.passTo and not options.failTo then
+        batchError("The template does not contain a recipe, cleanup rule, action, or destination.")
+        return
+    end
+
+    if options.mode then
+        local _, parseErr = batchParseRecipe(options.recipeRaw or options.cleanupRaw, options.mode)
+        if parseErr then
+            batchError(parseErr)
+            return
+        end
+    end
+    for _, field in ipairs({ "passTo", "failTo" }) do
+        if options[field] then
+            local canonical, err = batchCanonicalTemplateDestination(options[field])
+            if not canonical then
+                batchError(err)
+                return
+            end
+            options[field] = canonical
+        end
+    end
+
+    options.provided = nil
+    templates[name] = options
+    m_Enchanter.saveSettings()
+    batchInfo((action == "replace" and "Replaced" or "Saved") .. " batch template '" .. name .. "'.")
+end
+
+local function batchEnchantTotal(details, kind)
+    local total = 0
+    local found = false
+    for _, entry in ipairs(details and details[kind] or {}) do
+        local value = tostring(entry.value or "")
+        for number in value:gmatch("[%+%-]?%d+%.?%d*") do
+            local parsed = tonumber(number)
+            if parsed then
+                total = total + parsed
+                found = true
+            end
+        end
+    end
+    return found and total or nil
+end
+
+local function batchEnchantDetail(details, kind)
+    local values = {}
+    for _, entry in ipairs(details and details[kind] or {}) do
+        local value = trim(entry.value)
+        if value ~= "" then
+            table.insert(values, value)
+        end
+    end
+    return table.concat(values, ", ")
+end
+
+local function batchHasFlag(item, flag)
+    local raw = getStat(item, "flags")
+    if type(raw) == "table" then
+        local parts = {}
+        for key, value in pairs(raw) do
+            if type(key) == "number" then
+                table.insert(parts, tostring(value))
+            elseif value == true or value == 1 or value == "1" then
+                table.insert(parts, tostring(key))
+            end
+        end
+        raw = table.concat(parts, " ")
+    end
+    return hasToken(raw or "", flag)
+end
+
+local function batchNeedsIdentify(item, analysis)
+    -- A full DINV record is authoritative. In particular, a missing
+    -- *removal field on a fully identified item means DINV did not classify
+    -- that enchant as freely removable; it does not mean that another
+    -- identify can discover more data. Treating it as incomplete caused
+    -- permanent/non-removable enchants to be identified again on every plan.
+    if tostring(getStat(item, "identifyLevel") or ""):lower() == "full" then
+        return false
+    end
+
+    local flagNames = {
+        solidify = "solidified",
+        illuminate = "illuminated",
+        resonate = "resonated",
+    }
+    for kind, flag in pairs(flagNames) do
+        local indicated = batchHasFlag(item, flag) or hasEnchant(analysis.enchantDetails, kind)
+        if indicated then
+            if not hasEnchant(analysis.enchantDetails, kind)
+                or batchEnchantTotal(analysis.enchantDetails, kind) == nil
+                or enchantRemovalMode(analysis.enchantDetails, kind) == "" then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function batchFamilyEligible(analysis, kind)
+    if hasEnchant(analysis.enchantDetails, kind) then
+        return true
+    elseif kind == "solidify" then
+        if analysis.hasSolidified then return false end
+        return analysis.hasInvis == true
+    elseif kind == "resonate" then
+        if analysis.hasResonated then return false end
+        return analysis.hasHum ~= true
+    elseif kind == "illuminate" then
+        if analysis.hasIlluminated then return false end
+        return analysis.hasGlow ~= true
+    end
+    return false
+end
+
+local function batchSourceContents(source)
+    if not (DINV and DINV.api) then
+        return nil, "DINV API is unavailable."
+    end
+    local options = {
+        source = "live",
+        includeIgnored = true,
+        fields = {
+            "id", "name", "colorName", "type", "flags", "identifyLevel", "location", "container", "worn",
+            "enchants", "solidify", "solidifyremoval", "illuminate", "illuminateremoval",
+            "resonate", "resonateremoval",
+        },
+    }
+    local fn, arg
+    if source.id == "inventory" then
+        fn = DINV.api.getLocationContents
+        arg = "inventory"
+    else
+        fn = DINV.api.getContainerContents
+        arg = tostring(source.id)
+    end
+    if type(fn) ~= "function" then
+        return nil, "This DINV version does not expose container-content queries."
+    end
+    local ok, result = pcall(fn, arg, options)
+    if not ok or type(result) ~= "table" or not result.ok then
+        return nil, tostring(ok and result and (result.message or result.code) or result or "DINV query failed")
+    end
+    return result.items or {}
+end
+
+local function batchResolvePlanDestination(reference, role)
+    if not reference or trim(reference) == "" then
+        return nil
+    end
+    local lower = trim(reference):lower()
+    if lower == "keeper" or lower == "reject" then
+        local saved = m_Enchanter.settings.batch.containers[lower]
+        return batchValidateSavedContainer(saved, lower)
+    end
+    return batchResolveContainer(reference, true)
+end
+
+local function batchBuildPlan(plan)
+    local spec, parseErr = batchParseRecipe(plan.options.recipeRaw or plan.options.cleanupRaw, plan.mode)
+    if not spec then
+        return nil, parseErr
+    end
+    plan.spec = spec
+    plan.items = {}
+    plan.selected = 0
+    plan.skipped = 0
+    plan.tpSkipped = 0
+    plan.tpItems = {}
+    plan.cleanupRemovals = 0
+    plan.modifyItems = {}
+    plan.blockedItems = {}
+    plan.acceptableItems = {}
+    plan.modifyBlockedOverlap = 0
+
+    local snapshots = {}
+    for _, snapshot in pairs(plan.snapshots or {}) do
+        table.insert(snapshots, snapshot)
+    end
+    table.sort(snapshots, function(a, b)
+        local left, right = tonumber(a.id), tonumber(b.id)
+        if left and right then return left < right end
+        return tostring(a.id) < tostring(b.id)
+    end)
+
+    for _, snapshot in ipairs(snapshots) do
+        local analysis = snapshot.analysis
+        if plan.mode == "recipe" then
+            local families = {}
+            local familyStates = {}
+            local blockedFamilies = {}
+            local eligibleCount = 0
+            local hasModify = false
+            local hasBlocked = false
+            local missing = false
+            for _, family in ipairs(spec.families) do
+                if batchFamilyEligible(analysis, family.kind) then
+                    eligibleCount = eligibleCount + 1
+                    local plannedFamily = deepCopy(family)
+                    local state = {
+                        kind = family.kind,
+                        targets = deepCopy(family.targets),
+                    }
+                    if hasEnchant(analysis.enchantDetails, family.kind) then
+                        state.observed = batchEnchantTotal(analysis.enchantDetails, family.kind)
+                        state.removal = enchantRemovalMode(analysis.enchantDetails, family.kind)
+                        local target = family.targets[1]
+                        if state.observed ~= nil and state.observed >= target then
+                            state.state = "unchanged"
+                        elseif state.removal == "enchanter" then
+                            state.state = "recast"
+                            plannedFamily.planState = state.state
+                            table.insert(families, plannedFamily)
+                            hasModify = true
+                        else
+                            state.state = "blocked"
+                            table.insert(blockedFamilies, deepCopy(state))
+                            hasBlocked = true
+                        end
+                    else
+                        state.state = "cast"
+                        plannedFamily.planState = state.state
+                        table.insert(families, plannedFamily)
+                        hasModify = true
+                    end
+                    table.insert(familyStates, state)
+                else
+                    missing = true
+                    table.insert(familyStates, {
+                        kind = family.kind,
+                        targets = deepCopy(family.targets),
+                        state = "unavailable",
+                    })
+                end
+            end
+            if (plan.options.policy == "strict" and missing) or eligibleCount == 0 then
+                plan.skipped = plan.skipped + 1
+            else
+                local plannedItem = {
+                    id = snapshot.id,
+                    name = analysis.plainName,
+                    colorName = analysis.colorName,
+                    originalContainer = tostring(getStat(analysis.item, "container") or getStat(analysis.item, "location") or plan.source.id),
+                    analysis = analysis,
+                    families = families,
+                    familyStates = familyStates,
+                    blockedFamilies = blockedFamilies,
+                }
+                table.insert(plan.items, plannedItem)
+                if hasModify then table.insert(plan.modifyItems, plannedItem) end
+                if hasBlocked then table.insert(plan.blockedItems, plannedItem) end
+                if hasModify and hasBlocked then
+                    plan.modifyBlockedOverlap = plan.modifyBlockedOverlap + 1
+                elseif not hasModify and not hasBlocked then
+                    table.insert(plan.acceptableItems, plannedItem)
+                end
+                plan.selected = plan.selected + 1
+            end
+        else
+            local removals = {}
+            local tpRemovals = {}
+            for _, entry in ipairs(spec.entries) do
+                local kind = entry.kind
+                if hasEnchant(analysis.enchantDetails, kind) then
+                    local total = batchEnchantTotal(analysis.enchantDetails, kind)
+                    local removal = enchantRemovalMode(analysis.enchantDetails, kind)
+                    if total ~= nil and total <= entry.target then
+                        if removal == "enchanter" then
+                            table.insert(removals, { kind = kind, threshold = entry.target, observed = total })
+                        elseif removal == "tp" then
+                            table.insert(tpRemovals, { kind = kind, threshold = entry.target, observed = total })
+                        end
+                    end
+                end
+            end
+            plan.tpSkipped = plan.tpSkipped + #tpRemovals
+            if #tpRemovals > 0 then
+                table.insert(plan.tpItems, {
+                    id = snapshot.id,
+                    name = analysis.plainName,
+                    colorName = analysis.colorName,
+                    analysis = analysis,
+                    tpRemovals = tpRemovals,
+                })
+            end
+            if #removals > 0 then
+                table.insert(plan.items, {
+                    id = snapshot.id,
+                    name = analysis.plainName,
+                    colorName = analysis.colorName,
+                    originalContainer = tostring(getStat(analysis.item, "container") or getStat(analysis.item, "location") or plan.source.id),
+                    analysis = analysis,
+                    removals = removals,
+                })
+                plan.selected = plan.selected + 1
+                plan.cleanupRemovals = plan.cleanupRemovals + #removals
+            else
+                plan.skipped = plan.skipped + 1
+            end
+        end
+    end
+
+    return plan
+end
+
+local function batchPlanEnchantSummary(analysis)
+    local parts = {}
+    for _, kind in ipairs(BATCH_KIND_ORDER) do
+        local details = analysis and analysis.enchantDetails or nil
+        if hasEnchant(details, kind) then
+            local total = batchEnchantTotal(details, kind)
+            local detail = trim(batchEnchantDetail(details, kind))
+            local removal = enchantRemovalMode(details, kind)
+            local value = total ~= nil and tostring(total) or (detail ~= "" and detail or "unknown")
+            local removalLabel = removal == "enchanter" and "free"
+                or (removal == "tp" and "TP" or (removal ~= "" and removal or "not freely removable"))
+            table.insert(parts, BATCH_KIND_PRETTY[kind] .. " " .. value .. " (" .. removalLabel .. ")")
+        end
+    end
+    return #parts > 0 and table.concat(parts, "; ") or "none"
+end
+
+local function batchPlanMatchSummary(entries)
+    local parts = {}
+    for _, entry in ipairs(entries or {}) do
+        table.insert(parts, BATCH_KIND_PRETTY[entry.kind] .. " " .. tostring(entry.observed)
+            .. " <= " .. tostring(entry.threshold))
+    end
+    return #parts > 0 and table.concat(parts, "; ") or "none"
+end
+
+local function batchPlanFamilyStates(states, wanted)
+    local matches = {}
+    for _, family in ipairs(states or {}) do
+        local state = family.state
+        if state == wanted or (wanted == "modify" and (state == "cast" or state == "recast")) then
+            table.insert(matches, family)
+        end
+    end
+    return matches
+end
+
+local function batchPrintRecipeFamilyStates(states)
+    local recasts = batchPlanFamilyStates(states, "recast")
+    if #recasts > 0 then
+        local label = #recasts > 1 and "Recast once (each consumes its free removal):" or "Recast once:"
+        m_Enchanter.print("@Y     " .. label .. "@w")
+        for _, family in ipairs(recasts) do
+            local name = BATCH_KIND_PRETTY[family.kind]
+            local observed = family.observed == nil and "unknown" or tostring(family.observed)
+            local target = family.targets and family.targets[1] or "?"
+            m_Enchanter.print("@Y       " .. name .. " " .. observed
+                .. ": remove, cast for target " .. tostring(target) .. "+@w")
+        end
+    end
+
+    local casts = batchPlanFamilyStates(states, "cast")
+    local castsOnce = {}
+    local castsWithRetry = {}
+    for _, family in ipairs(casts) do
+        if #(family.targets or {}) > 1 then
+            table.insert(castsWithRetry, family)
+        else
+            table.insert(castsOnce, family)
+        end
+    end
+    if #castsOnce > 0 then
+        m_Enchanter.print("@Y     Cast once:@w")
+        for _, family in ipairs(castsOnce) do
+            local name = BATCH_KIND_PRETTY[family.kind]
+            local target = family.targets and family.targets[1] or "?"
+            m_Enchanter.print("@Y       " .. name .. ": target " .. tostring(target) .. "+@w")
+        end
+    end
+    if #castsWithRetry > 0 then
+        m_Enchanter.print("@Y     Cast with possible free retry:@w")
+        for _, family in ipairs(castsWithRetry) do
+            local name = BATCH_KIND_PRETTY[family.kind]
+            local first = family.targets and family.targets[1] or "?"
+            local retry = family.targets and family.targets[2] or "?"
+            m_Enchanter.print("@Y       " .. name .. ": first target " .. tostring(first)
+                .. "+; retry target " .. tostring(retry) .. "+ if freely removable@w")
+        end
+    end
+
+    local blocked = batchPlanFamilyStates(states, "blocked")
+    if #blocked > 0 then
+        m_Enchanter.print("@R     Blocked:@w")
+        for _, family in ipairs(blocked) do
+            local name = BATCH_KIND_PRETTY[family.kind]
+            local observed = family.observed == nil and "unknown" or tostring(family.observed)
+            local target = family.targets and family.targets[1] or "?"
+            local reason = family.removal == "tp" and "TP removal required" or "not freely removable"
+            m_Enchanter.print("@R       " .. name .. " " .. observed .. ": target "
+                .. tostring(target) .. "+; " .. reason .. "@w")
+        end
+    end
+
+    local unchanged = batchPlanFamilyStates(states, "unchanged")
+    if #unchanged > 0 then
+        m_Enchanter.print("@G     Unchanged:@w")
+        for _, family in ipairs(unchanged) do
+            local name = BATCH_KIND_PRETTY[family.kind]
+            local observed = family.observed == nil and "unknown" or tostring(family.observed)
+            local target = family.targets and family.targets[1] or "?"
+            m_Enchanter.print("@G       " .. name .. " " .. observed
+                .. ": target " .. tostring(target) .. "+ met@w")
+        end
+    end
+
+    local unavailable = batchPlanFamilyStates(states, "unavailable")
+    if #unavailable > 0 then
+        m_Enchanter.print("@D     Unavailable:@w")
+        for _, family in ipairs(unavailable) do
+            m_Enchanter.print("@D       " .. BATCH_KIND_PRETTY[family.kind] .. ": not eligible@w")
+        end
+    end
+end
+
+local function batchPrintPlanCountLink(label, count, category, suffix)
+    local prefix = string.format("@W%-20s", tostring(label) .. ":")
+    suffix = suffix or ""
+    if type(cecho) == "function" and type(cechoLink) == "function" then
+        cecho(m_Enchanter.convertColors(prefix))
+        local callback = function() m_Enchanter.batchShowPlanItems(category) end
+        local tooltip = "List " .. tostring(category) .. " items from this batch plan"
+        local linked = pcall(cechoLink, m_Enchanter.convertColors("@G" .. tostring(count) .. "@w"), callback, tooltip, true)
+        if not linked then
+            linked = pcall(cechoLink, m_Enchanter.convertColors("@G" .. tostring(count) .. "@w"),
+                "m_Enchanter.batchShowPlanItems([[" .. tostring(category) .. "]])", tooltip, true)
+        end
+        if not linked then cecho(m_Enchanter.convertColors("@G" .. tostring(count) .. "@w")) end
+        cecho(m_Enchanter.convertColors(" @D(click to list)@w" .. suffix) .. "\n")
+    else
+        m_Enchanter.print(prefix .. "@G" .. tostring(count) .. "@w @D(use 'eqb list "
+            .. tostring(category) .. "')@w" .. suffix)
+    end
+end
+
+function m_Enchanter.batchShowPlanItems(category)
+    category = tostring(category or "selected"):lower()
+    if category == "tp-only" or category == "tponly" or category == "tp-protected" then category = "tp" end
+    if category == "will-modify" or category == "willmodify" or category == "changes" then category = "modify" end
+    if category == "already-acceptable" or category == "alreadyacceptable" then category = "acceptable" end
+    local plan = m_Enchanter.batch and m_Enchanter.batch.plan or nil
+    if not plan then
+        batchError("No batch plan is available to list.")
+        return
+    end
+
+    local entries
+    local title
+    if category == "selected" then
+        entries = plan.items or {}
+        title = "Selected " .. tostring(plan.mode) .. " items"
+    elseif category == "modify" and plan.mode == "recipe" then
+        entries = plan.modifyItems or {}
+        title = "Recipe items that will be modified"
+    elseif category == "blocked" and plan.mode == "recipe" then
+        entries = plan.blockedItems or {}
+        title = "Recipe items blocked by protected enchants"
+    elseif category == "acceptable" and plan.mode == "recipe" then
+        entries = plan.acceptableItems or {}
+        title = "Recipe items already acceptable"
+    elseif category == "tp" and plan.mode == "cleanup" then
+        entries = plan.tpItems or {}
+        title = "Weak enchants protected by TP removal"
+    else
+        batchError("Usage: eqb list modify|blocked|acceptable|selected|tp")
+        return
+    end
+
+    m_Enchanter.print("@D------------------------------------------------------------@w")
+    m_Enchanter.print("@W" .. title .. " (@G" .. tostring(#entries) .. "@W)@w")
+    if #entries == 0 then
+        m_Enchanter.print("@D  None.@w")
+    end
+    for index, entry in ipairs(entries) do
+        m_Enchanter.print(string.format("@W%3d. %s @D[@Y%s@D]@w", index,
+            tostring(entry.colorName or entry.name or "item"), tostring(entry.id or "?")))
+        m_Enchanter.print("@D     Enchants: @w" .. batchPlanEnchantSummary(entry.analysis))
+        if category == "tp" then
+            m_Enchanter.print("@D     Skipped (TP): @R" .. batchPlanMatchSummary(entry.tpRemovals) .. "@w")
+        elseif plan.mode == "cleanup" then
+            m_Enchanter.print("@D     Planned free removal: @G" .. batchPlanMatchSummary(entry.removals) .. "@w")
+        else
+            batchPrintRecipeFamilyStates(entry.familyStates or {})
+        end
+    end
+    m_Enchanter.print("@D------------------------------------------------------------@w")
+end
+
+local function batchDisplayPlan(plan)
+    m_Enchanter.print("@D------------------------------------------------------------@w")
+    m_Enchanter.print("@WBatch " .. (plan.mode == "cleanup" and "cleanup" or "enchant") .. " plan ready@w")
+    m_Enchanter.print("@WSource:       @G" .. batchContainerLabel(plan.source) .. "@w")
+    m_Enchanter.print("@WDefinition:   @G" .. tostring(plan.spec.raw) .. "@w")
+    if plan.mode == "recipe" then
+        m_Enchanter.print("@WPolicy:       @G" .. tostring(plan.options.policy or "partial") .. "@w")
+    end
+    m_Enchanter.print(string.format("@W%-20s@G%s@w", "Items read:", tostring(plan.scanned or 0)))
+    if plan.mode == "recipe" then
+        batchPrintPlanCountLink("Will modify", #(plan.modifyItems or {}), "modify")
+        batchPrintPlanCountLink("Blocked", #(plan.blockedItems or {}), "blocked")
+        batchPrintPlanCountLink("Already acceptable", #(plan.acceptableItems or {}), "acceptable")
+        if (plan.modifyBlockedOverlap or 0) > 0 then
+            m_Enchanter.print("@D  " .. tostring(plan.modifyBlockedOverlap)
+                .. " item(s) appear in both Will modify and Blocked because different families have different states.@w")
+        end
+    else
+        batchPrintPlanCountLink("Selected", plan.selected or 0, "selected")
+    end
+    m_Enchanter.print(string.format("@W%-20s@G%s@w", "Skipped:", tostring(plan.skipped or 0)))
+    m_Enchanter.print(string.format("@W%-20s@G%s@w", "Identified:", tostring(plan.identified or 0)))
+    if plan.mode == "cleanup" then
+        m_Enchanter.print(string.format("@W%-20s@G%s@w", "Free removals:", tostring(plan.cleanupRemovals or 0)))
+        batchPrintPlanCountLink("TP-protected", #(plan.tpItems or {}), "tp",
+            " @D(" .. tostring(plan.tpSkipped or 0) .. " weak enchant(s) skipped)@w")
+        m_Enchanter.print("@YThis is a disenchant-only plan. It will not cast any enchant spell and does not require focus.@w")
+    end
+    if plan.passDestination then
+        m_Enchanter.print("@WPass-to:      @G" .. batchContainerLabel(plan.passDestination) .. "@w")
+    end
+    if plan.failDestination then
+        m_Enchanter.print("@WFail-to:      @G" .. batchContainerLabel(plan.failDestination) .. "@w")
+    end
+    m_Enchanter.print("@D------------------------------------------------------------@w")
+    if #plan.items > 0 then
+        batchInfo("Run 'eqb start' to begin.")
+    else
+        batchWarn("Nothing qualifies for this plan.")
+    end
+end
+
+function m_Enchanter.batchFinishPlanning()
+    local batch = m_Enchanter.batch
+    local plan = batch and batch.plan
+    if not plan or batch.status ~= "planning" then
+        return
+    end
+    local built, err = batchBuildPlan(plan)
+    if not built then
+        batch.status = "idle"
+        batchError(err)
+        return
+    end
+    batch.status = #built.items > 0 and "planned" or "idle"
+    batchDisplayPlan(built)
+end
+
+function m_Enchanter.batchContinuePlanning()
+    local batch = m_Enchanter.batch
+    local plan = batch and batch.plan
+    if not plan or batch.status ~= "planning" then
+        return
+    end
+    local objId = table.remove(plan.identifyQueue, 1)
+    if not objId then
+        m_Enchanter.batchFinishPlanning()
+        return
+    end
+
+    local pending = m_Enchanter.queuePostIdentifyReport(objId, {
+        kind = "batch-plan",
+        reportOperation = false,
+        onComplete = function(analysis)
+            if not analysis or m_Enchanter.batch.status ~= "planning" then
+                return
+            end
+            plan.snapshots[objId] = { id = objId, analysis = analysis }
+            plan.identified = (plan.identified or 0) + 1
+            tempTimer(0.05, m_Enchanter.batchContinuePlanning)
+        end,
+        onError = function(reason)
+            if m_Enchanter.batch.status == "planning" then
+                m_Enchanter.batch.status = "idle"
+                batchError("Planning stopped while identifying item " .. objId .. ": " .. tostring(reason))
+            end
+        end,
+    })
+    local accepted, reason = pending and m_Enchanter.requestDinvIdentify(objId)
+    if not accepted then
+        if pending and pending.timeoutTimer and killTimer then pcall(killTimer, pending.timeoutTimer) end
+        m_Enchanter.pending_identifies[objId] = nil
+        if m_Enchanter.identify_capture_id == objId then m_Enchanter.identify_capture_id = nil end
+        batch.status = "idle"
+        batchError("Planning could not identify item " .. objId .. ": " .. tostring(reason))
+    end
+end
+
+function m_Enchanter.batchPlan(mode, source, options)
+    if m_Enchanter.batch.status ~= "idle" and m_Enchanter.batch.status ~= "planned" then
+        batchError("A batch job is already " .. tostring(m_Enchanter.batch.status) .. ". Abort it before planning another job.")
+        return
+    end
+    if m_Enchanter.active_command_queue or tableCount(m_Enchanter.pending_identifies) > 0 then
+        batchError("m_enchanter is still processing another command or identify request.")
+        return
+    end
+    if not m_Enchanter.ensureDinvReady() then
+        return
+    end
+
+    local passDestination, failDestination
+    if options.passTo then
+        local err
+        passDestination, err = batchResolvePlanDestination(options.passTo, "pass")
+        if not passDestination then batchError(err) return end
+    end
+    if options.failTo then
+        local err
+        failDestination, err = batchResolvePlanDestination(options.failTo, "fail")
+        if not failDestination then batchError(err) return end
+    end
+
+    local items, queryErr = batchSourceContents(source)
+    if not items then
+        batchError("Could not inspect " .. batchContainerLabel(source) .. ": " .. tostring(queryErr))
+        return
+    end
+
+    local plan = {
+        mode = mode,
+        source = source,
+        options = options,
+        passDestination = passDestination,
+        failDestination = failDestination,
+        snapshots = {},
+        identifyQueue = {},
+        scanned = #items,
+        identified = 0,
+        createdAt = os.time(),
+    }
+    for _, item in ipairs(items) do
+        local objId = tostring(item.id or "")
+        if objId:match("^%d+$") then
+            local analysis = m_Enchanter.buildAnalysis(objId, item)
+            plan.snapshots[objId] = { id = objId, analysis = analysis }
+            if batchNeedsIdentify(item, analysis) then
+                table.insert(plan.identifyQueue, objId)
+            end
+        end
+    end
+    table.sort(plan.identifyQueue, function(a, b) return tonumber(a) < tonumber(b) end)
+
+    m_Enchanter.batch = { status = "planning", plan = plan }
+    batchInfo("Inspecting " .. batchContainerLabel(source) .. ": " .. tostring(plan.scanned) .. " items found; "
+        .. tostring(#plan.identifyQueue) .. " require one identify.")
+    m_Enchanter.batchContinuePlanning()
+end
+
+----------------------------------------------------------------------------------------------------
+-- Batch enchanting: execution, routing, actions, guards, and reporting
+----------------------------------------------------------------------------------------------------
+
+local function batchFocusRemaining()
+    if m_Enchanter.focus.status ~= "up" or not m_Enchanter.focus.expiresAt then
+        return nil
+    end
+    return math.max(0, tonumber(m_Enchanter.focus.expiresAt) - os.time())
+end
+
+local function batchFocusReady(showError)
+    local remaining = batchFocusRemaining()
+    if not remaining then
+        if showError then
+            batchError("Batch enchanting needs a confirmed focus timer. Run 'eqfocus'; eqfocusignore never bypasses the batch guard.")
+        end
+        return false
+    end
+    if remaining <= 30 then
+        if showError then
+            batchError("Batch enchanting will not start or resume with only " .. tostring(remaining)
+                .. " seconds of focus remaining. Renew focus first.")
+        end
+        return false
+    end
+    return true
+end
+
+local function batchIsSleeping()
+    local status = gmcp and gmcp.char and gmcp.char.status or nil
+    local state = status and tonumber(status.state) or nil
+    local position = status and tostring(status.pos or ""):lower() or ""
+    return state == 9 or position == "sleeping"
+end
+
+local function batchCurrentSubclass()
+    local subclass = gmcp and gmcp.char and gmcp.char.base and gmcp.char.base.subclass or nil
+    if (subclass == nil or trim(subclass) == "") and dbot and dbot.gmcp and type(dbot.gmcp.getClass) == "function" then
+        local ok, _, dinvSubclass = pcall(dbot.gmcp.getClass)
+        if ok then subclass = dinvSubclass end
+    end
+    subclass = trim(subclass)
+    return subclass:lower(), subclass ~= "" and subclass or "unknown"
+end
+
+local function batchHasEnchanterSubclass()
+    local normalized, display = batchCurrentSubclass()
+    return normalized == "enchanter", display
+end
+
+local function batchPlanMayDisenchant(plan)
+    if not plan then return false end
+    if plan.mode == "cleanup" then return #(plan.items or {}) > 0 end
+    for _, item in ipairs(plan.items or {}) do
+        for _, family in ipairs(item.families or {}) do
+            if #(family.targets or {}) > 1 then return true end
+            if hasEnchant(item.analysis and item.analysis.enchantDetails, family.kind) then
+                local total = batchEnchantTotal(item.analysis.enchantDetails, family.kind)
+                local target = family.targets and family.targets[1] or nil
+                if total ~= nil and target ~= nil and total < target
+                    and enchantRemovalMode(item.analysis.enchantDetails, family.kind) == "enchanter" then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+local function batchRequireEnchanter(plan, action)
+    if not batchPlanMayDisenchant(plan) and action ~= "disenchant" then return true end
+    local allowed, current = batchHasEnchanterSubclass()
+    if allowed then return true end
+    batchError("This batch may use disenchant, which requires the active Enchanter subclass. Current subclass: "
+        .. tostring(current) .. ". Switch to Enchanter, then run 'eqb start' or 'eqb resume'.")
+    return false
+end
+
+local function batchDisableTickSleep(batch)
+    if batch.sleepManaged then
+        return true
+    end
+    batch.sleepManaged = true
+    batch.sleepWasEnabled = MSLEEP and MSLEEP.enabled == true or false
+    if batch.sleepWasEnabled and MSLEEP and type(MSLEEP.toggle) == "function" then
+        MSLEEP.toggle()
+        batchInfo("Tick sleeping was temporarily disabled for this batch.")
+    elseif batch.sleepWasEnabled then
+        batchError("Tick sleeping is enabled, but m_sleep does not expose MSLEEP.toggle. The batch was not started.")
+        batch.sleepManaged = false
+        return false
+    end
+    return true
+end
+
+local function batchRestoreTickSleep(batch)
+    if not batch or not batch.sleepManaged then
+        return
+    end
+    if batch.sleepWasEnabled and MSLEEP and MSLEEP.enabled == false and type(MSLEEP.toggle) == "function" then
+        MSLEEP.toggle()
+        batchInfo("Tick sleeping was restored.")
+    end
+    batch.sleepManaged = false
+end
+
+local function batchNewStats(plan)
+    local stats = {
+        selected = #(plan.items or {}),
+        processed = 0,
+        passed = 0,
+        failed = 0,
+        skipped = plan.skipped or 0,
+        identifies = plan.identified or 0,
+        tpFailures = plan.tpSkipped or 0,
+        focusPauses = 0,
+        sleepPauses = 0,
+        routeFailures = 0,
+        timeouts = 0,
+        startedAt = os.time(),
+        families = {},
+    }
+    for _, kind in ipairs(BATCH_KIND_ORDER) do
+        stats.families[kind] = { casts = 0, removals = 0, sum = 0, min = nil, max = nil, best = nil }
+    end
+    return stats
+end
+
+local function batchRecordCast(batch, current, kind, analysis)
+    local family = batch.stats.families[kind]
+    local total = batchEnchantTotal(analysis and analysis.enchantDetails, kind)
+    family.casts = family.casts + 1
+    current.attempts[kind] = (current.attempts[kind] or 0) + 1
+    current.totalAttempts = (current.totalAttempts or 0) + 1
+    if total == nil then
+        return nil
+    end
+    family.sum = family.sum + total
+    family.min = family.min == nil and total or math.min(family.min, total)
+    family.max = family.max == nil and total or math.max(family.max, total)
+    if not family.best or total > family.best.total then
+        family.best = {
+            total = total,
+            id = current.id,
+            name = current.name,
+            detail = batchEnchantDetail(analysis.enchantDetails, kind),
+        }
+    end
+    return total
+end
+
+local function batchRecipeText(plan)
+    return plan and plan.spec and plan.spec.raw or ""
+end
+
+local function batchCurrentTargetText(current)
+    local parts = {}
+    for _, family in ipairs(current.families or {}) do
+        local accepted = current.finalTargets and current.finalTargets[family.kind]
+        table.insert(parts, family.letter .. tostring(accepted or family.targets[1] or "?"))
+    end
+    return table.concat(parts, " ")
+end
+
+local function batchValueText(current, kind)
+    local total = batchEnchantTotal(current.analysis and current.analysis.enchantDetails, kind)
+    return total == nil and "none" or tostring(total)
+end
+
+local function batchDefaultActionMessage(current, result)
+    local verb = result == "pass" and "Kept" or "Rejected"
+    local values = {}
+    for _, kind in ipairs(BATCH_KIND_ORDER) do
+        local total = batchEnchantTotal(current.analysis and current.analysis.enchantDetails, kind)
+        if total ~= nil then
+            table.insert(values, BATCH_KIND_PRETTY[kind] .. " " .. tostring(total))
+        end
+    end
+    local suffix = #values > 0 and table.concat(values, ", ") or "no completed enchants"
+    if result == "pass" and m_Enchanter.batch.plan.mode == "recipe" then
+        suffix = suffix .. "; target " .. batchCurrentTargetText(current)
+    elseif result == "pass" then
+        suffix = suffix .. "; cleanup complete"
+    elseif current.reason and current.reason ~= "" then
+        suffix = suffix .. "; " .. current.reason
+    end
+    return verb .. " " .. tostring(current.name or ("item " .. current.id)) .. " — " .. suffix .. "."
+end
+
+local function batchExpandPlaceholders(template, current, result, destination)
+    local replacements = {
+        ["%solidify_attempts"] = tostring(current.attempts.solidify or 0),
+        ["%illuminate_attempts"] = tostring(current.attempts.illuminate or 0),
+        ["%resonate_attempts"] = tostring(current.attempts.resonate or 0),
+        ["%original_container"] = tostring(current.originalContainer or ""),
+        ["%destination"] = destination and tostring(destination.id or destination) or "",
+        ["%solidify"] = batchValueText(current, "solidify"),
+        ["%illuminate"] = batchValueText(current, "illuminate"),
+        ["%resonate"] = batchValueText(current, "resonate"),
+        ["%attempts"] = tostring(current.totalAttempts or 0),
+        ["%recipe"] = batchRecipeText(m_Enchanter.batch.plan),
+        ["%result"] = tostring(result or ""),
+        ["%reason"] = tostring(current.reason or ""),
+        ["%name"] = tostring(current.name or ""),
+        ["%id"] = tostring(current.id or ""),
+    }
+    local rendered = tostring(template or "")
+    local keys = sortedKeys(replacements)
+    table.sort(keys, function(a, b) return #a > #b end)
+    for _, key in ipairs(keys) do
+        rendered = rendered:gsub(key:gsub("%%", "%%%%"), function() return replacements[key] end)
+    end
+    return rendered
+end
+
+local function batchRunAction(action, current, result, destination)
+    action = trim(action)
+    if action == "" then
+        return
+    end
+    local rendered = batchExpandPlaceholders(action, current, result, destination)
+    local command, message = rendered:match("^(%S+)%s+(.+)$")
+    if not command then
+        sendToDestination(rendered, batchDefaultActionMessage(current, result))
+        return
+    end
+
+    local channelCommands = {
+        gchan = true, clan = true, say = true, gtell = true, gt = true,
+        spouse = true, party = true, group = true,
+    }
+    if channelCommands[command:lower()] then
+        sendToDestination(command, message)
+    elseif expandAlias then
+        expandAlias(rendered, false)
+    else
+        sendGameCommand(rendered)
+    end
+end
+
+local function batchEnsureInventory(objId, callback)
+    objId = tostring(objId or "")
+    local item = m_Enchanter.findItemById(objId)
+    if item and itemIsInInventory(item) then
+        tempTimer(0, function() callback(true) end)
+        return
+    end
+    if not (DINV and DINV.actions and type(DINV.actions.retrieve) == "function") then
+        callback(false, "DINV cannot retrieve the item from its container")
+        return
+    end
+
+    local finished = false
+    local function finish(result)
+        if finished then return end
+        finished = true
+        local refreshed = m_Enchanter.findItemById(objId)
+        if result and (result.timedOut or #(result.failures or {}) > 0) then
+            callback(false, "DINV retrieval was not confirmed")
+        elseif refreshed and itemIsInInventory(refreshed) then
+            callback(true)
+        else
+            callback(false, "item did not reach main inventory")
+        end
+    end
+
+    local worn = tostring(getStat(item, "worn") or ""):lower()
+    local isWorn = worn ~= "" and worn ~= "undefined" and worn ~= "not-worn" and worn ~= "not worn"
+    local action = isWorn and DINV.actions.remove or DINV.actions.retrieve
+    if type(action) ~= "function" then
+        callback(false, "DINV cannot move the worn item to main inventory")
+        return
+    end
+    local ok, result = pcall(action, objId, {
+        label = "m_enchanter batch retrieve",
+        report = false,
+        timeout = 10,
+        onFinish = finish,
+    })
+    if not ok or type(result) ~= "table" or not result.ok then
+        finish({ failures = { tostring(ok and result and (result.message or result.code) or result) } })
+    elseif not result.operationId then
+        tempTimer(0.1, function() finish(nil) end)
+    end
+end
+
+local function batchContainerOf(objId)
+    local item = m_Enchanter.findItemById(objId)
+    if not item then return nil end
+    local container = tostring(getStat(item, "container") or "")
+    local location = tostring(getStat(item, "location") or "")
+    if container ~= "" and container ~= "inventory" then return container end
+    return location
+end
+
+local function batchWaitForContainer(objId, destinationId, deadline, callback)
+    if tostring(batchContainerOf(objId) or "") == tostring(destinationId) then
+        callback(true)
+        return
+    end
+    if os.time() >= deadline then
+        callback(false, "DINV did not confirm the destination within 10 seconds")
+        return
+    end
+    tempTimer(0.2, function()
+        batchWaitForContainer(objId, destinationId, deadline, callback)
+    end)
+end
+
+local function batchRouteItem(current, destination, callback)
+    if not destination or destination.id == "inventory" then
+        callback(true)
+        return
+    end
+    batchEnsureInventory(current.id, function(ok, reason)
+        if not ok then
+            callback(false, reason)
+            return
+        end
+        sendGameCommand("put " .. tostring(current.id) .. " " .. tostring(destination.id))
+        batchInfo("Routing " .. current.name .. " [" .. current.id .. "] to " .. batchContainerLabel(destination) .. ".")
+        batchWaitForContainer(current.id, destination.id, os.time() + 10, callback)
+    end)
+end
+
+local function batchFinalReport(batch, outcome)
+    local stats = batch.stats or {}
+    local plan = batch.plan or {}
+    local duration = math.max(0, os.time() - tonumber(stats.startedAt or os.time()))
+    m_Enchanter.print("@D============================================================@w")
+    m_Enchanter.print("@WBatch " .. tostring(outcome or "complete") .. "@w")
+    m_Enchanter.print("@WSource:     @G" .. batchContainerLabel(plan.source) .. "@w")
+    m_Enchanter.print("@WMode:       @G" .. tostring(plan.mode or "unknown") .. "@w")
+    m_Enchanter.print("@WDefinition: @G" .. batchRecipeText(plan) .. "@w")
+    m_Enchanter.print(string.format("@WItems:      @G%d selected, %d processed, %d passed, %d failed, %d skipped@w",
+        stats.selected or 0, stats.processed or 0, stats.passed or 0, stats.failed or 0, stats.skipped or 0))
+
+    for _, kind in ipairs(BATCH_KIND_ORDER) do
+        local family = stats.families and stats.families[kind]
+        if family and (family.casts > 0 or family.removals > 0) then
+            local average = family.casts > 0 and (family.sum / family.casts) or 0
+            m_Enchanter.print(string.format("@W%-10s @G%d casts, %d removals, avg %.2f, min %s, max %s@w",
+                BATCH_KIND_PRETTY[kind] .. ":", family.casts, family.removals, average,
+                family.min == nil and "-" or tostring(family.min), family.max == nil and "-" or tostring(family.max)))
+            if family.best then
+                local detail = trim(family.best.detail)
+                m_Enchanter.print("@W  Best: @G" .. tostring(family.best.total)
+                    .. (detail ~= "" and (" (" .. detail .. ")") or "") .. "@w")
+                m_Enchanter.print("@W        " .. tostring(family.best.name) .. " [@Y" .. tostring(family.best.id) .. "@W]@w")
+            end
+        end
+    end
+    m_Enchanter.print(string.format("@WOther:      @G%d identifies, %d TP-only failures/skips, %d focus pauses, %d sleep pauses, %d route failures, %d timeouts@w",
+        stats.identifies or 0, stats.tpFailures or 0, stats.focusPauses or 0,
+        stats.sleepPauses or 0, stats.routeFailures or 0, stats.timeouts or 0))
+    m_Enchanter.print(string.format("@WDuration:   @G%dm %02ds@w", math.floor(duration / 60), duration % 60))
+    m_Enchanter.print("@D============================================================@w")
+end
+
+local function batchFinish(outcome)
+    local batch = m_Enchanter.batch
+    if not batch or batch.status == "idle" then return end
+    batchFinalReport(batch, outcome)
+    batchRestoreTickSleep(batch)
+    m_Enchanter.batch = { status = "idle", lastOutcome = outcome, lastStats = deepCopy(batch.stats) }
+end
+
+function m_Enchanter.batchTryPause()
+    local batch = m_Enchanter.batch
+    if not batch then return true end
+    if batch.abortRequested and not batch.inFlight then
+        batchFinish("aborted")
+        return true
+    end
+    if batch.pauseRequested and not batch.inFlight then
+        batch.status = batchIsSleeping() and "sleeping" or "paused"
+        batchInfo("Batch paused" .. (batch.pauseReason and (": " .. batch.pauseReason) or "") .. ".")
+        if batch.pauseReason == "focus cutoff" then
+            batchInfo("Renew focus, then use 'eqb resume'.")
+        end
+        return true
+    end
+    return false
+end
+
+local function batchCanDispatch()
+    local batch = m_Enchanter.batch
+    if not batch or batch.status ~= "running" then
+        return false
+    end
+    if batch.abortRequested or batch.pauseRequested then
+        m_Enchanter.batchTryPause()
+        return false
+    end
+    if batchIsSleeping() then
+        batch.pauseRequested = true
+        batch.pauseReason = "player is sleeping"
+        batch.sleepInterrupted = true
+        batch.status = "sleeping"
+        batch.stats.sleepPauses = (batch.stats.sleepPauses or 0) + 1
+        batchWarn("You are sleeping. Batch commands stopped; the current item will be identified after you wake.")
+        return false
+    end
+    if batch.plan.mode == "recipe" and not batchFocusReady(false) then
+        if not batch.focusWarned30 then
+            m_Enchanter.print("@RFocus has reached the 30-second cutoff; batch enchanting is pausing.@w")
+            batch.stats.focusPauses = (batch.stats.focusPauses or 0) + 1
+        end
+        batch.focusWarned30 = true
+        batch.pauseRequested = true
+        batch.pauseReason = "focus cutoff"
+        m_Enchanter.batchTryPause()
+        return false
+    end
+    return true
+end
+
+local function batchOperationError(reason)
+    local batch = m_Enchanter.batch
+    if not batch or batch.status == "idle" then return end
+    batch.inFlight = false
+    if tostring(reason or ""):lower():find("timeout", 1, true) then
+        batch.stats.timeouts = (batch.stats.timeouts or 0) + 1
+    end
+    if batchIsSleeping() or batch.sleepInterrupted then
+        batch.pauseRequested = true
+        batch.pauseReason = "sleep interruption"
+        batch.status = "sleeping"
+        if not batchIsSleeping() then
+            tempTimer(0.1, m_Enchanter.batchRecoverAfterWake)
+        end
+        return
+    end
+    batch.pauseRequested = true
+    batch.pauseReason = "operation error: " .. tostring(reason)
+    batchError("Batch operation stopped: " .. tostring(reason))
+    m_Enchanter.batchTryPause()
+end
+
+local function batchDispatchCommand(command, identifyAfter, callback)
+    local batch = m_Enchanter.batch
+    local current = batch.current
+    current.pendingDispatch = { command = command, identifyAfter = identifyAfter, callback = callback }
+    current.recoveryCallback = callback
+    if not batchCanDispatch() then return end
+    batch.inFlight = true
+    batchEnsureInventory(current.id, function(retrieved, reason)
+        if not retrieved then
+            batchOperationError(reason)
+            return
+        end
+        if not batchCanDispatch() then
+            batch.inFlight = false
+            m_Enchanter.batchTryPause()
+            return
+        end
+        current.pendingDispatch = nil
+        local context = {
+            kind = identifyAfter and "batch" or "batch-command",
+            batch = true,
+            skipIdentify = not identifyAfter,
+            reportOperation = identifyAfter,
+            onComplete = function(analysis)
+                local active = m_Enchanter.batch
+                if not active or active.status == "idle" then return end
+                active.inFlight = false
+                if identifyAfter then
+                    active.stats.identifies = (active.stats.identifies or 0) + 1
+                end
+                if active.current then active.current.recoveryCallback = nil end
+                safeCall(callback, analysis)
+                if active.abortRequested or active.pauseRequested then
+                    m_Enchanter.batchTryPause()
+                end
+            end,
+            onError = batchOperationError,
+        }
+        local started = m_Enchanter.scheduleCommands({ command }, "Batch operation", current.id, context)
+        if not started then
+            batchOperationError("could not start command queue")
+        end
+    end)
+end
+
+local function batchRemoveEnchant(kind, callback)
+    local batch = m_Enchanter.batch
+    local current = batch.current
+    local allowed, subclass = batchHasEnchanterSubclass()
+    if not allowed then
+        batchOperationError("disenchant requires the active Enchanter subclass; current subclass is " .. tostring(subclass))
+        return
+    end
+    local command = "disenchant " .. quoteTarget(current.id) .. " " .. BATCH_KIND_PRETTY[kind] .. " confirm"
+    batchDispatchCommand(command, false, function()
+        local family = batch.stats.families[kind]
+        family.removals = family.removals + 1
+        if current.mode == "recipe" then
+            current.freeRemovalsUsed = current.freeRemovalsUsed or {}
+            current.freeRemovalsUsed[kind] = true
+        end
+        if current.analysis and current.analysis.enchantDetails then
+            current.analysis.enchantDetails[kind] = {}
+            if kind == "solidify" then current.analysis.hasSolidified = false
+            elseif kind == "illuminate" then current.analysis.hasIlluminated = false
+            elseif kind == "resonate" then current.analysis.hasResonated = false end
+        end
+        if m_Enchanter.settings.reporting_on then
+            sendReportLine("Removed " .. BATCH_KIND_PRETTY[kind] .. " from " .. tostring(current.colorName or current.name))
+        end
+        callback()
+    end)
+end
+
+local function batchDefaultDestination(current, result)
+    local plan = m_Enchanter.batch.plan
+    local configured = result == "pass" and plan.passDestination or plan.failDestination
+    if configured then return configured end
+    if current.originalContainer and tostring(current.originalContainer):match("^%d+$") then
+        return { id = tostring(current.originalContainer), name = "original container" }
+    end
+    return nil
+end
+
+local function batchAdvanceToNextItem()
+    local batch = m_Enchanter.batch
+    batch.current = nil
+    batch.itemIndex = batch.itemIndex + 1
+    tempTimer(0.05, m_Enchanter.batchProcessNext)
+end
+
+local function batchFinalizeCurrent(result, reason)
+    local batch = m_Enchanter.batch
+    local current = batch.current
+    if not current then return end
+    current.result = result
+    current.reason = reason or ""
+    batch.stats.processed = batch.stats.processed + 1
+    if result == "pass" then batch.stats.passed = batch.stats.passed + 1
+    else batch.stats.failed = batch.stats.failed + 1 end
+
+    local destination = batchDefaultDestination(current, result)
+    local action = result == "pass" and batch.plan.options.passAction or batch.plan.options.failAction
+    batchRunAction(action, current, result, destination)
+    current.phase = "routing"
+    current.routeDestination = destination
+    batch.inFlight = true
+
+    batchRouteItem(current, destination, function(ok, routeReason)
+        batch.inFlight = false
+        if ok then
+            current.phase = "done"
+            batchAdvanceToNextItem()
+            if batch.abortRequested or batch.pauseRequested then
+                m_Enchanter.batchTryPause()
+            end
+            return
+        end
+        batch.stats.routeFailures = batch.stats.routeFailures + 1
+        current.phase = "route-failed"
+        batch.pauseRequested = true
+        batch.pauseReason = "routing failed for item " .. current.id .. ": " .. tostring(routeReason)
+        batchError(batch.pauseReason)
+        m_Enchanter.batchTryPause()
+    end)
+end
+
+local function batchAdvanceFamily()
+    local current = m_Enchanter.batch.current
+    current.familyIndex = current.familyIndex + 1
+    current.targetIndex = 1
+    current.phase = "family-start"
+    tempTimer(0.05, m_Enchanter.batchProcessCurrent)
+end
+
+local function batchFinalizeRecipeCurrent()
+    local batch = m_Enchanter.batch
+    local current = batch.current
+    if #(current.blockedFamilies or {}) == 0 then
+        batchFinalizeCurrent("pass")
+        return
+    end
+
+    local reasons = {}
+    for _, blocked in ipairs(current.blockedFamilies) do
+        local observed = blocked.observed == nil and "unknown" or tostring(blocked.observed)
+        local target = blocked.targets and blocked.targets[1] or "?"
+        local reason = BATCH_KIND_PRETTY[blocked.kind] .. " " .. observed
+            .. " is below " .. tostring(target)
+        if blocked.removal == "tp" then
+            reason = reason .. " and requires TP to remove"
+            batch.stats.tpFailures = batch.stats.tpFailures + 1
+        else
+            reason = reason .. " and is not freely removable"
+        end
+        table.insert(reasons, reason)
+    end
+    batchFinalizeCurrent("fail", table.concat(reasons, "; "))
+end
+
+local function batchCastCurrentFamily()
+    local batch = m_Enchanter.batch
+    local current = batch.current
+    local family = current.families[current.familyIndex]
+    if not family then
+        batchFinalizeRecipeCurrent()
+        return
+    end
+    current.phase = "casting"
+    local command = "cast " .. family.kind .. " " .. quoteTarget(current.id)
+    batchDispatchCommand(command, true, function(analysis)
+        if not analysis then
+            batchOperationError("DINV did not return identified enchant data")
+            return
+        end
+        current.analysis = analysis
+        local target = family.targets[current.targetIndex]
+        local total = batchRecordCast(batch, current, family.kind, analysis)
+        if total ~= nil and total >= target then
+            current.finalTargets[family.kind] = target
+            current.phase = "family-passed"
+            batchAdvanceFamily()
+            return
+        end
+
+        local removal = enchantRemovalMode(analysis.enchantDetails, family.kind)
+        local nextTarget = family.targets[current.targetIndex + 1]
+        local freeRemovalUsed = current.freeRemovalsUsed and current.freeRemovalsUsed[family.kind] == true
+        if removal == "enchanter" and nextTarget ~= nil and not freeRemovalUsed then
+            current.phase = "removing-for-retry"
+            batchRemoveEnchant(family.kind, function()
+                current.targetIndex = current.targetIndex + 1
+                batchCastCurrentFamily()
+            end)
+        else
+            if removal == "tp" then
+                batch.stats.tpFailures = batch.stats.tpFailures + 1
+            end
+            local observed = total == nil and "unknown" or tostring(total)
+            local why = BATCH_KIND_PRETTY[family.kind] .. " " .. observed .. " did not reach " .. tostring(target)
+            if nextTarget and freeRemovalUsed then
+                why = why .. "; fallback unavailable because its free removal was already used"
+            elseif removal == "tp" then why = why .. " and now requires TP to remove"
+            elseif not nextTarget then why = why .. " and no fallback attempt remains" end
+            batchFinalizeCurrent("fail", why)
+        end
+    end)
+end
+
+function m_Enchanter.batchProcessCurrent()
+    local batch = m_Enchanter.batch
+    local current = batch and batch.current
+    if not current or not batchCanDispatch() then return end
+
+    if current.mode == "cleanup" then
+        current.removalIndex = (current.removalIndex or 0) + 1
+        local removal = current.removals[current.removalIndex]
+        if not removal then
+            batchFinalizeCurrent("pass")
+            return
+        end
+        current.phase = "cleanup-removal"
+        batchRemoveEnchant(removal.kind, function()
+            tempTimer(0.05, m_Enchanter.batchProcessCurrent)
+        end)
+        return
+    end
+
+    local family = current.families[current.familyIndex]
+    if not family then
+        batchFinalizeRecipeCurrent()
+        return
+    end
+    if current.phase ~= "family-start" then
+        return
+    end
+
+    local hasCurrent = hasEnchant(current.analysis.enchantDetails, family.kind)
+    if hasCurrent then
+        local total = batchEnchantTotal(current.analysis.enchantDetails, family.kind)
+        local target = family.targets[1]
+        if total ~= nil and total >= target then
+            current.finalTargets[family.kind] = target
+            batchAdvanceFamily()
+            return
+        end
+        local removal = enchantRemovalMode(current.analysis.enchantDetails, family.kind)
+        if removal == "enchanter" then
+            current.phase = "removing-existing"
+            batchRemoveEnchant(family.kind, function()
+                current.targetIndex = 1
+                batchCastCurrentFamily()
+            end)
+        else
+            if removal == "tp" then batch.stats.tpFailures = batch.stats.tpFailures + 1 end
+            batchFinalizeCurrent("fail", BATCH_KIND_PRETTY[family.kind]
+                .. " is below target and is not freely removable")
+        end
+    else
+        batchCastCurrentFamily()
+    end
+end
+
+function m_Enchanter.batchProcessNext()
+    local batch = m_Enchanter.batch
+    if not batch or not batchCanDispatch() then return end
+    local planned = batch.plan.items[batch.itemIndex]
+    if not planned then
+        batchFinish("complete")
+        return
+    end
+    batch.current = {
+        id = planned.id,
+        name = planned.name,
+        colorName = planned.colorName,
+        originalContainer = planned.originalContainer,
+        analysis = planned.analysis,
+        mode = batch.plan.mode,
+        families = deepCopy(planned.families or {}),
+        blockedFamilies = deepCopy(planned.blockedFamilies or {}),
+        removals = deepCopy(planned.removals or {}),
+        familyIndex = 1,
+        targetIndex = 1,
+        removalIndex = 0,
+        phase = batch.plan.mode == "cleanup" and "cleanup-start" or "family-start",
+        attempts = { solidify = 0, illuminate = 0, resonate = 0 },
+        freeRemovalsUsed = { solidify = false, illuminate = false, resonate = false },
+        finalTargets = {},
+        totalAttempts = 0,
+    }
+    batchInfo("Processing " .. batch.current.name .. " [" .. batch.current.id .. "] ("
+        .. tostring(batch.itemIndex) .. "/" .. tostring(#batch.plan.items) .. ").")
+    m_Enchanter.batchProcessCurrent()
+end
+
+function m_Enchanter.batchStart()
+    local batch = m_Enchanter.batch
+    if not batch or batch.status ~= "planned" or not batch.plan then
+        batchError("No batch plan is ready. Create one with 'eqb plan ...' or 'eqb cleanup plan ...'.")
+        return
+    end
+    if #batch.plan.items == 0 then
+        batchError("The current plan contains no work.")
+        return
+    end
+    if not batchRequireEnchanter(batch.plan) then
+        return
+    end
+    if batchIsSleeping() then
+        batchError("You are sleeping. Wake before starting a batch.")
+        return
+    end
+    if batch.plan.mode == "recipe" and not batchFocusReady(true) then
+        return
+    end
+    if m_Enchanter.active_command_queue or tableCount(m_Enchanter.pending_identifies) > 0 then
+        batchError("m_enchanter is still processing another command or identify request.")
+        return
+    end
+    if batch.plan.source.id ~= "inventory" then
+        local validSource, sourceErr = batchResolveContainer(batch.plan.source.id, false)
+        if not validSource then
+            batchError("The planned source container is unavailable: " .. tostring(sourceErr))
+            return
+        end
+        batch.plan.source = validSource
+    end
+    for _, route in ipairs({ { option = "passTo", field = "passDestination" }, { option = "failTo", field = "failDestination" } }) do
+        local reference = batch.plan.options[route.option]
+        if reference then
+            local resolved, routeErr = batchResolvePlanDestination(reference, route.option)
+            if not resolved then
+                batchError(routeErr)
+                return
+            end
+            batch.plan[route.field] = resolved
+        end
+    end
+    for _, role in ipairs({ "passDestination", "failDestination" }) do
+        local destination = batch.plan[role]
+        if destination then
+            local valid, err = batchResolveContainer(destination.id, true)
+            if not valid then
+                batchError("Configured route is unavailable: " .. tostring(err))
+                return
+            end
+            batch.plan[role] = valid
+        end
+    end
+
+    batch.status = "running"
+    batch.itemIndex = 1
+    batch.current = nil
+    batch.inFlight = false
+    batch.pauseRequested = false
+    batch.abortRequested = false
+    batch.stats = batchNewStats(batch.plan)
+    if not batchDisableTickSleep(batch) then
+        batch.status = "planned"
+        return
+    end
+    local remaining = batch.plan.mode == "recipe" and batchFocusRemaining() or nil
+    if remaining and remaining <= 60 then
+        warnFocus60(remaining)
+    end
+    if batch.plan.mode == "recipe" then
+        batchInfo("Batch started: " .. tostring(#batch.plan.items) .. " item(s); "
+            .. tostring(#(batch.plan.modifyItems or {})) .. " scheduled for enchant changes.")
+    else
+        batchInfo("Batch started: " .. tostring(#batch.plan.items) .. " item(s).")
+    end
+    m_Enchanter.batchProcessNext()
+end
+
+function m_Enchanter.batchPause(reason)
+    local batch = m_Enchanter.batch
+    if not batch or (batch.status ~= "running" and batch.status ~= "pausing") then
+        batchError("No running batch can be paused.")
+        return
+    end
+    if not batch.pauseRequested then
+        batch.pauseRequested = true
+        batch.pauseReason = reason or "requested by user"
+    end
+    batch.status = batch.inFlight and "pausing" or batch.status
+    if batch.inFlight then
+        batchInfo("Pause requested; the current operation will finish first.")
+    end
+    m_Enchanter.batchTryPause()
+end
+
+function m_Enchanter.batchResume()
+    local batch = m_Enchanter.batch
+    if not batch or batch.status ~= "paused" then
+        batchError("No paused batch can be resumed.")
+        return
+    end
+    if batchIsSleeping() then
+        batchError("You are still sleeping. The batch cannot resume.")
+        return
+    end
+    if not batchRequireEnchanter(batch.plan) then
+        return
+    end
+    if batch.plan.mode == "recipe" and not batchFocusReady(true) then
+        return
+    end
+    batch.pauseRequested = false
+    batch.pauseReason = nil
+    batch.status = "running"
+    batchInfo("Batch resumed.")
+    if batch.current and batch.current.resumeAfterRecovery then
+        local resume = batch.current.resumeAfterRecovery
+        batch.current.resumeAfterRecovery = nil
+        safeCall(resume)
+    elseif batch.current and batch.current.pendingDispatch then
+        local pending = batch.current.pendingDispatch
+        batch.current.pendingDispatch = nil
+        batchDispatchCommand(pending.command, pending.identifyAfter, pending.callback)
+    elseif batch.current and batch.current.phase == "route-failed" then
+        local current = batch.current
+        batch.inFlight = true
+        batchRouteItem(current, current.routeDestination, function(ok, reason)
+            batch.inFlight = false
+            if ok then
+                batchAdvanceToNextItem()
+                if batch.abortRequested or batch.pauseRequested then m_Enchanter.batchTryPause() end
+            else
+                batch.stats.routeFailures = batch.stats.routeFailures + 1
+                batch.pauseRequested = true
+                batch.pauseReason = "routing failed for item " .. current.id .. ": " .. tostring(reason)
+                m_Enchanter.batchTryPause()
+            end
+        end)
+    elseif batch.current then
+        m_Enchanter.batchProcessCurrent()
+    else
+        m_Enchanter.batchProcessNext()
+    end
+end
+
+function m_Enchanter.batchAbort()
+    local batch = m_Enchanter.batch
+    if not batch or batch.status == "idle" then
+        batchError("No batch job exists.")
+        return
+    end
+    if batch.status == "planned" or batch.status == "planning" then
+        batchRestoreTickSleep(batch)
+        m_Enchanter.batch = { status = "idle" }
+        batchInfo("Batch plan aborted.")
+        return
+    end
+    batch.abortRequested = true
+    batch.pauseRequested = false
+    batch.status = batch.inFlight and "aborting" or batch.status
+    if batch.inFlight then
+        batchInfo("Abort requested; the command already sent will be reconciled first.")
+    end
+    m_Enchanter.batchTryPause()
+end
+
+function m_Enchanter.batchRecoverAfterWake()
+    local batch = m_Enchanter.batch
+    if not batch or not batch.sleepInterrupted or batchIsSleeping() then return end
+    if batch.inFlight or m_Enchanter.active_command_queue or tableCount(m_Enchanter.pending_identifies) > 0 then
+        tempTimer(0.3, m_Enchanter.batchRecoverAfterWake)
+        return
+    end
+    if not batch.current then
+        batch.sleepInterrupted = false
+        batch.status = "paused"
+        batch.pauseRequested = true
+        batch.pauseReason = "sleep interruption"
+        batchInfo("You are awake. Batch state is ready; use 'eqb resume'.")
+        return
+    end
+
+    local objId = batch.current.id
+    batch.status = "recovering"
+    batchInfo("You are awake. Identifying interrupted item " .. batch.current.name .. " [" .. objId .. "]...")
+    batch.inFlight = true
+    local pending = m_Enchanter.queuePostIdentifyReport(objId, {
+        kind = "batch-recover",
+        reportOperation = false,
+        onComplete = function(analysis)
+            local active = m_Enchanter.batch
+            if not active or active.status == "idle" then return end
+            active.inFlight = false
+            active.stats.identifies = (active.stats.identifies or 0) + 1
+            if analysis and active.current then active.current.analysis = analysis end
+            if active.current and active.current.recoveryCallback then
+                local recoveryCallback = active.current.recoveryCallback
+                active.current.recoveryCallback = nil
+                active.current.resumeAfterRecovery = function() recoveryCallback(analysis) end
+            end
+            active.sleepInterrupted = false
+            active.pauseRequested = true
+            active.pauseReason = "sleep interruption reconciled"
+            active.status = "paused"
+            batchInfo("Interrupted item identified. Batch state recovered; use 'eqb resume'.")
+            if active.abortRequested then m_Enchanter.batchTryPause() end
+        end,
+        onError = function(reason)
+            local active = m_Enchanter.batch
+            if not active or active.status == "idle" then return end
+            active.inFlight = false
+            active.pauseRequested = true
+            active.pauseReason = "wake recovery identify failed: " .. tostring(reason)
+            active.status = "paused"
+            batchError(active.pauseReason)
+            if active.abortRequested then m_Enchanter.batchTryPause() end
+        end,
+    })
+    local accepted, reason = pending and m_Enchanter.requestDinvIdentify(objId)
+    if not accepted then
+        if pending and pending.timeoutTimer and killTimer then pcall(killTimer, pending.timeoutTimer) end
+        m_Enchanter.pending_identifies[objId] = nil
+        if m_Enchanter.identify_capture_id == objId then m_Enchanter.identify_capture_id = nil end
+        batch.inFlight = false
+        batch.pauseRequested = true
+        batch.pauseReason = "wake recovery identify failed: " .. tostring(reason)
+        batch.status = "paused"
+        batchError(batch.pauseReason)
+    end
+end
+
+function m_Enchanter.onBatchGmcpStatus()
+    local batch = m_Enchanter.batch
+    if not batch or batch.status == "idle" or batch.status == "planned" or batch.status == "planning" then
+        return
+    end
+    if batchIsSleeping() then
+        if not batch.sleepInterrupted then
+            batch.sleepInterrupted = true
+            batch.pauseRequested = true
+            batch.pauseReason = "player fell asleep"
+            batch.stats.sleepPauses = (batch.stats.sleepPauses or 0) + 1
+            batchWarn("You fell asleep. No more batch commands will be sent.")
+        end
+        batch.status = batch.inFlight and "pausing" or "sleeping"
+        m_Enchanter.batchTryPause()
+    elseif batch.sleepInterrupted then
+        m_Enchanter.batchRecoverAfterWake()
+    end
+end
+
+----------------------------------------------------------------------------------------------------
+-- Batch enchanting: command surface and help
+----------------------------------------------------------------------------------------------------
+
+function m_Enchanter.showBatchPlaceholders()
+    m_Enchanter.print([[@Y
+Batch action placeholders
+=========================
+  @G%id@w                  Exact item object ID
+  @G%name@w                Plain item name
+  @G%result@w              pass or fail
+  @G%reason@w              Failure/pause reason when applicable
+  @G%recipe@w              Active recipe or cleanup flags
+  @G%attempts@w            Total enchant casts for this item
+  @G%solidify@w            Current Solidify total, or none
+  @G%illuminate@w           Current Illuminate total, or none
+  @G%resonate@w            Current Resonate total, or none
+  @G%solidify_attempts@w    Solidify casts for this item
+  @G%illuminate_attempts@w  Illuminate casts for this item
+  @G%resonate_attempts@w    Resonate casts for this item
+  @G%original_container@w  Original container ID
+  @G%destination@w         Selected pass/fail destination ID
+
+One-word actions such as @Gpass {gchan}@w send a useful default message.
+Full actions expand placeholders, for example:
+  @Gpass {gchan Kept %name with Illuminate %illuminate}@w
+  @Gfail {clan %name failed: %reason}@w
+]])
+end
+
+function m_Enchanter.showBatchExamples()
+    m_Enchanter.print([[@Y
+Batch examples
+==============
+@WConfigure stable container IDs (relative names are resolved only once):@w
+  @Geqb source 2682741121@w
+  @Geqb keeper 2.bag@w
+  @Geqb reject 3.bag@w
+  @Geqb reject inventory@w
+
+@WSave and run a complete enchant template:@w
+  @Geqb template save reallyGoodEnchants recipe {I5 I3 S6} partial pass {gchan} pass-to keeper fail-to reject@w
+  @Geqb plan source using reallyGoodEnchants@w
+  @Geqb start@w
+
+@WChoose how items with an ineligible requested family are handled:@w
+  @Geqb plan source recipe {I5 I3 S6} partial@w
+  @Dpartial is the default. If an item cannot receive Solidify, it may still be
+  processed for Illuminate; only its ineligible family is skipped.@w
+  @Geqb plan source recipe {I5 I3 S6} strict@w
+  @Dstrict skips that entire item unless both Illuminate and Solidify are eligible.@w
+
+@WSave strict behavior in a reusable template:@w
+  @Geqb template save strictSet recipe {I5 I3 S6} strict pass {gchan} pass-to keeper fail-to reject@w
+  @Geqb plan source using strictSet@w
+
+@WPlan directly against a container, with custom pass and fail reports:@w
+  @Geqb plan container 2682741121 recipe {I5 I3} pass {gchan Kept %name with Illuminate %illuminate} fail {clan %name failed: %reason} pass-to keeper fail-to reject@w
+
+@WReuse an action-only template with an ad-hoc recipe:@w
+  @Geqb template save sortResults pass {gchan} fail {gchan} pass-to keeper fail-to reject@w
+  @Geqb plan source recipe {S6 S4 I5 I3} using sortResults@w
+
+@WSave and run a free, disenchant-only cleanup job (focus is not required):@w
+  @Geqb template save weakEnchants cleanup {S4 I3 R3}@w
+  @Geqb cleanup plan container 2682741121 using weakEnchants@w
+  @Geqb start@w
+
+@WControl a running job:@w
+  @Geqb status@w
+  @Geqb pause@w
+  @Geqb resume@w
+  @Geqb abort@w
+]])
+end
+
+function m_Enchanter.showBatchHelp()
+    m_Enchanter.print([[@Y
+Batch enchanting
+================
+@WPlanning and execution:@w
+  @Geqb plan source recipe {FLAGS} [strict|partial] [using TEMPLATE] [actions/routes]@w
+  @Geqb plan container CONTAINER recipe {FLAGS} [strict|partial] [using TEMPLATE] [actions/routes]@w
+  @Geqb plan source using TEMPLATE@w
+  @Geqb cleanup plan source using TEMPLATE@w
+  @Geqb cleanup plan container CONTAINER using TEMPLATE@w
+  @Geqb cleanup plan source cleanup {FLAGS}@w
+  @Geqb cleanup plan container CONTAINER cleanup {FLAGS}@w
+  @Geqb start | status | pause | resume | abort@w
+  @Geqb list modify | blocked | acceptable | selected | tp@w
+
+@WTemplates:@w
+  @Geqb template save NAME recipe {FLAGS} [options]@w
+  @Geqb template save NAME cleanup {FLAGS} [options]@w
+  @Geqb template save NAME [actions/routes]@w
+  @Geqb template replace NAME ...@w
+  @Geqb template show NAME@w
+  @Geqb template list@w
+  @Geqb template delete NAME@w
+
+@WContainer shortcuts:@w
+  @Geqb source [CONTAINER|inventory|clear]@w
+  @Geqb keeper [CONTAINER|inventory|clear]@w
+  @Geqb reject [CONTAINER|inventory|clear]@w
+
+@WOptions:@w
+  @Gpartial@w (default) selects an item when at least one requested enchant family is
+  eligible. Ineligible families are skipped for that item, while eligible families run.
+  Example: with @Grecipe {I5 I3 S6} partial@w, an item that cannot receive Solidify may
+  still be processed for Illuminate.
+  @Gstrict@w selects an item only when every requested enchant family is eligible.
+  With the same recipe, an item that cannot receive Solidify is skipped completely;
+  Illuminate is not attempted on it either.
+  @Gpass {ACTION}@w / @Gfail {ACTION}@w run exact-item actions after classification.
+  @Gpass-to CONTAINER@w / @Gfail-to CONTAINER@w route only the current item.
+  @Gusing TEMPLATE@w merges a saved template; explicit options override it.
+
+Without pass-to/fail-to, processed items return to their original container. Items sourced
+from main inventory remain there unless an explicit destination is configured.
+
+Recipe thresholds use >= and repeated families are fallback attempts, for example @GI5 I3@w.
+Rerolling an existing free enchant consumes its free removal before the first cast, so only
+the first target is available. A fallback attempt is possible only when a free removal remains.
+Cleanup thresholds use <= and only remove enchants marked @Genchanter@w by DINV.
+Cleanup is disenchant-only and does not require focus. Recipe jobs always require a confirmed
+focus timer above 30 seconds; eqfocusignore never bypasses that guard.
+Any batch that may issue a disenchant command requires the active @GEnchanter@w subclass.
+The check is repeated at start/resume and immediately before every disenchant command.
+
+The Selected and TP-protected counts in a cleanup plan are clickable. Use
+@Geqb list selected@w or @Geqb list tp@w if links are unavailable. Cleanup selection is
+OR-based: an item is selected when at least one listed family is weak and freely removable.
+
+Recipe plans separate items into clickable @GWill modify@w, @RBlocked@w, and
+@GAlready acceptable@w lists. Use @Geqb list modify@w, @Geqb list blocked@w, or
+@Geqb list acceptable@w if links are unavailable. An item can appear in both Will modify
+and Blocked when one family is freely replaceable but another needs TP or cannot be removed.
+
+The planner trusts items DINV marks @GidentifyLevel=full@w, including an absent removal
+mode meaning "not known to be freely removable." It identifies only partial enchanted
+records whose enchant value or removal information is incomplete.
+
+Use @Geqb examples@w for complete examples and @Geqb placeholders@w for action variables.
+The long form @Geqenchant batch ...@w is equivalent to @Geqb ...@w.
+]])
+end
+
+function m_Enchanter.batchStatus()
+    local batch = m_Enchanter.batch or { status = "idle" }
+    m_Enchanter.print("@YBatch status@w")
+    m_Enchanter.print("@W  State:       @G" .. tostring(batch.status or "idle") .. "@w")
+    if batch.plan then
+        m_Enchanter.print("@W  Mode:        @G" .. tostring(batch.plan.mode) .. "@w")
+        m_Enchanter.print("@W  Source:      @G" .. batchContainerLabel(batch.plan.source) .. "@w")
+        m_Enchanter.print("@W  Definition:  @G" .. batchRecipeText(batch.plan) .. "@w")
+        m_Enchanter.print("@W  Planned:     @G" .. tostring(#(batch.plan.items or {})) .. " item(s)@w")
+        if batch.plan.mode == "recipe" then
+            m_Enchanter.print("@W  Will modify: @G" .. tostring(#(batch.plan.modifyItems or {})) .. " item(s)@w")
+            m_Enchanter.print("@W  Blocked:     @G" .. tostring(#(batch.plan.blockedItems or {})) .. " item(s)@w")
+            m_Enchanter.print("@W  Acceptable:  @G" .. tostring(#(batch.plan.acceptableItems or {})) .. " item(s)@w")
+        end
+    end
+    if batch.current then
+        m_Enchanter.print("@W  Current:     @G" .. tostring(batch.current.name) .. " [" .. tostring(batch.current.id) .. "]@w")
+        m_Enchanter.print("@W  Phase:       @G" .. tostring(batch.current.phase or "unknown") .. "@w")
+    end
+    if batch.stats then
+        m_Enchanter.print(string.format("@W  Progress:    @G%d/%d processed; %d passed, %d failed@w",
+            batch.stats.processed or 0, batch.stats.selected or 0,
+            batch.stats.passed or 0, batch.stats.failed or 0))
+    end
+    local remaining = batchFocusRemaining()
+    m_Enchanter.print("@W  Focus:       @G" .. (remaining and (tostring(remaining) .. " seconds") or tostring(m_Enchanter.focus.status or "unknown")) .. "@w")
+    m_Enchanter.print("@W  Tick sleep:  @G" .. (MSLEEP and MSLEEP.enabled and "ON" or "OFF") .. "@w")
+end
+
+local function batchPlanFromTokens(mode, tokens, selectorIndex)
+    local selector = tokens[selectorIndex] and tostring(tokens[selectorIndex].value or ""):lower() or ""
+    local source
+    local optionsAt
+    if selector == "source" then
+        local saved = m_Enchanter.settings.batch.containers.source
+        local err
+        source, err = batchValidateSavedContainer(saved, "source")
+        if not source then batchError(err) return end
+        optionsAt = selectorIndex + 1
+    elseif selector == "container" then
+        local reference = tokens[selectorIndex + 1] and tokens[selectorIndex + 1].value or ""
+        if trim(reference) == "" then
+            batchError("Usage: eqb " .. (mode == "cleanup" and "cleanup " or "") .. "plan container <container> ...")
+            return
+        end
+        local err
+        source, err = batchResolveContainer(reference, true)
+        if not source then batchError(err) return end
+        optionsAt = selectorIndex + 2
+    else
+        batchError("Choose 'source' or 'container <container>' after plan.")
+        return
+    end
+
+    local explicit, optionErr = batchParseOptions(tokens, optionsAt)
+    if not explicit then batchError(optionErr) return end
+    if explicit.recipeRaw and explicit.cleanupRaw then
+        batchError("A job cannot contain both recipe and cleanup definitions.")
+        return
+    end
+
+    local template
+    local templateName = explicit.using
+    if explicit.using then
+        template = m_Enchanter.settings.batch.templates[explicit.using]
+        if not template then
+            batchError("Template '" .. explicit.using .. "' does not exist.")
+            return
+        end
+    end
+    local options = batchMergeOptions(template, explicit)
+    options.using = nil
+    if mode == "recipe" then
+        if options.mode and options.mode ~= "recipe" then
+            batchError("Enchant plans need a recipe template, but '" .. tostring(templateName or "that template")
+                .. "' is a cleanup template. Run it with 'eqb cleanup plan ...' instead.")
+            return
+        end
+        options.mode = "recipe"
+        if not options.recipeRaw then
+            batchError("An enchant plan needs 'recipe {FLAGS}' or a recipe template.")
+            return
+        end
+    else
+        if options.mode and options.mode ~= "cleanup" then
+            batchError("Cleanup plans need a cleanup template, but '" .. tostring(templateName or "that template")
+                .. "' is a recipe template. Save one with 'eqb template save NAME cleanup {S4 I3 R3}', "
+                .. "then use it with 'eqb cleanup plan source using NAME'.")
+            return
+        end
+        options.mode = "cleanup"
+        if not options.cleanupRaw then
+            batchError("A cleanup plan needs 'cleanup {FLAGS}' or a cleanup template.")
+            return
+        end
+    end
+    local _, recipeErr = batchParseRecipe(options.recipeRaw or options.cleanupRaw, mode)
+    if recipeErr then batchError(recipeErr) return end
+    m_Enchanter.batchPlan(mode, source, options)
+end
+
+function m_Enchanter.batchCommand(raw)
+    raw = trim(raw)
+    if raw == "" or raw:lower() == "help" then
+        m_Enchanter.showBatchHelp()
+        return
+    end
+    local lower = raw:lower()
+    if lower == "examples" or lower == "help examples" then
+        m_Enchanter.showBatchExamples()
+        return
+    elseif lower == "placeholders" or lower == "help placeholders" then
+        m_Enchanter.showBatchPlaceholders()
+        return
+    elseif lower == "status" then
+        m_Enchanter.batchStatus()
+        return
+    elseif lower == "start" then
+        m_Enchanter.batchStart()
+        return
+    elseif lower == "pause" then
+        m_Enchanter.batchPause()
+        return
+    elseif lower == "resume" then
+        m_Enchanter.batchResume()
+        return
+    elseif lower == "abort" then
+        m_Enchanter.batchAbort()
+        return
+    end
+
+    local listCategory = lower:match("^list%s+(%S+)%s*$")
+    if listCategory then
+        m_Enchanter.batchShowPlanItems(listCategory)
+        return
+    end
+
+    local role, reference = raw:match("^(%S+)%s*(.*)$")
+    role = role and role:lower() or nil
+    if role == "source" or role == "keeper" or role == "reject" then
+        m_Enchanter.batchConfigureContainer(role:lower(), reference)
+        return
+    end
+
+    local templateAction, templateName, templateOptions = raw:match("^template%s+(%S+)%s+(%S+)%s+(.+)$")
+    templateAction = templateAction and templateAction:lower() or nil
+    if templateAction == "save" or templateAction == "replace" then
+        m_Enchanter.batchTemplateCommand(templateAction, templateName, templateOptions)
+        return
+    end
+    templateAction, templateName = raw:match("^template%s+(%S+)%s+(%S+)%s*$")
+    templateAction = templateAction and templateAction:lower() or nil
+    if templateAction == "show" or templateAction == "delete" then
+        m_Enchanter.batchTemplateCommand(templateAction, templateName, "")
+        return
+    end
+    if lower == "template list" then
+        m_Enchanter.batchTemplateCommand("list", "", "")
+        return
+    end
+
+    local tokens, tokenErr = batchTokenize(raw)
+    if not tokens then batchError(tokenErr) return end
+    local first = tokens[1] and tostring(tokens[1].value or ""):lower() or ""
+    if first == "plan" then
+        batchPlanFromTokens("recipe", tokens, 2)
+        return
+    elseif first == "cleanup" and tokens[2] and tostring(tokens[2].value or ""):lower() == "plan" then
+        batchPlanFromTokens("cleanup", tokens, 3)
+        return
+    end
+
+    batchError("Unknown batch command. Use 'eqb help'.")
+end
+
+----------------------------------------------------------------------------------------------------
 -- Mudlet alias/trigger registration
 ----------------------------------------------------------------------------------------------------
 
@@ -2040,6 +4523,10 @@ function m_Enchanter.registerAliases()
         m_Enchanter.eqDisenchant(matches[2] or "")
     end)
 
+    m_Enchanter.aliases.eqb = tempAlias([[^eqb(?:\s+(.*))?$]], function()
+        m_Enchanter.batchCommand(matches[2] or "")
+    end)
+
     m_Enchanter.aliases.eqfocus = tempAlias([[^eqfocus$]], function()
         m_Enchanter.eqFocus()
     end)
@@ -2074,11 +4561,11 @@ function m_Enchanter.registerTriggers()
     )
     m_Enchanter.triggers.commandCastOutcome = tempRegexTrigger(
         [[^(?:You solidify .+ making it visible again\.|.+ begins to hum softly\.|.+ starts to glow brightly as you infuse it with holy magic\.)$]],
-        function() m_Enchanter.onCommandResponseLine() end
+        function() m_Enchanter.onCommandResponseLine(line) end
     )
     m_Enchanter.triggers.commandDisenchantOutcome = tempRegexTrigger(
         [[^(?i:.*(?:(?:disenchant|remov(?:e|ed|able)).*(?:solidify|resonate|illuminate)|(?:solidify|resonate|illuminate).*(?:disenchant|remov(?:e|ed|able))).*)$]],
-        function() m_Enchanter.onCommandResponseLine() end
+        function() m_Enchanter.onCommandResponseLine(line) end
     )
     m_Enchanter.triggers.identifyEnchantLine = tempRegexTrigger(
         [[^\|\s*(Solidify|Resonate|Illuminate)\s*:\s*(.*?)\s*\|\s*$]],
@@ -2117,6 +4604,7 @@ function m_Enchanter.registerEvents()
 
     replaceEvent("dinvIdentifyComplete", "DINV.identifyComplete", m_Enchanter.onDinvIdentifyComplete)
     replaceEvent("commandPrompt", "gmcp.char.vitals", m_Enchanter.onCommandPrompt)
+    replaceEvent("batchStatus", "gmcp.char.status", m_Enchanter.onBatchGmcpStatus)
 end
 
 function m_Enchanter.initialize()
@@ -2124,7 +4612,7 @@ function m_Enchanter.initialize()
     m_Enchanter.registerAliases()
     m_Enchanter.registerTriggers()
     m_Enchanter.registerEvents()
-    m_Enchanter.info("v" .. m_Enchanter.version .. " loaded. Use 'eqanalyze help' or 'eqa help'.")
+    m_Enchanter.info("v" .. m_Enchanter.version .. " loaded. Use 'eqenchant help' or 'eqb help'.")
 end
 
 m_Enchanter.initialize()

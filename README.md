@@ -36,6 +36,17 @@ Keydedup, it adds keys to keyring and removes old keys:
 Character stats window. It supports reporting of instinct/mastery/resists over a channel. Stats support vertical/horizontal display and short/long tags. I removed gold/tp/qp so you guys don't laugh of how poor I am.
 
 <img width="245" height="461" alt="2026-04-16 22_41_46-NVIDIA GeForce Overlay" src="https://github.com/user-attachments/assets/09ad7879-19a6-469d-ad37-4f5b6877ceb8" />
+hp bars for character window with clickable config
+
+<img width="663" height="128" alt="2026-09-04 23_23_36-Aardwolf - Mudlet 4 22 0" src="https://github.com/user-attachments/assets/3cf147f2-476a-4d23-b511-b14d86ae5fa0" />
+<img width="584" height="527" alt="2026-09-04 23_23_12-Aardwolf - Mudlet 4 22 0" src="https://github.com/user-attachments/assets/cfd1a3b8-9ebe-4c54-813f-f16c011c5fa7" />
+<img width="220" height="435" alt="2026-09-04 23_22_56-Aardwolf - Mudlet 4 22 0" src="https://github.com/user-attachments/assets/772a4743-1811-4010-908b-a1f2aa40ceaa" />
+<img width="351" height="128" alt="2026-09-04 23_22_29-Aardwolf - Mudlet 4 22 0" src="https://github.com/user-attachments/assets/a2d1ab2a-aafa-428d-97bf-f485a3e10a00" />
+<img width="354" height="134" alt="2026-09-04 23_22_14-Aardwolf - Mudlet 4 22 0" src="https://github.com/user-attachments/assets/c96b3bc6-eb73-4e29-8b45-d3b060633237" />
+<img width="186" height="430" alt="2026-09-04 23_21_38-Aardwolf - Mudlet 4 22 0" src="https://github.com/user-attachments/assets/ff8ac538-597f-4b5f-a1be-71dc1f1ae59b" />
+:
+
+
 
 Event reminder addon. It supports reminders on level, remort, tier, qp, tp, trains, pracs, gold. Yes, it should've been ==
 

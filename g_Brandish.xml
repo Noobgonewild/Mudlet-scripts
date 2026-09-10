@@ -50,7 +50,7 @@ end]]></script>
 GBRANDISH = GBRANDISH or {}
 local gbr = GBRANDISH
 
-gbr.version = "1.0.1"
+gbr.version = "1.0.2"
 gbr.config = gbr.config or {
     enabled = false,
     selector = "breath",
@@ -351,13 +351,26 @@ local function parseRoomcharLine(line)
     return { player = isPlayer, name = remaining, raw = trim(line) }
 end
 
+function gbr.killRoomCaptureTrigger()
+    if gbr.triggers and gbr.triggers.roomLine and type(killTrigger) == "function" then
+        pcall(killTrigger, gbr.triggers.roomLine)
+    end
+    if gbr.triggers then
+        gbr.triggers.roomLine = nil
+    end
+end
+
 function gbr.roomcharsStart()
+    gbr.killRoomCaptureTrigger()
     gbr.runtime.roomCapture = {
         roomId = currentRoomId(),
         npcCount = 0,
         players = {},
         rows = 0,
     }
+    gbr.triggers.roomLine = tempRegexTrigger("^(.*)$", function()
+        if gbr.runtime.roomCapture and matches then gbr.roomcharsLine(matches[2]) end
+    end)
 end
 
 function gbr.roomcharsLine(line)
@@ -387,6 +400,7 @@ function gbr.roomSafety(snapshot)
 end
 
 function gbr.roomcharsEnd()
+    gbr.killRoomCaptureTrigger()
     local capture = gbr.runtime.roomCapture
     gbr.runtime.roomCapture = nil
     if not capture then return end
@@ -430,6 +444,8 @@ function gbr.requestRoomSnapshot(manual)
     after(2.5, "lookTimeout", function()
         if not gbr.runtime.lookInFlight then return end
         gbr.runtime.lookInFlight = false
+        gbr.killRoomCaptureTrigger()
+        gbr.runtime.roomCapture = nil
         gbr.invalidateRoom("roomchars timeout")
         if manual then
             gbr.runtime.manualQueued = false
@@ -928,9 +944,6 @@ function gbr.installRuntime()
     end)
     gbr.triggers.roomStart = tempRegexTrigger("^\\{roomchars\\}$", gbr.roomcharsStart)
     gbr.triggers.roomEnd = tempRegexTrigger("^\\{/roomchars\\}$", gbr.roomcharsEnd)
-    gbr.triggers.roomLine = tempRegexTrigger("^(.*)$", function()
-        if gbr.runtime.roomCapture and matches then gbr.roomcharsLine(matches[2]) end
-    end)
     gbr.triggers.population = tempRegexTrigger(
         "(?i)\\b(arrives|enters|leaves|has arrived|fades into existence)\\b", gbr.onPopulationChange)
 

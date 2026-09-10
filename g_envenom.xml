@@ -39,7 +39,7 @@ end]]></script>
 GENVENOM = GENVENOM or {}
 local genv = GENVENOM
 
-genv.version = "1.0.11"
+genv.version = "1.0.12"
 genv.config = genv.config or {}
 genv.runtime = genv.runtime or {}
 genv.triggers = genv.triggers or {}
@@ -522,11 +522,21 @@ local function setWeaponDuration(weapon, seconds)
     end)
 end
 
+function genv.killIdentifyTrigger()
+    if genv.triggers and genv.triggers.allLines and type(killTrigger) == "function" then
+        pcall(killTrigger, genv.triggers.allLines)
+    end
+    if genv.triggers then
+        genv.triggers.allLines = nil
+    end
+end
+
 local function killOperationTimers()
     killTimerField("operation")
     killTimerField("identifyTimeout")
     killTimerField("identifyQuiet")
     killTimerField("poll")
+    genv.killIdentifyTrigger()
 end
 
 function genv.finishActive(delay)
@@ -816,9 +826,35 @@ function genv.onIdentifyEnd()
     end
 end
 
+function genv.ensureIdentifyTrigger()
+    if genv.triggers and genv.triggers.allLines then return end
+    genv.triggers = genv.triggers or {}
+    genv.triggers.allLines = tempRegexTrigger("^(.*)$", function()
+        local capture = genv.runtime and genv.runtime.identify
+        if capture and matches then
+            local text = matches[2] or matches[1]
+            local isTag = text == "{identify}" or text == "{/identify}"
+            if not capture.gagActive and text:match("^%s*%+%-+%+%s*$") then
+                capture.gagActive = true
+            end
+            local isIdentifyOutput = genv.onIdentifyLine(text)
+            if capture.gagActive and capture.sawTarget and not isIdentifyOutput and not isTag then
+                capture.gagActive = false
+                genv.finishIdentifyCapture(capture)
+                return
+            end
+            if capture.gagActive and not isTag
+                and type(deleteLine) == "function" then
+                deleteLine()
+            end
+        end
+    end)
+end
+
 function genv.startIdentify(job, worn, purpose)
     killTimerField("identifyTimeout")
     killTimerField("identifyQuiet")
+    genv.ensureIdentifyTrigger()
     job.stage = "identifying"
     job.identifyPurpose = purpose
     local capture = {
@@ -845,6 +881,7 @@ function genv.failIdentifyCapture(capture, reason)
     if genv.runtime.identify ~= capture then return end
     killTimerField("identifyTimeout")
     killTimerField("identifyQuiet")
+    genv.killIdentifyTrigger()
     genv.runtime.identify = nil
     local job = capture.job
     if job.kind == "own" then
@@ -904,6 +941,7 @@ function genv.finishIdentifyCapture(capture)
         genv.failIdentifyCapture(capture, "identify output did not contain the expected ID")
         return
     end
+    genv.killIdentifyTrigger()
     genv.runtime.identify = nil
 
     local itemType, level, item = identifyTypeAndLevel(job, data)
@@ -1422,28 +1460,6 @@ function genv.installRuntime()
         recoveryRetries = 0,
     }
 
-    genv.triggers.allLines = tempRegexTrigger("^(.*)$", function()
-        local capture = genv.runtime.identify
-        if capture and matches then
-            local text = matches[2] or matches[1]
-            local isTag = text == "{identify}" or text == "{/identify}"
-            if not capture.gagActive and text:match("^%s*%+%-+%+%s*$") then
-                capture.gagActive = true
-            end
-            local isIdentifyOutput = genv.onIdentifyLine(text)
-            if capture.gagActive and capture.sawTarget and not isIdentifyOutput and not isTag then
-                -- Untagged fallback: the first line after the table belongs to the user/game,
-                -- so finish our capture without deleting that line.
-                capture.gagActive = false
-                genv.finishIdentifyCapture(capture)
-                return
-            end
-            if capture.gagActive and not isTag
-                and type(deleteLine) == "function" then
-                deleteLine()
-            end
-        end
-    end)
     genv.triggers.identifyStart = tempRegexTrigger("^\\{identify\\}$", genv.onIdentifyStart)
     genv.triggers.identifyEnd = tempRegexTrigger("^\\{/identify\\}$", genv.onIdentifyEnd)
     genv.triggers.invmon = tempRegexTrigger("^\\{invmon\\}(.*)$", function()

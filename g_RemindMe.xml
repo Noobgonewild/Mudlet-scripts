@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!-- ============================================================
-       G_RemindMe v1.0 – Mudlet Port (initial)
+       G_RemindMe v1.1 – Mudlet Port
        Original Author: Gizmmo (MUSHclient plugin)
        Purpose: GMCP-based reminder system with threshold triggers
        ============================================================ -->
@@ -76,7 +76,7 @@
         <script>RemindMe_Cmd_Add(matches)</script>
         <command></command>
         <packageName></packageName>
-        <regex>^remindme\s+(\w+)(?:\s*(=|&gt;=|&lt;=|&gt;|&lt;)\s*(\d+)\s+(.+)|\s+(\d+)\s+(.+))$</regex>
+        <regex>^remindme\s+(\w+)(?:\s*(==|&gt;=|&lt;=|=|&gt;|&lt;)\s*(\d+)\s+(.+)|\s+(\d+)\s+(.+))$</regex>
       </Alias>
     </AliasGroup>
   </AliasPackage>
@@ -91,10 +91,11 @@
         <name>G_RemindMe_Script</name>
         <script><![CDATA[
 ---------------------------------------------------------------------------
--- G_RemindMe v1.0 - Mudlet Port (initial)
+-- G_RemindMe v1.1 - Mudlet Port
 ---------------------------------------------------------------------------
 
 G_RemindMe = G_RemindMe or {}
+G_RemindMe.version = "1.1"
 
 local EVENT_DEFS = {
   level  = { path = "char.status.level",  broadcast = "gmcp.char.status" },
@@ -107,7 +108,7 @@ local EVENT_DEFS = {
   gold   = { path = "char.worth.gold",    broadcast = "gmcp.char.worth" },
 }
 
-local VALID_OPS = { ["="] = true, [">="] = true, ["<="] = true, [">"] = true, ["<"] = true }
+local VALID_OPS = { ["="] = true, ["=="] = true, [">="] = true, ["<="] = true, [">"] = true, ["<"] = true }
 local COOLDOWN_SECONDS = 60
 
 local function msg(s)  cecho("<gold>[RemindMe] <white>" .. s .. "\n") end
@@ -139,7 +140,7 @@ end
 
 local function evaluate_condition(current, op, target)
   if current == nil then return false end
-  if op == "="  then return current == target end
+  if op == "=" or op == "==" then return current == target end
   if op == ">=" then return current >= target end
   if op == "<=" then return current <= target end
   if op == ">"  then return current > target end
@@ -287,9 +288,10 @@ end
 function RemindMe_Cmd_Help()
   msg("Usage: remindme <event> <op> <value> <message>")
   msg("       remindme <event> <value> <message> (defaults op to >=)")
-  msg("Operators: =, >=, <=, >, <")
+  msg("Operators: == (or =), >=, <=, >, <")
   msg("Examples:")
   msg("  remindme level >= 90 buy level 90 weapon")
+  msg("  remindme level == 100 hit max level")
   msg("  remindme level 90 buy level 90 weapon")
   msg("Commands: remindme list | events | delete <id> | clear")
   msg("          remindme clear I AM SURE | debug on|off")
@@ -366,7 +368,7 @@ function RemindMe_Cmd_Add(matches)
   local value = tonumber(matches[4])
   local message = matches[5]
 
-  if not op then
+  if op == nil or op == "" then
     op = ">="
     value = tonumber(matches[6])
     message = matches[7]
@@ -420,7 +422,7 @@ function RemindMe_Init()
     }
   end
 
-  msg(string.format("Loaded. %d reminder(s) active.", #G_RemindMe.reminders))
+  msg(string.format("Loaded (v%s). %d reminder(s) active.", G_RemindMe.version or "1.1", #G_RemindMe.reminders))
   msg("Type 'remindme help' for usage.")
 end
 

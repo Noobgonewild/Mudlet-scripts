@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!-- ============================================================
-       G_areapicker v4.4 – Mudlet Port
+       G_areapicker v4.5 – Mudlet Port
        Original Author: Gizmmo (MUSHclient plugin)
        Ported to Mudlet format
 
@@ -151,7 +151,7 @@
         <name>AreaPickerScript</name>
         <script><![CDATA[
 ---------------------------------------------------------------------------
--- G_areapicker v4.4 (Mudlet Port)
+-- G_areapicker v4.5 (Mudlet Port)
 -- Persistence uses file-only state (g_areapicker_state.lua)
 ---------------------------------------------------------------------------
 
@@ -438,6 +438,8 @@ end
 -- DISPLAY
 -- =======================================================================================
 
+local parse_areas
+
 local function display_areas()
   dbg("Starting area display. Current offset: " .. tostring(state.level_offset))
   if not state.areas or #state.areas == 0 then
@@ -553,7 +555,7 @@ end
 -- AREA DATA
 -- =======================================================================================
 
-local function parse_areas()
+parse_areas = function()
   state.areas = {}
   state.original_area_names = {}
   local function extract_area_name(rest)
@@ -1078,7 +1080,7 @@ local function init_areapicker()
     dbg("Registered GMCP handlers for gmcp.char.status/base.")
   end
 
-  msg("Addon loaded (v4.4). Type 'lvl help' for commands.")
+  msg("Addon loaded (v4.5). Type 'lvl help' for commands.")
 end
 
 init_areapicker()

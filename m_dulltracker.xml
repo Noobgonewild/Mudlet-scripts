@@ -31,7 +31,7 @@
       <name>m_dulltracker_main</name>
       <packageName>m_dulltracker</packageName>
       <script><![CDATA[DULL = DULL or {}
-DULL.version = "1.3.2"
+DULL.version = "1.3.3"
 DULL.ids = DULL.ids or { triggers = {}, timers = {} }
 DULL.ids.triggers = DULL.ids.triggers or {}
 DULL.ids.handlers = DULL.ids.handlers or {}
@@ -2982,23 +2982,17 @@ function DULL.command(arg)
   local session_mode = lower:match("^session%s+(%S+)$")
   if session_mode == "manual" or session_mode == "auto" then return DULL.set_session_mode(session_mode) end
 
-  local report_cmd, report_channel = cmd:match("^(session)%s*(.-)$")
-  if report_cmd then return DULL.report_session(report_channel) end
-  report_cmd, report_channel = cmd:match("^(total)%s*(.-)$")
-  if report_cmd then return DULL.report_total(report_channel) end
-  report_cmd, report_channel = cmd:match("^(double)%s*(.-)$")
-  if report_cmd then return DULL.report_double(report_channel) end
-  report_cmd, report_channel = cmd:match("^(status)%s*(.-)$")
-  if report_cmd then return DULL.status(report_channel) end
+  local report_cmd, report_channel = cmd:match("^(%S+)%s*(.-)$")
+  local report_cmd_lower = report_cmd and report_cmd:lower() or ""
+  if report_cmd_lower == "session" then return DULL.report_session(report_channel) end
+  if report_cmd_lower == "total" then return DULL.report_total(report_channel) end
+  if report_cmd_lower == "double" then return DULL.report_double(report_channel) end
+  if report_cmd_lower == "status" then return DULL.status(report_channel) end
 
-  report_cmd, report_channel = cmd:match("^(stats)%s*(.-)$")
-  if report_cmd then return DULL.report_stats(report_channel) end
-  report_cmd, report_channel = cmd:match("^(mastery)%s*(.-)$")
-  if report_cmd then return DULL.report_mastery(report_channel) end
-  report_cmd, report_channel = cmd:match("^(instinct)%s*(.-)$")
-  if report_cmd then return DULL.report_instinct(report_channel) end
-  report_cmd, report_channel = cmd:match("^(resists?)%s*(.-)$")
-  if report_cmd then return DULL.report_resists(report_channel) end
+  if report_cmd_lower == "stats" then return DULL.report_stats(report_channel) end
+  if report_cmd_lower == "mastery" then return DULL.report_mastery(report_channel) end
+  if report_cmd_lower == "instinct" then return DULL.report_instinct(report_channel) end
+  if report_cmd_lower == "resist" or report_cmd_lower == "resists" then return DULL.report_resists(report_channel) end
 
   timer, hist_n = DULL.parse_timer_history_command(cmd)
   if timer then
@@ -3006,21 +3000,21 @@ function DULL.command(arg)
   end
 
   if lower == "xpr reset" then return DULL.reset_rate("xpr") end
-  local rest = cmd:match("^xpr%s+clear%s*(.-)$")
+  local rest = cmd:match("^[Xx][Pp][Rr]%s+[Cc][Ll][Ee][Aa][Rr]%s*(.-)$")
   if rest ~= nil then return DULL.clear_area_rate("xpr", rest) end
-  rest = cmd:match("^xpr%s*(.-)$")
+  rest = cmd:match("^[Xx][Pp][Rr]%s*(.-)$")
   if rest ~= nil then return DULL.show_area_rate("xpr", rest) end
 
   if lower == "gr reset" then return DULL.reset_rate("gr") end
-  rest = cmd:match("^gr%s+clear%s*(.-)$")
+  rest = cmd:match("^[Gg][Rr]%s+[Cc][Ll][Ee][Aa][Rr]%s*(.-)$")
   if rest ~= nil then return DULL.clear_area_rate("gr", rest) end
-  rest = cmd:match("^gr%s*(.-)$")
+  rest = cmd:match("^[Gg][Rr]%s*(.-)$")
   if rest ~= nil then return DULL.show_area_rate("gr", rest) end
 
   if lower == "dps reset" then return DULL.reset_rate("dps") end
-  rest = cmd:match("^dps%s+clear%s*(.-)$")
+  rest = cmd:match("^[Dd][Pp][Ss]%s+[Cc][Ll][Ee][Aa][Rr]%s*(.-)$")
   if rest ~= nil then return DULL.clear_area_rate("dps", rest) end
-  rest = cmd:match("^dps%s*(.-)$")
+  rest = cmd:match("^[Dd][Pp][Ss]%s*(.-)$")
   if rest ~= nil then return DULL.show_area_rate("dps", rest) end
 
   local mins = lower:match("^timer%s*(%d*)$")

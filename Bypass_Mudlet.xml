@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!-- ============================================================
-       Bypass v1.0 – Mudlet Port (initial)
+       Bypass v1.1.2 – Mudlet Port
        Original Author: Durel (MUSHclient plugin)
        Purpose: Sets bypass list automatically on level-up.
        ============================================================ -->
@@ -78,6 +78,30 @@
       <regex></regex>
 
       <Alias isActive="yes" isFolder="no">
+        <name>Bypass_Config</name>
+        <script>Bypass_Cmd_Config()</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^bypass\s+config$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>Bypass_ConfigWishes</name>
+        <script>Bypass_Cmd_ConfigWishes(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^bypass\s+config\s+wishes\s+([012])$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>Bypass_ConfigInstinct</name>
+        <script>Bypass_Cmd_ConfigInstinct(matches)</script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^bypass\s+config\s+instinct\s+(on|off)$</regex>
+      </Alias>
+
+      <Alias isActive="yes" isFolder="no">
         <name>Bypass_ApplyCurrentLevel</name>
         <script>Bypass_ApplyCurrentLevel()</script>
         <command></command>
@@ -97,12 +121,21 @@
         <name>Bypass_Script</name>
         <script><![CDATA[
 Bypass = Bypass or {}
+Bypass.version = "1.1.2"
 
 local function bypass_note(msg)
   if type(cecho) == "function" then
     cecho("<gold>[Bypass] <white>" .. msg .. "\n")
   elseif type(echo) == "function" then
     echo("[Bypass] " .. msg .. "\n")
+  end
+end
+
+local function bypass_warn(msg)
+  if type(cecho) == "function" then
+    cecho("<tomato>[Bypass:warn] <white>" .. msg .. "\n")
+  elseif type(echo) == "function" then
+    echo("[Bypass:warn] " .. msg .. "\n")
   end
 end
 
@@ -132,151 +165,270 @@ local function to_num(v)
   return n
 end
 
-local function get_slots()
-  local slots = 2
-  local subclass = tostring(gmcp_get("char.base.subclass") or "")
-  if subclass == "Navigator" then
-    slots = slots + 2
+local function persistence_dir()
+  local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir
+end
+
+local CONFIG_FILE = persistence_dir() .. "/bypass_config.lua"
+
+function Bypass.load_config()
+  local ok, data = pcall(dofile, CONFIG_FILE)
+  if not ok or type(data) ~= "table" then
+    if ok == false and data and not tostring(data):find("cannot open") then
+      bypass_warn("Failed to read bypass config: " .. tostring(data) .. ". Falling back to defaults.")
+    end
+    Bypass.config = { version = 1, wishes = 0, instinct = false }
+    return
   end
 
-  local int_plus_wis = to_num(gmcp_get("char.stats.int")) + to_num(gmcp_get("char.stats.wis"))
-  if int_plus_wis >= 800 then
-    slots = slots + 1
+  local valid = true
+  if tonumber(data.version) ~= 1 then
+    valid = false
+  end
+  local wishes = tonumber(data.wishes)
+  if wishes ~= 0 and wishes ~= 1 and wishes ~= 2 then
+    valid = false
+  end
+  if type(data.instinct) ~= "boolean" then
+    valid = false
+  end
+
+  if not valid then
+    bypass_warn("Corrupt or invalid bypass config found. Falling back to defaults.")
+    Bypass.config = { version = 1, wishes = 0, instinct = false }
+    return
+  end
+
+  Bypass.config = {
+    version = 1,
+    wishes = wishes,
+    instinct = data.instinct,
+  }
+end
+
+function Bypass.save_config()
+  local cfg = Bypass.config or { version = 1, wishes = 0, instinct = false }
+  local f, err = io.open(CONFIG_FILE, "w")
+  if not f then
+    bypass_warn("Could not save bypass config: " .. tostring(err))
+    return
+  end
+  f:write(string.format("return { version = %d, wishes = %d, instinct = %s }\n",
+    cfg.version or 1, cfg.wishes or 0, cfg.instinct and "true" or "false"))
+  f:close()
+end
+
+function Bypass.get_slot_allocation()
+  local cfg = Bypass.config or { version = 1, wishes = 0, instinct = false }
+  local subclass = tostring(gmcp_get("char.base.subclass") or "")
+  local is_nav = (subclass == "Navigator")
+  local int_val = to_num(gmcp_get("char.stats.int"))
+  local wis_val = to_num(gmcp_get("char.stats.wis"))
+  local stat_sum = int_val + wis_val
+
+  local wish_slots = math.max(0, math.min(2, tonumber(cfg.wishes) or 0))
+
+  local skill_slots = 0
+  if is_nav then
+    skill_slots = 2
+    if stat_sum >= 800 then
+      skill_slots = skill_slots + 1
+    end
+  end
+
+  local instinct_slots = 0
+  if is_nav and cfg.instinct == true then
+    instinct_slots = 1
+  end
+
+  local total_capacity = math.min(6, wish_slots + skill_slots + instinct_slots)
+
+  return {
+    wish = wish_slots,
+    skill = skill_slots,
+    instinct = instinct_slots,
+    total = total_capacity,
+    is_nav = is_nav,
+    stat_sum = stat_sum,
+    subclass = subclass,
+  }
+end
+
+local CANONICAL_ALIASES = {
+  ["gold rush"] = "goldrush",
+  ["upper planes"] = "uplanes",
+  ["lower planes"] = "lplanes",
+  ["flying citadel"] = "citadel",
+  ["deathtrap dungeon"] = "deathtrap",
+  ["halls of the damned"] = "damned",
+}
+
+local function canonicalize_area(name)
+  local n = tostring(name or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+  return CANONICAL_ALIASES[n] or n
+end
+
+local RAW_BANDS = {
+  { min = 2, max = 14, areas = { "graveyard", "gauntlet", "chessboard", "maelstrom" } },
+  { min = 15, max = 29, areas = { "gauntlet", "kul tiras", "chessboard", "maelstrom", "verume" } },
+  { min = 30, max = 39, areas = { "kingsholm", "dsr", "verume", "maelstrom" } },
+  { min = 40, max = 54, areas = { "kingsholm", "zangar", "citadel", "maelstrom", "dsr" } },
+  { min = 55, max = 59, areas = { "zangar", "gold rush", "citadel", "uplanes", "kingsholm" } },
+  { min = 60, max = 69, areas = { "upper planes", "flying citadel", "goldrush", "lplanes" } },
+  { min = 70, max = 85, areas = { "lower planes", "upper planes", "goldrush", "citadel" } },
+  { min = 86, max = 99, areas = { "lower planes", "upper planes", "deathtrap", "citadel" } },
+  { min = 100, max = 114, areas = { "xyl", "halls of the damned", "deathtrap", "talsa" } },
+  { min = 115, max = 119, areas = { "xyl", "deathtrap dungeon", "damned", "talsa" } },
+  { min = 120, max = 129, areas = { "talsa", "deathtrap dungeon", "ftii", "horath" } },
+  { min = 130, max = 139, areas = { "deathtrap dungeon", "zyian", "masquerade", "ftii" } },
+  { min = 140, max = 149, areas = { "cougarian", "cataclysm", "masquerade", "ftii" } },
+  { min = 150, max = 174, areas = { "cataclysm", "cougarian", "deadlights", "helegear" } },
+  { min = 175, max = 179, areas = { "deadlights", "cataclysm", "deadlights", "helegear" } },
+  { min = 180, max = 200, areas = { "partroxis", "nine hells", "deadlights", "helegear" } },
+  { min = 201, max = 201, areas = { "partroxis", "nine hells", "deadlights", "wyrm" } },
+}
+
+local EXPANDED_BANDS = {}
+
+local function build_expanded_bands()
+  EXPANDED_BANDS = {}
+  for i, band in ipairs(RAW_BANDS) do
+    local list = {}
+    local seen = {}
+    for _, a in ipairs(band.areas) do
+      local ca = canonicalize_area(a)
+      if not seen[ca] then
+        table.insert(list, ca)
+        seen[ca] = true
+      end
+    end
+
+    if i > 1 then
+      local prev_list = EXPANDED_BANDS[i - 1].areas
+      for _, a in ipairs(prev_list) do
+        if #list >= 6 then break end
+        if not seen[a] then
+          table.insert(list, a)
+          seen[a] = true
+        end
+      end
+    end
+
+    table.insert(EXPANDED_BANDS, { min = band.min, max = band.max, areas = list })
+  end
+end
+
+build_expanded_bands()
+Bypass.EXPANDED_BANDS = EXPANDED_BANDS
+
+function Bypass.candidates_for_level(level)
+  level = tonumber(level) or 0
+  for _, band in ipairs(EXPANDED_BANDS) do
+    if level >= band.min and level <= band.max then
+      return band.areas
+    end
+  end
+  return nil
+end
+
+function Bypass.build_assigned_slots(level, allocation)
+  local candidates = Bypass.candidates_for_level(level)
+  if not candidates or #candidates == 0 then
+    return {}
+  end
+
+  local total_capacity = allocation.total or 0
+  local slots = {}
+
+  local remaining_wish = allocation.wish or 0
+  local remaining_skill = allocation.skill or 0
+  local remaining_instinct = allocation.instinct or 0
+
+  for i = 1, math.min(#candidates, total_capacity) do
+    local src = "wish"
+    if remaining_wish > 0 then
+      src = "wish"
+      remaining_wish = remaining_wish - 1
+    elseif remaining_skill > 0 then
+      src = "skill"
+      remaining_skill = remaining_skill - 1
+    elseif remaining_instinct > 0 then
+      src = "instinct"
+      remaining_instinct = remaining_instinct - 1
+    end
+
+    table.insert(slots, {
+      area = candidates[i],
+      source = src,
+    })
   end
 
   return slots
 end
 
-local function run_bypass_commands(commands)
+local function run_bypass_commands(slots)
   Bypass.bypassed_areas = {}
   Bypass.bypassed_lookup = {}
+  Bypass.confirmed_slots = {}
+  Bypass.assigned_slots = slots
   if Bypass.summary_timer then
     killTimer(Bypass.summary_timer)
     Bypass.summary_timer = nil
   end
 
   send("bypass clear", false)
-  for _, cmd in ipairs(commands) do
-    send("bypass " .. cmd, false)
+  for _, s in ipairs(slots) do
+    send("bypass " .. s.area, false)
   end
 end
 
 local function report_bypass_summary()
-  local list = Bypass.bypassed_areas or {}
-  if #list == 0 then
+  local confirmed = Bypass.confirmed_slots or {}
+  if #confirmed == 0 then
+    if type(cecho) == "function" then
+      cecho("<ansiCyan>[INFO] <white>Bypass cleared (0 areas configured).\n")
+    elseif type(echo) == "function" then
+      echo("[INFO] Bypass cleared (0 areas configured).\n")
+    end
     return
   end
 
-  local summary = table.concat(list, ", ")
+  local parts = {}
+  for _, s in ipairs(confirmed) do
+    table.insert(parts, string.format("%s (%s)", s.area, s.source or "confirmed"))
+  end
+  local summary = table.concat(parts, ", ")
+
   if type(cecho) == "function" then
-    cecho(string.format("<ansiCyan>[INFO] <white>You are now bypassing %d areas: %s\n", #list, summary))
+    cecho(string.format("<ansiCyan>[INFO] <white>You are now bypassing %d areas: %s\n", #confirmed, summary))
   elseif type(echo) == "function" then
-    echo(string.format("[INFO] You are now bypassing %d areas: %s\n", #list, summary))
+    echo(string.format("[INFO] You are now bypassing %d areas: %s\n", #confirmed, summary))
   end
 end
 
-local function commands_for_level(level, slots)
-  if level >= 2 and level <= 14 then
-    if slots == 4 then
-      return { "graveyard", "gauntlet", "chessboard", "maelstrom" }
-    end
-    return { "graveyard", "gauntlet" }
-  elseif level >= 15 and level <= 29 then
-    if slots == 4 then
-      return { "gauntlet", "kul tiras", "chessboard", "maelstrom", "verume" }
-    end
-    return { "gauntlet", "kul tiras" }
-  elseif level >= 30 and level <= 39 then
-    if slots == 4 then
-      return { "kingsholm", "dsr", "verume", "maelstrom" }
-    end
-    return { "kingsholm", "dsr" }
-  elseif level >= 40 and level <= 54 then
-    if slots == 4 then
-      return { "kingsholm", "zangar", "citadel", "maelstrom", "dsr" }
-    end
-    return { "kingsholm", "zangar" }
-  elseif level >= 55 and level <= 59 then
-    if slots == 4 then
-      return { "zangar", "gold rush", "citadel", "uplanes", "kingsholm" }
-    end
-    return { "zangar", "gold rush" }
-  elseif level >= 60 and level <= 69 then
-    if slots == 4 then
-      return { "upper planes", "flying citadel", "goldrush", "lplanes" }
-    end
-    return { "upper planes", "flying citadel" }
-  elseif level >= 70 and level <= 85 then
-    if slots == 4 then
-      return { "lower planes", "upper planes", "goldrush", "citadel" }
-    end
-    return { "lower planes", "upper planes" }
-  elseif level >= 86 and level <= 99 then
-    if slots == 4 then
-      return { "lower planes", "upper planes", "deathtrap", "citadel" }
-    end
-    return { "lower planes", "upper planes" }
-  elseif level >= 100 and level <= 114 then
-    if slots == 4 then
-      return { "xyl", "halls of the damned", "deathtrap", "talsa" }
-    end
-    return { "xyl", "halls of the damned" }
-  elseif level >= 115 and level <= 119 then
-    if slots == 4 then
-      return { "xyl", "deathtrap dungeon", "damned", "talsa" }
-    end
-    return { "xyl", "deathtrap dungeon" }
-  elseif level >= 120 and level <= 129 then
-    if slots == 4 then
-      return { "talsa", "deathtrap dungeon", "ftii", "horath" }
-    end
-    return { "talsa", "deathtrap dungeon" }
-  elseif level >= 130 and level <= 139 then
-    if slots == 4 then
-      return { "deathtrap dungeon", "zyian", "masquerade", "ftii" }
-    end
-    return { "deathtrap dungeon", "zyian" }
-  elseif level >= 140 and level <= 149 then
-    if slots == 4 then
-      return { "cougarian", "cataclysm", "sahuagin", "ftii" }
-    end
-    return { "cougarian", "cataclysm" }
-  elseif level >= 150 and level <= 174 then
-    if slots >= 4 then
-      return { "cataclysm", "cougarian", "deadlights", "helegear" }
-    end
-    return { "cataclysm", "cougarian" }
-  elseif level >= 175 and level <= 179 then
-    if slots >= 4 then
-      return { "deadlights", "cataclysm", "shadowsend", "helegear" }
-    end
-    return { "deadlights", "cataclysm" }
-  elseif level >= 180 and level <= 200 then
-    if slots >= 4 then
-      return { "partroxis", "nine hells", "deadlights", "shadowsend" }
-    end
-    return { "partroxis", "nine hells" }
-  elseif level == 201 then
-    if slots == 4 then
-      return { "partroxis", "nine hells", "deadlights", "wyrm" }
-    end
-    return { "partroxis", "nine hells" }
+local function assigned_source_for(area_code)
+  local key = canonicalize_area(area_code)
+  for _, slot in ipairs(Bypass.assigned_slots or {}) do
+    if canonicalize_area(slot.area) == key then return slot.source end
   end
-
   return nil
 end
 
 function Bypass_ApplyLevel(level)
-  local commands = commands_for_level(level, get_slots())
-  if not commands then
-    return
-  end
+  level = tonumber(level) or 0
+  if level <= 0 then return end
 
-  run_bypass_commands(commands)
+  local alloc = Bypass.get_slot_allocation()
+  local slots = Bypass.build_assigned_slots(level, alloc)
+  run_bypass_commands(slots)
 end
 
 function Bypass_ApplyCurrentLevel()
-  local level = to_num(gmcp_get("char.base.level"))
+  local level = to_num(gmcp_get("char.base.level") or gmcp_get("char.status.level"))
   if level <= 0 then
     bypass_note("No GMCP level yet. Try again after score/level data arrives.")
     return
@@ -287,9 +439,7 @@ end
 
 function Bypass_OnLevelUp(matches)
   local level = to_num(matches[2])
-  if level <= 0 then
-    return
-  end
+  if level <= 0 then return end
 
   Bypass_ApplyLevel(level)
 end
@@ -299,9 +449,15 @@ function Bypass_OnBypassLine(matches)
   if short_name ~= "" then
     Bypass.bypassed_areas = Bypass.bypassed_areas or {}
     Bypass.bypassed_lookup = Bypass.bypassed_lookup or {}
-    if not Bypass.bypassed_lookup[short_name] then
+    Bypass.confirmed_slots = Bypass.confirmed_slots or {}
+    local lookup_key = canonicalize_area(matches[3])
+    if not Bypass.bypassed_lookup[lookup_key] then
       table.insert(Bypass.bypassed_areas, short_name)
-      Bypass.bypassed_lookup[short_name] = true
+      table.insert(Bypass.confirmed_slots, {
+        area = short_name,
+        source = assigned_source_for(matches[3]),
+      })
+      Bypass.bypassed_lookup[lookup_key] = true
     end
   end
 
@@ -316,7 +472,59 @@ function Bypass_OnBypassLine(matches)
   deleteLine()
 end
 
-bypass_note("Loaded. Use 'bypass apply' to apply bypasses for current level.")
+function Bypass_Cmd_Config()
+  local alloc = Bypass.get_slot_allocation()
+  local cfg = Bypass.config or { version = 1, wishes = 0, instinct = false }
+
+  bypass_note("--------------------------------------------------")
+  bypass_note(string.format("Bypass Configuration (v%s)", Bypass.version or "1.1.2"))
+  bypass_note(string.format("  Wishes:    %d slot(s) (configured: 0-2)", cfg.wishes or 0))
+  bypass_note(string.format("  Instinct:  %s (%s)",
+    cfg.instinct and "ON" or "OFF",
+    alloc.is_nav and (cfg.instinct and "active: +1 slot" or "inactive") or "inactive: requires Navigator"))
+  bypass_note(string.format("  Subclass:  %s", alloc.subclass ~= "" and alloc.subclass or "None / non-Navigator"))
+  bypass_note(string.format("  INT + WIS: %d (800+ bonus: %s)", alloc.stat_sum, alloc.stat_sum >= 800 and "YES" or "NO"))
+  bypass_note(string.format("  Capacity:  %d / 6 (Wish: %d, Skill: %d, Instinct: %d)",
+    alloc.total, alloc.wish, alloc.skill, alloc.instinct))
+  bypass_note("Commands:")
+  bypass_note("  bypass config wishes 0|1|2")
+  bypass_note("  bypass config instinct on|off")
+  bypass_note("  bypass apply")
+  bypass_note("--------------------------------------------------")
+end
+
+function Bypass_Cmd_ConfigWishes(matches)
+  local val = tonumber(matches[2])
+  if val == 0 or val == 1 or val == 2 then
+    Bypass.config.wishes = val
+    Bypass.save_config()
+    bypass_note(string.format("Wish slots set to %d.", val))
+  else
+    bypass_note("Invalid wish value. Use: bypass config wishes 0|1|2")
+  end
+end
+
+function Bypass_Cmd_ConfigInstinct(matches)
+  local val = tostring(matches[2] or ""):lower()
+  if val == "on" then
+    Bypass.config.instinct = true
+    Bypass.save_config()
+    bypass_note("Instinct slot turned ON (active for Navigator).")
+  elseif val == "off" then
+    Bypass.config.instinct = false
+    Bypass.save_config()
+    bypass_note("Instinct slot turned OFF.")
+  else
+    bypass_note("Invalid instinct value. Use: bypass config instinct on|off")
+  end
+end
+
+function Bypass.init()
+  Bypass.load_config()
+  bypass_note("Loaded (v" .. Bypass.version .. "). Use 'bypass config' or 'bypass apply'.")
+end
+
+Bypass.init()
         ]]></script>
       </Script>
     </ScriptGroup>

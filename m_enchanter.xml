@@ -16,7 +16,7 @@
 ----------------------------------------------------------------------------------------------------
 
 m_Enchanter = m_Enchanter or {}
-m_Enchanter.version = "1.2.2"
+m_Enchanter.version = "1.2.3"
 m_Enchanter.aliases = m_Enchanter.aliases or {}
 m_Enchanter.triggers = m_Enchanter.triggers or {}
 m_Enchanter.timers = m_Enchanter.timers or {}
@@ -3087,7 +3087,12 @@ function m_Enchanter.batchContinuePlanning()
             end
         end,
     })
-    local accepted, reason = pending and m_Enchanter.requestDinvIdentify(objId)
+    local accepted, reason
+    if pending then
+        accepted, reason = m_Enchanter.requestDinvIdentify(objId)
+    else
+        accepted, reason = false, "could not queue identify report"
+    end
     if not accepted then
         if pending and pending.timeoutTimer and killTimer then pcall(killTimer, pending.timeoutTimer) end
         m_Enchanter.pending_identifies[objId] = nil
@@ -4112,7 +4117,12 @@ function m_Enchanter.batchRecoverAfterWake()
             if active.abortRequested then m_Enchanter.batchTryPause() end
         end,
     })
-    local accepted, reason = pending and m_Enchanter.requestDinvIdentify(objId)
+    local accepted, reason
+    if pending then
+        accepted, reason = m_Enchanter.requestDinvIdentify(objId)
+    else
+        accepted, reason = false, "could not queue identify report"
+    end
     if not accepted then
         if pending and pending.timeoutTimer and killTimer then pcall(killTimer, pending.timeoutTimer) end
         m_Enchanter.pending_identifies[objId] = nil

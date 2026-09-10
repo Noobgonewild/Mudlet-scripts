@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!-- ============================================================
-       Gizmmo_AutoTrainer v6.7 – Mudlet Port
+       Gizmmo_AutoTrainer v6.8 – Mudlet Port
        Original Author: Gizmmo (MUSHclient plugin)
        Ported to Mudlet format
 
@@ -199,15 +199,23 @@
         <name>AutoTrainerScript</name>
         <script><![CDATA[
 ---------------------------------------------------------------------------
--- AutoTrainer v6.7 (Mudlet Port)
--- Changes from v6.7:
+-- AutoTrainer v6.8 (Mudlet Port)
+-- Changes from v6.8:
 -- 1. Training profiles are selected per subclass and inherit their class template.
 ---------------------------------------------------------------------------
 
-if not string.trim then
-  function string.trim(s)
-    return (s:gsub("^%s+", ""):gsub("%s+$", ""))
-  end
+local function local_trim(s)
+  if not s then return "" end
+  return (tostring(s):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function local_deepcopy(t)
+  if type(t) ~= "table" then return t end
+  local mt = getmetatable(t)
+  local res = {}
+  for k, v in pairs(t) do res[k] = local_deepcopy(v) end
+  if mt then setmetatable(res, mt) end
+  return res
 end
 
 -- =======================================================================================
@@ -947,7 +955,7 @@ function PlanAndExecuteBatch()
   if is_check then sim_msg("Benchmark Cost (Primary): " .. benchmark_cost) end
 
   local plan = {}
-  local temp_caps = table.deepcopy(caps)
+  local temp_caps = local_deepcopy(caps)
   local safety = 20000
   local total_spent = 0
 
@@ -1061,7 +1069,7 @@ function HandleWeights(args)
   sub = (sub or ""):lower()
 
   if sub == "show" then
-    local target = string.trim(rest)
+    local target = local_trim(rest)
     if target == "" then
       if not require_active_subclass() then return end
       DisplayWeights(state.subclass)
@@ -1089,14 +1097,14 @@ function HandleWeights(args)
 
     if not state.subclass_weights[subclass] then
       local template = get_weights_for_subclass(subclass)
-      state.subclass_weights[subclass] = table.deepcopy(template)
+      state.subclass_weights[subclass] = local_deepcopy(template)
     end
     state.subclass_weights[subclass][stat] = val
     save_all_settings()
     okm(string.format("Weight for %s -> %s set to %d.", subclass, stat, val))
 
   elseif sub == "reset" then
-    local target = string.trim(rest)
+    local target = local_trim(rest)
     if target == "all" then
       state.subclass_weights = {}
       save_all_settings()
@@ -1155,7 +1163,7 @@ end
 -- =======================================================================================
 
 function Cmd_AutoTrain(matches)
-  local params = string.trim((matches and matches[2]) or "")
+  local params = local_trim((matches and matches[2]) or "")
 
   if params == "" then
     if not require_active_subclass() then return end
@@ -1167,8 +1175,8 @@ function Cmd_AutoTrain(matches)
   end
 
   local a, b = string.match(params, "^(%S+)%s*(.*)$")
-  a = string.trim((a or ""):lower())
-  b = string.trim((b or ""):lower())
+  a = local_trim((a or ""):lower())
+  b = local_trim((b or ""):lower())
 
   if a == "check" then
     if not require_active_subclass() then return end
@@ -1285,18 +1293,6 @@ end
 -- =======================================================================================
 
 function AutoTrainer_Initialize()
-  -- Ensure table.deepcopy exists
-  if not table.deepcopy then
-    function table.deepcopy(t)
-      if type(t) ~= "table" then return t end
-      local mt = getmetatable(t)
-      local res = {}
-      for k, v in pairs(t) do res[k] = table.deepcopy(v) end
-      setmetatable(res, mt)
-      return res
-    end
-  end
-
   -- Load saved settings (respects manual class/subclass overrides)
   load_all_settings()
 
@@ -1309,13 +1305,13 @@ function AutoTrainer_Initialize()
   -- Deferred init message so Mudlet UI is ready
   if type(tempTimer) == "function" then
     tempTimer(0.1, function()
-      msg("Loaded (v6.7). JSON: " .. json_module_name)
+      msg("Loaded (v6.8). JSON: " .. json_module_name)
       debug_gmcp_snapshot("init")
       AutoTrain_OnGMCP()
     end)
   else
     -- Fallback if tempTimer not available
-    msg("Loaded (v6.7). JSON: " .. json_module_name)
+    msg("Loaded (v6.8). JSON: " .. json_module_name)
     AutoTrain_OnGMCP()
   end
 

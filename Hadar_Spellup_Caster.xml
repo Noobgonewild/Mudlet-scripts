@@ -554,12 +554,12 @@ hspskillgain()</script>
  <script>-- ============================================================================
 -- Hadar_Spellup_Caster for Mudlet
 -- Ported from MUSHclient plugin by Hadar
- -- Version: 1.36
+ -- Version: 1.37
 -- Purpose: Spellup Script for Aardwolf MUD
 -- ============================================================================
 
 HSP = HSP or {}
-HSP.version = &quot;1.36&quot;
+HSP.version = &quot;1.37&quot;
 HSP.pluginName = &quot;Hadar_Spellup_Caster&quot;
 HSP.combatDefaultsVersion = 2
 local function hsp_persistence_dir()
@@ -1067,7 +1067,7 @@ function table.count(tbl)
   return tblcount
 end
 
-function contains(tableToSearch, value)
+local function contains(tableToSearch, value)
   if not tableToSearch then return false end
   for i,v in ipairs(tableToSearch) do
     if (v == value) then
@@ -1076,6 +1076,7 @@ function contains(tableToSearch, value)
   end
   return false
 end
+HSP.contains = contains
 
 function HSP.isNoAuto(sn)
   local noAuto = Spellups[&quot;EX&quot;] and Spellups[&quot;EX&quot;][&quot;noAuto&quot;]
@@ -1087,7 +1088,7 @@ function HSP.hasNoAuto()
   return noAuto ~= nil and next(noAuto) ~= nil
 end
 
-function remove(tableToSearch, value)
+local function remove(tableToSearch, value)
   for i,v in ipairs(tableToSearch) do
     if (v == value) then
       table.remove(tableToSearch, i)
@@ -1095,6 +1096,7 @@ function remove(tableToSearch, value)
     end
   end
 end
+HSP.remove = remove
 
 -- ============================================================================
 -- Utility: split string
@@ -1135,9 +1137,18 @@ function HSP.SaveState()
 end
 
 function HSP.LoadState()
-  if io.open(HSP.savefile, &quot;r&quot;) then
-    table.load(HSP.savefile, Spellups)
-    return true
+  local f = io.open(HSP.savefile, &quot;r&quot;)
+  if f then
+    f:close()
+    local ok, err = pcall(table.load, HSP.savefile, Spellups)
+    if ok then
+      return true
+    else
+      if hadarprint then
+        hadarprint(&quot;@RFailed to load spellup state: @w&quot; .. tostring(err))
+      end
+      return false
+    end
   end
   return false
 end

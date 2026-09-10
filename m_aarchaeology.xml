@@ -13,12 +13,15 @@
       <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_bid</name><script>m_aarchaeology_TR_Bid(matches)</script><command></command><packageName></packageName><regexCodeList><string>^([\d ]+) - .+\(Aarchaeology\) (.+?)\s+1\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_market_list</name><script>m_aarchaeology_TR_MarketList(matches)</script><command></command><packageName></packageName><regexCodeList><string>^\s*(\d+)\s+\(Aarchaeology\)\s+(.+?)\s+1\s+\*?\s*(Gold|Qp|QP)\s+.+$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_cant_look</name><script>m_aarchaeology_TR_CantLook(matches)</script><command></command><packageName></packageName><regexCodeList><string>^You dream about being able to look\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no" isFilterTrigger="yes"><name>m_aarchaeology_bag_context</name><script>m_aarchaeology_TR_BagContext(matches)</script><command></command><packageName></packageName><regexCodeList><string>^\{aarchbag (\d+)\}$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
       <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_done</name><script>m_aarchaeology_TR_Done(matches)</script><command></command><packageName></packageName><regexCodeList><string>^Looked in Aarch Bags!$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
+      <Trigger isActive="yes" isFolder="no"><name>m_aarchaeology_turnin_success</name><script>m_aarchaeology_TR_TurninSuccess(matches)</script><command></command><packageName></packageName><regexCodeList><string>^(?i:You give .+ to .*professor)\.$</string></regexCodeList><regexCodePropertyList><integer>1</integer></regexCodePropertyList></Trigger>
     </TriggerGroup>
   </TriggerPackage>
   <AliasPackage>
     <AliasGroup isActive="yes" isFolder="yes"><name>m_aarchaeology</name><script></script><command></command><packageName>m_aarchaeology</packageName><regex></regex>
       <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_report</name><script>m_aarchaeology_Alias_Report(matches)</script><command></command><packageName></packageName><regex>^a?arch repo?r?t?$</regex></Alias>
+      <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_turnin</name><script>m_aarchaeology_Alias_Turnin(matches)</script><command></command><packageName></packageName><regex>^a?arch turnin(?: (.+))?$</regex></Alias>
       <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_cost</name><script>m_aarchaeology_Alias_Cost(matches)</script><command></command><packageName></packageName><regex>^a?arch cost$</regex></Alias>
       <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_multiplier</name><script>m_aarchaeology_Alias_Multiplier(matches)</script><command></command><packageName></packageName><regex>^a?arch (?:cost )?(?:multiplier|multiplicator)(?: (\d+(?:\.\d+)?))?$</regex></Alias>
       <Alias isActive="yes" isFolder="no"><name>m_aarchaeology_help</name><script>m_aarchaeology_Alias_Help(matches)</script><command></command><packageName></packageName><regex>^a?arch help$</regex></Alias>
@@ -37,7 +40,7 @@
 m_aarchaeology = m_aarchaeology or {}
 local A = m_aarchaeology
 
-A.version = "1.3.0"
+A.version = "1.4.2"
 A.default_settings = {
   bags = "'collection satchel'",
   sounds = "on",
@@ -128,6 +131,16 @@ local function normalize(value)
   return text
 end
 
+local function bag_key(value)
+  local text = trim(value)
+  local first = text:sub(1, 1)
+  local last = text:sub(-1)
+  if (first == "'" and last == "'") or (first == '"' and last == '"') then
+    text = text:sub(2, -2)
+  end
+  return trim(text):lower()
+end
+
 local function clone_defaults()
   return {
     bags = A.default_settings.bags,
@@ -152,6 +165,7 @@ function A.load_settings()
   A.settings = clone_defaults()
   A.saved_piece_counts = {}
   A.saved_pamphlet_counts = {}
+  A.saved_piece_locations = {}
   A.has_saved_inventory = false
   A.inventory_saved_at = nil
   local ok, loaded = pcall(dofile, A.state_file)
@@ -164,6 +178,7 @@ function A.load_settings()
   if loaded.inventory_saved == true then
     A.saved_piece_counts = A.decode_saved_counts(loaded.piece_counts)
     A.saved_pamphlet_counts = A.decode_saved_counts(loaded.pamphlet_counts)
+    A.saved_piece_locations = A.decode_saved_locations(loaded.piece_locations)
     A.has_saved_inventory = true
     A.inventory_saved_at = tonumber(loaded.inventory_saved_at)
     A.restore_saved_inventory()
@@ -197,6 +212,23 @@ function A.save_settings()
     if amount > 0 then f:write(string.format("    [%d] = %d,\n", number, amount)) end
   end
   f:write("  },\n")
+  f:write("  piece_locations = {\n")
+  for number, piece in ipairs(A.pieces) do
+    local locations = A.saved_piece_locations and A.saved_piece_locations[piece]
+    local bags = {}
+    for bag, amount in pairs(type(locations) == "table" and locations or {}) do
+      if math.floor(tonumber(amount) or 0) > 0 then bags[#bags + 1] = bag end
+    end
+    table.sort(bags)
+    if #bags > 0 then
+      f:write(string.format("    [%d] = {\n", number))
+      for _, bag in ipairs(bags) do
+        f:write(string.format("      [%q] = %d,\n", bag, math.floor(tonumber(locations[bag]) or 0)))
+      end
+      f:write("    },\n")
+    end
+  end
+  f:write("  },\n")
   f:write("}\n")
   f:close()
   return true
@@ -215,6 +247,7 @@ function A.clear_inventory()
   A.owned = {}
   A.piece_counts = {}
   A.pamphlet_counts = {}
+  A.piece_locations = {}
 end
 
 local function copy_counts(source)
@@ -222,6 +255,20 @@ local function copy_counts(source)
   for _, piece in ipairs(A.pieces) do
     local amount = math.floor(tonumber(source and source[piece]) or 0)
     if amount > 0 then result[piece] = amount end
+  end
+  return result
+end
+
+local function copy_piece_locations(source)
+  local result = {}
+  for _, piece in ipairs(A.pieces) do
+    local copied = {}
+    for bag, value in pairs(type(source and source[piece]) == "table" and source[piece] or {}) do
+      local amount = math.floor(tonumber(value) or 0)
+      local key = bag_key(bag)
+      if key ~= "" and amount > 0 then copied[key] = amount end
+    end
+    if next(copied) then result[piece] = copied end
   end
   return result
 end
@@ -238,10 +285,30 @@ function A.decode_saved_counts(source)
   return result
 end
 
+function A.decode_saved_locations(source)
+  local result = {}
+  if type(source) ~= "table" then return result end
+  for piece_key, locations in pairs(source) do
+    local number = tonumber(piece_key)
+    local canonical = number and A.pieces[number] or A.canonical_by_key[normalize(piece_key)]
+    if canonical and type(locations) == "table" then
+      local copied = {}
+      for bag, value in pairs(locations) do
+        local amount = math.floor(tonumber(value) or 0)
+        local key = bag_key(bag)
+        if key ~= "" and amount > 0 then copied[key] = amount end
+      end
+      if next(copied) then result[canonical] = copied end
+    end
+  end
+  return result
+end
+
 function A.restore_saved_inventory()
   A.clear_inventory()
   A.piece_counts = copy_counts(A.saved_piece_counts)
   A.pamphlet_counts = copy_counts(A.saved_pamphlet_counts)
+  A.piece_locations = copy_piece_locations(A.saved_piece_locations)
   for _, piece in ipairs(A.pieces) do
     if (tonumber(A.piece_counts[piece]) or 0) > 0
       or (tonumber(A.pamphlet_counts[piece]) or 0) > 0
@@ -255,6 +322,7 @@ end
 function A.commit_inventory()
   A.saved_piece_counts = copy_counts(A.piece_counts)
   A.saved_pamphlet_counts = copy_counts(A.pamphlet_counts)
+  A.saved_piece_locations = copy_piece_locations(A.piece_locations)
   A.has_saved_inventory = true
   A.inventory_saved_at = os.time()
   A.ran = true
@@ -457,6 +525,11 @@ function A.capture_piece(count, piece, raw_line)
     local amount = tonumber(count) or 1
     A.owned[canonical] = true
     A.piece_counts[canonical] = (tonumber(A.piece_counts[canonical]) or 0) + amount
+    local key = A.scan_current_bag_key
+    if key and key ~= "" then
+      A.piece_locations[canonical] = A.piece_locations[canonical] or {}
+      A.piece_locations[canonical][key] = (tonumber(A.piece_locations[canonical][key]) or 0) + amount
+    end
   end
   A.append_piece_details(raw_line, canonical)
 end
@@ -936,6 +1009,10 @@ function A.report()
 end
 
 function A.run_report()
+  if A.turnin_pending then
+    cecho("<yellow>[m_aarchaeology] A turn-in is awaiting confirmation; wait for it to finish before scanning.\n")
+    return
+  end
   local bags = split_bags(A.settings.bags)
   if #bags == 0 then
     cecho("<red>[m_aarchaeology] No bags configured. Use: aarch bag [id/keyword]\n")
@@ -945,10 +1022,25 @@ function A.run_report()
   A.scan_in_progress = true
   A.scan_failed = false
   A.ran = true
-  for _, bag in ipairs(bags) do
+  A.scan_bags = bags
+  A.scan_current_bag_key = nil
+  for index, bag in ipairs(bags) do
+    send("echo @Y{aarchbag " .. tostring(index) .. "}", false)
     if bag:lower() == "vault list" then send("vault list") else send("look in " .. bag) end
   end
   send("echo @YLooked in Aarch Bags!", false)
+end
+
+function A.set_scan_bag_context(index)
+  if type(deleteLine) == "function" then deleteLine() end
+  if not A.scan_in_progress then return end
+  local bag = A.scan_bags and A.scan_bags[tonumber(index)]
+  if not bag then
+    A.scan_failed = true
+    A.scan_current_bag_key = nil
+    return
+  end
+  A.scan_current_bag_key = bag_key(bag)
 end
 
 function A.cant_look()
@@ -960,6 +1052,8 @@ end
 function A.done_look()
   if not A.scan_in_progress then return end
   A.scan_in_progress = false
+  A.scan_bags = nil
+  A.scan_current_bag_key = nil
   if not A.scan_failed then
     A.commit_inventory()
     A.report()
@@ -968,9 +1062,157 @@ function A.done_look()
   end
 end
 
+local function quote_turnin_item(name)
+  local text = trim(name)
+  if text:sub(1, 1) == "'" and text:sub(-1) == "'" then
+    return text
+  end
+  if text:sub(1, 1) == '"' and text:sub(-1) == '"' then
+    text = text:sub(2, -2)
+  end
+  return string.format("'%s'", text:gsub("'", "\\'"))
+end
+
+local function quote_turnin_container(name)
+  local text = trim(name)
+  if text:sub(1, 1) == "'" and text:sub(-1) == "'" then
+    return text
+  end
+  if text:sub(1, 1) == '"' and text:sub(-1) == '"' then
+    text = text:sub(2, -2)
+  end
+  if text:find("%s") then
+    return string.format("'%s'", text:gsub("'", "\\'"))
+  end
+  return text
+end
+
+function A.find_highest_value_piece()
+  for index = #A.pieces, 1, -1 do
+    local piece = A.pieces[index]
+    if (tonumber(A.piece_counts and A.piece_counts[piece]) or 0) > 0 then
+      return piece, index, A.values[index]
+    end
+  end
+  return nil
+end
+
+function A.find_highest_value_piece_in_bags(bags)
+  for index = #A.pieces, 1, -1 do
+    local piece = A.pieces[index]
+    local locations = A.piece_locations and A.piece_locations[piece]
+    for _, bag in ipairs(bags or {}) do
+      local key = bag_key(bag)
+      if (tonumber(locations and locations[key]) or 0) > 0 then
+        return piece, index, A.values[index], bag, key
+      end
+    end
+  end
+  return nil
+end
+
+local function clear_turnin_timeout()
+  if A.turnin_timeout_id and type(killTimer) == "function" then
+    pcall(killTimer, A.turnin_timeout_id)
+  end
+  A.turnin_timeout_id = nil
+end
+
+function A.on_turnin_success(raw_line)
+  local pending = A.turnin_pending
+  if not pending then return end
+  if not normalize(raw_line):find(normalize(pending.piece), 1, true) then return end
+
+  clear_turnin_timeout()
+  A.turnin_pending = nil
+
+  local piece = pending.piece
+  local current_count = tonumber(A.piece_counts[piece]) or 0
+  if current_count <= 1 then
+    A.piece_counts[piece] = nil
+    if (tonumber(A.pamphlet_counts and A.pamphlet_counts[piece]) or 0) <= 0 then
+      A.owned[piece] = nil
+    end
+  else
+    A.piece_counts[piece] = current_count - 1
+  end
+
+  local locations = A.piece_locations and A.piece_locations[piece]
+  if locations then
+    local bag_count = tonumber(locations[pending.bag_key]) or 0
+    if bag_count <= 1 then
+      locations[pending.bag_key] = nil
+    else
+      locations[pending.bag_key] = bag_count - 1
+    end
+    if not next(locations) then A.piece_locations[piece] = nil end
+  end
+
+  A.commit_inventory()
+  cecho(string.format("<green>[m_aarchaeology] Confirmed turn-in of <white>%s<green>; saved inventory updated.\n", piece))
+end
+
+function A.turnin(target_bag)
+  if A.turnin_pending then
+    cecho("<yellow>[m_aarchaeology] A turn-in is already awaiting confirmation.\n")
+    return
+  end
+  if A.scan_in_progress then
+    cecho("<yellow>[m_aarchaeology] The bag scan is still running; wait for it to finish before turning in.\n")
+    return
+  end
+  if not A.ran or A.scan_failed then
+    cecho("<yellow>[m_aarchaeology] Run <cyan>aarch report<yellow> first so your bag inventory is scanned.\n")
+    return
+  end
+
+  local requested_bag = trim(target_bag)
+  local valid_bags = {}
+  if requested_bag == "" then
+    local bags = split_bags(A.settings.bags)
+    for _, b in ipairs(bags) do
+      if bag_key(b) ~= "vault list" then
+        valid_bags[#valid_bags + 1] = b
+      end
+    end
+  elseif bag_key(requested_bag) ~= "vault list" then
+    valid_bags[1] = requested_bag
+  end
+  if #valid_bags == 0 then
+    cecho("<red>[m_aarchaeology] No valid bag selected. Set one with: aarch bag [id/keyword]\n")
+    return
+  end
+
+  local piece, number, value, bag, selected_bag_key = A.find_highest_value_piece_in_bags(valid_bags)
+  if not piece then
+    if A.find_highest_value_piece() then
+      cecho("<yellow>[m_aarchaeology] The last report did not place any loose pieces in the selected bag(s). Run aarch report again before turning in.\n")
+    else
+      cecho("<yellow>[m_aarchaeology] No loose Aarchaeology pieces found in the selected bag(s).\n")
+    end
+    return
+  end
+
+  local quoted_piece = quote_turnin_item(piece)
+  local quoted_bag = quote_turnin_container(bag)
+
+  cecho(string.format("<yellow>[m_aarchaeology] Turning in highest value piece: <white>%s <magenta>[<cyan>%s<magenta>] <yellow>from <cyan>%s<yellow>.\n", piece, value, bag))
+  local pending = { piece = piece, bag = bag, bag_key = selected_bag_key }
+  A.turnin_pending = pending
+  send("get " .. quoted_piece .. " " .. quoted_bag)
+  send("give " .. quoted_piece .. " professor")
+  A.turnin_timeout_id = tempTimer(5, function()
+    if A.turnin_pending ~= pending then return end
+    A.turnin_pending = nil
+    A.turnin_timeout_id = nil
+    cecho("<yellow>[m_aarchaeology] The turn-in was not confirmed; saved inventory was not changed. Run aarch report before retrying.\n")
+  end)
+end
+
 function A.help()
   cecho("\n<gold>m_aarchaeology commands<reset>\n\n")
   cecho("<cyan>aarch report<reset>\n<gray>  Scan configured bags, save the inventory, and report missing pieces and duplicates.<reset>\n")
+  cecho("<cyan>aarch turnin [bag]<reset>\n<gray>  Give the highest value piece from the selected scanned bag (TP first); saves only after confirmation.<reset>\n")
   cecho("<cyan>aarch cost<reset>\n<gray>  Total missing pieces using mbot averages and the no-history fallback.<reset>\n")
   cecho("<cyan>aarch multiplier [number]<reset>\n<gray>  Show or set the no-history fallback multiplier.<reset>\n")
   cecho("<cyan>aarch bag [id/keyword,...]<reset>\n<gray>  Show or set one or more bags.<reset>\n")
@@ -981,8 +1223,12 @@ function A.help()
 end
 
 function A.on_disconnect()
+  clear_turnin_timeout()
+  A.turnin_pending = nil
   A.scan_in_progress = false
   A.scan_failed = false
+  A.scan_bags = nil
+  A.scan_current_bag_key = nil
   A.restore_saved_inventory()
 end
 
@@ -1000,10 +1246,14 @@ function A.register_handlers()
 end
 
 function A.init()
+  clear_turnin_timeout()
   A.rebuild_indexes()
   A.clear_inventory()
   A.scan_in_progress = false
   A.scan_failed = false
+  A.scan_bags = nil
+  A.scan_current_bag_key = nil
+  A.turnin_pending = nil
   A.ran = false
   A.sales_cache = nil
   A.load_settings()
@@ -1018,6 +1268,7 @@ function A.init()
 end
 
 function m_aarchaeology_Alias_Report() A.run_report() end
+function m_aarchaeology_Alias_Turnin(matches) A.turnin(matches and matches[2]) end
 function m_aarchaeology_Alias_Cost() A.remaining_cost() end
 function m_aarchaeology_Alias_Multiplier(matches) A.set_multiplier(matches and matches[2] or "") end
 function m_aarchaeology_Alias_Help() A.help() end
@@ -1036,7 +1287,9 @@ function m_aarchaeology_TR_LBid(matches) A.append_sale_details(line, matches and
 function m_aarchaeology_TR_Bid(matches) A.append_sale_details(line, matches and matches[3]) end
 function m_aarchaeology_TR_MarketList(matches) A.market_list(matches and matches[3], matches and matches[2], line) end
 function m_aarchaeology_TR_CantLook() A.cant_look() end
+function m_aarchaeology_TR_BagContext(matches) A.set_scan_bag_context(matches and matches[2]) end
 function m_aarchaeology_TR_Done() A.done_look() end
+function m_aarchaeology_TR_TurninSuccess(matches) A.on_turnin_success(matches and matches[1] or line) end
 function m_aarchaeology_OnDisconnect() A.on_disconnect() end
 
 A.init()

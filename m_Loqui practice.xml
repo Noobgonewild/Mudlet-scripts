@@ -77,6 +77,8 @@
       <Script isActive="yes" isFolder="no">
         <name>LoquiPracticeCore</name>
         <script><![CDATA[-- Mudlet edition of Loqui Practice
+LoquiPractice = LoquiPractice or {}
+LoquiPractice.version = "1.1"
 
 local function persistence_dir()
   local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
@@ -112,7 +114,7 @@ local function lph_serialize(value)
   return "nil"
 end
 
-serialize = serialize or {}
+local serialize = serialize or {}
 serialize.save_simple = serialize.save_simple or lph_serialize
 
 local function lph_load_state()
@@ -162,16 +164,16 @@ end
 
 lph_load_state()
 
-function GetVariable(name)
+local function GetVariable(name)
   return LPH_STATE[name]
 end
 
-function SetVariable(name, value)
+local function SetVariable(name, value)
   LPH_STATE[name] = value
   lph_save_state()
 end
 
-function Send(cmd)
+local function Send(cmd)
   send(cmd)
 end
 
@@ -196,7 +198,7 @@ local function lph_append_colored(out, color, text)
   out[#out + 1] = tostring(text)
 end
 
-function ColourNote(fg, _, ...)
+local function ColourNote(fg, _, ...)
   local parts = {...}
   local out = {}
   lph_append_colored(out, fg, parts[1])
@@ -208,19 +210,19 @@ function ColourNote(fg, _, ...)
   cecho(table.concat(out) .. "\n")
 end
 
-function Note(msg)
+local function Note(msg)
   ColourNote("orange", "", msg)
 end
 
-function GetPluginID()
+local function GetPluginID()
   return "loqui_practice"
 end
 
-function GetPluginInfo(_, field)
+local function GetPluginInfo(_, field)
   if field == 3 then
     return [[
 .----------------------------------------------------------------------------|
-|                           Loqui Practice Helper                            |
+|                     Loqui Practice Helper v1.1                             |
 |----------------------------------------------------------------------------|
 |lph help -- Brings up the help section. (What you are reading now)          |
 |                                                                            |
@@ -253,7 +255,7 @@ function GetPluginInfo(_, field)
   return ""
 end
 
-function Send_GMCP_Packet(packet)
+local function Send_GMCP_Packet(packet)
   sendGMCP(packet)
 end
 
@@ -299,7 +301,6 @@ end
 		["soften"] 		= { mage = 0, 	cleric = 0, 	thief = 0, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 29, 	sub = 0, sublist = "", prac = 0 },
 		["weaken"] 		= { mage = 17, 	cleric = 0, 	thief = 0, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["wither"] 		= { mage = 31, 	cleric = 0, 	thief = 0, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
-		["purge"] 		= { mage = 0, 	cleric = 137, 	thief = 0, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["burnt marbu"] 	= { mage = 0, 	cleric = 0, 	thief = 15, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
  		["green death"] 	= { mage = 0, 	cleric = 0, 	thief = 88, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["hydra blood"] 	= { mage = 0, 	cleric = 0, 	thief = 51, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
@@ -465,7 +466,6 @@ end
 		["fast healing"] 	= { mage = 40, 	cleric = 0, 	thief = 60, 	warrior = 35, 	ranger = 45, 	paladin = 45, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["haggle"] 		= { mage = 0, 	cleric = 0, 	thief = 5, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["meditation"] 		= { mage = 22, 	cleric = 15, 	thief = 53, 	warrior = 0, 	ranger = 48, 	paladin = 14, 	psionicist = 8, 	sub = 0, sublist = "", prac = 0 },
-		["peek"] 		= { mage = 0, 	cleric = 0, 	thief = 30, 	warrior = 0, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["power grip"] 		= { mage = 0, 	cleric = 0, 	thief = 0, 	warrior = 63, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["vitality"] 		= { mage = 0, 	cleric = 0, 	thief = 32, 	warrior = 38, 	ranger = 38, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },
 		["blockexit"] 		= { mage = 0, 	cleric = 0, 	thief = 0, 	warrior = 99, 	ranger = 0, 	paladin = 0, 	psionicist = 0, 	sub = 0, sublist = "", prac = 0 },

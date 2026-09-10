@@ -71,12 +71,13 @@
 G_MazeSolver = type(G_MazeSolver) == "table" and G_MazeSolver or {}
 local M = G_MazeSolver
 
+M.version = "1.1"
 M.ms_basearea = M.ms_basearea or ""
 M.ms_room_table = M.ms_room_table or {}
 M.lastroom = M.lastroom or ""
 M.lastmove = M.lastmove or ""
 M.enablemap = M.enablemap or false
-M.visited = ""
+M.visited = M.visited or {}
 M.handlers = M.handlers or {}
 
 local function maze_note(msg)
@@ -154,7 +155,7 @@ end
 
 function MazeShowHelp()
   maze_note("----------------------------------------------------------------------------")
-  maze_note("Maze solver")
+  maze_note("Maze solver v" .. (M.version or "1.1"))
   maze_note("#maze_help       - this info")
   maze_note("#maze            - clear Maze Solver tables")
   maze_note("#maze_dump       - display rooms visited so far and exits")
@@ -194,21 +195,23 @@ function MazeNextRoom_dir(dir)
   send(dir)
 end
 
-function FindPathFromTo(from, dest)
-  M.visited = M.visited .. "," .. tostring(from)
+local function dfs_find_path(from, dest, visited)
+  local from_str = tostring(from)
+  local dest_str = tostring(dest)
+  visited[from_str] = true
 
   for _, room in ipairs(M.ms_room_table) do
-    if room.num == tostring(from) then
+    if room.num == from_str then
       for k, v in pairs(room.exits) do
-        if tostring(v) == tostring(dest) then
+        if tostring(v) == dest_str then
           return k
         end
       end
 
       for k, v in pairs(room.exits) do
         local vs = tostring(v)
-        if not string.find(M.visited, "," .. vs, 1, true) and not is_unmapped_exit(vs) then
-          local path = FindPathFromTo(vs, tostring(dest))
+        if not visited[vs] and not is_unmapped_exit(vs) then
+          local path = dfs_find_path(vs, dest_str, visited)
           if path ~= "" then
             return k .. path
           end
@@ -221,6 +224,12 @@ function FindPathFromTo(from, dest)
   return ""
 end
 
+function FindPathFromTo(from, dest)
+  local visited = {}
+  M.visited = visited
+  return dfs_find_path(from, dest, visited)
+end
+
 function MazeGotoRoom(roomid)
   roomid = tostring(roomid or "")
   if roomid == "" then
@@ -228,7 +237,7 @@ function MazeGotoRoom(roomid)
     return
   end
 
-  M.visited = "-1"
+  M.visited = {}
   local tt = room_info()
   if not tt then
     maze_note("No gmcp room.info available yet.")
@@ -289,7 +298,7 @@ function MazeNextRoom()
     if room.area == tt.zone then
       for _, v in pairs(room.exits) do
         if is_unmapped_exit(v) then
-          M.visited = "-1"
+          M.visited = {}
           local path = FindPathFromTo(thisroom, room.num)
           maze_note("Trying " .. room.num .. " path " .. path)
           if path ~= "" then

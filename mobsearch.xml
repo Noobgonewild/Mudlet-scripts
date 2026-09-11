@@ -70,9 +70,22 @@
       <Script isActive="yes" isFolder="no">
         <name>MobSearcherScript</name>
         <script><![CDATA[
-MobSearcher = MobSearcher or {}
-MobSearcher.results = MobSearcher.results or {}
-MobSearcher.config = MobSearcher.config or { channel = "", debug = false }
+if type(MobSearcher) == "table" and type(MobSearcher.shutdown) == "function" then
+  pcall(MobSearcher.shutdown)
+end
+
+MobSearcher = {
+  version = "1.0.1",
+  results = {},
+  config = { channel = "", debug = false, mcheck_source_path = "" },
+  mcheck = {
+    protocol = "1",
+    addon_id = "mobsearch",
+    package_name = "mobsearch",
+    repository_id = "noobgonewild-mudlet-scripts",
+    xml_filename = "mobsearch.xml",
+  },
+}
 
 local function gmcp_value(path)
   local node = gmcp
@@ -188,6 +201,9 @@ local function persist_load()
   if type(loaded.debug) == "boolean" then
     MobSearcher.config.debug = loaded.debug
   end
+  if type(loaded.mcheck_source_path) == "string" then
+    MobSearcher.config.mcheck_source_path = loaded.mcheck_source_path
+  end
   dbg("Loaded config: channel='" .. tostring(MobSearcher.config.channel or "") .. "', debug=" .. tostring(MobSearcher.config.debug))
 end
 
@@ -195,13 +211,52 @@ local function persist_save()
   local payload = {
     channel = MobSearcher.config.channel or "",
     debug = (MobSearcher.config.debug == true),
+    mcheck_source_path = MobSearcher.config.mcheck_source_path or "",
   }
 
   local f = io.open(STATE_FILE, "w")
   if f then
-    f:write("return " .. string.format("{ channel = %q, debug = %s }", payload.channel, tostring(payload.debug)))
+    f:write("return " .. string.format(
+      "{ channel = %q, debug = %s, mcheck_source_path = %q }",
+      payload.channel,
+      tostring(payload.debug),
+      payload.mcheck_source_path
+    ))
     f:close()
   end
+end
+
+function MobSearcher.mcheck_on_install(package_name, source_path)
+  if tostring(package_name or "") ~= MobSearcher.mcheck.package_name then return end
+  if type(source_path) ~= "string" or source_path == "" then return end
+  MobSearcher.config.mcheck_source_path = source_path
+  persist_save()
+end
+
+function MobSearcher.mcheck_report(scan_id, protocol, requested_addon_id)
+  if tostring(protocol or "") ~= MobSearcher.mcheck.protocol then return end
+  requested_addon_id = tostring(requested_addon_id or "")
+  if requested_addon_id ~= "" and requested_addon_id ~= MobSearcher.mcheck.addon_id then return end
+  raiseEvent(
+    "mcheck.scan.response",
+    tostring(scan_id or ""),
+    MobSearcher.mcheck.protocol,
+    MobSearcher.mcheck.addon_id,
+    MobSearcher.mcheck.package_name,
+    MobSearcher.version,
+    MobSearcher.mcheck.repository_id,
+    MobSearcher.mcheck.xml_filename,
+    MobSearcher.config.mcheck_source_path or ""
+  )
+end
+
+function MobSearcher.mcheck_on_uninstall(package_name)
+  if tostring(package_name or "") ~= MobSearcher.mcheck.package_name then return end
+  MobSearcher.shutdown()
+end
+
+function MobSearcher.shutdown()
+  persist_save()
 end
 
 local function report_message_plain(row)
@@ -523,6 +578,51 @@ end
 persist_load()
 msg("orange", "Loaded. Use 'msearch help' for usage.")
         ]]></script>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>MobSearcherMCheckScan</name>
+        <packageName>MobSearcher</packageName>
+        <script><![CDATA[
+function MobSearcherMCheckScan(_, scan_id, protocol, requested_addon_id)
+  if type(MobSearcher) == "table" and type(MobSearcher.mcheck_report) == "function" then
+    MobSearcher.mcheck_report(scan_id, protocol, requested_addon_id)
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+        </eventHandlerList>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>MobSearcherMCheckInstall</name>
+        <packageName>MobSearcher</packageName>
+        <script><![CDATA[
+function MobSearcherMCheckInstall(_, package_name, source_path)
+  if type(MobSearcher) == "table" and type(MobSearcher.mcheck_on_install) == "function" then
+    MobSearcher.mcheck_on_install(package_name, source_path)
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>sysInstallPackage</string>
+        </eventHandlerList>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>MobSearcherMCheckUninstall</name>
+        <packageName>MobSearcher</packageName>
+        <script><![CDATA[
+function MobSearcherMCheckUninstall(_, package_name)
+  if type(MobSearcher) == "table" and type(MobSearcher.mcheck_on_uninstall) == "function" then
+    MobSearcher.mcheck_on_uninstall(package_name)
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

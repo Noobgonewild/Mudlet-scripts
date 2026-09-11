@@ -38,7 +38,35 @@
       <Script isActive="yes" isFolder="no">
       <name>g_channels_main</name>
       <packageName>g_channels</packageName>
-      <script><![CDATA[GCH = GCH or {}
+      <script><![CDATA[local previous_gch = type(GCH) == "table" and GCH or nil
+if previous_gch then
+  if type(previous_gch.shutdown) == "function" then
+    pcall(previous_gch.shutdown)
+  else
+    if type(previous_gch.on_exit) == "function" then pcall(previous_gch.on_exit) end
+    if previous_gch.refresh_timer and type(killTimer) == "function" then pcall(killTimer, previous_gch.refresh_timer) end
+    if type(killAnonymousEventHandler) == "function" then
+      for _, field in ipairs({"tag_config_handler", "gmcp_handler_1", "gmcp_handler_2", "resize_handler", "exit_handler"}) do
+        if previous_gch[field] then pcall(killAnonymousEventHandler, previous_gch[field]) end
+      end
+    end
+    if type(killTrigger) == "function" then
+      if previous_gch.tag_trigger_id then pcall(killTrigger, previous_gch.tag_trigger_id) end
+      for _, trigger_id in ipairs(previous_gch.tag_trigger_ids or {}) do pcall(killTrigger, trigger_id) end
+    end
+    previous_gch.refresh_timer = nil
+    previous_gch.tag_config_handler = nil
+    previous_gch.gmcp_handler_1 = nil
+    previous_gch.gmcp_handler_2 = nil
+    previous_gch.resize_handler = nil
+    previous_gch.exit_handler = nil
+    previous_gch.tag_trigger_id = nil
+    previous_gch.tag_trigger_ids = {}
+    previous_gch.handlers_registered = false
+  end
+end
+GCH = previous_gch or {}
+GCH.version = "1.0.1"
 
 local BATCH_SIZE = 10
 
@@ -1690,6 +1718,28 @@ function GCH.on_exit()
   GCH.close_db()
 end
 
+function GCH.shutdown()
+  pcall(GCH.on_exit)
+  if GCH.refresh_timer and type(killTimer) == "function" then pcall(killTimer, GCH.refresh_timer) end
+  GCH.refresh_timer = nil
+  if type(killAnonymousEventHandler) == "function" then
+    for _, field in ipairs({"tag_config_handler", "gmcp_handler_1", "gmcp_handler_2", "resize_handler", "exit_handler"}) do
+      if GCH[field] then pcall(killAnonymousEventHandler, GCH[field]) end
+      GCH[field] = nil
+    end
+  end
+  if type(killTrigger) == "function" then
+    if GCH.tag_trigger_id then pcall(killTrigger, GCH.tag_trigger_id) end
+    for _, trigger_id in ipairs(GCH.tag_trigger_ids or {}) do pcall(killTrigger, trigger_id) end
+  end
+  GCH.tag_trigger_id = nil
+  GCH.tag_trigger_ids = {}
+  GCH.handlers_registered = false
+  if GCH.ui and GCH.ui.container and type(GCH.ui.container.hide) == "function" then
+    pcall(function() GCH.ui.container:hide() end)
+  end
+end
+
 function GCH.configure_required_tags_once()
   if GCH.state.required_tags_configured == true then return true end
   if type(send) ~= "function" then return false end
@@ -1760,6 +1810,66 @@ end
 GCH.init()]]></script>
       <eventHandlerList/>
     </Script>
+      <Script isActive="yes" isFolder="no">
+        <name>GChannelsMCheckBridge</name>
+        <packageName>g_channels</packageName>
+        <script><![CDATA[
+local function gchannels_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_g_channels_path.lua"
+end
+
+local function gchannels_mcheck_load_path()
+  local ok, saved = pcall(dofile, gchannels_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function gchannels_mcheck_save_path(path)
+  local file = io.open(gchannels_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+GCH.mcheck = {
+  protocol = "1",
+  addon_id = "g_channels",
+  package_name = "g_channels",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "g_channels.xml",
+  source_path = gchannels_mcheck_load_path(),
+}
+
+function GChannelsMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(GCH) == "table" and GCH.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, GCH.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      gchannels_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(GCH.shutdown) == "function" then pcall(GCH.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
+      </Script>
     </ScriptGroup>
   </ScriptPackage>
 </MudletPackage>

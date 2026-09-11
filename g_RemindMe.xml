@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!-- ============================================================
-       G_RemindMe v1.1 – Mudlet Port
+       G_RemindMe v1.1.1 – Mudlet Port
        Original Author: Gizmmo (MUSHclient plugin)
        Purpose: GMCP-based reminder system with threshold triggers
        ============================================================ -->
@@ -91,11 +91,23 @@
         <name>G_RemindMe_Script</name>
         <script><![CDATA[
 ---------------------------------------------------------------------------
--- G_RemindMe v1.1 - Mudlet Port
+-- G_RemindMe v1.1.1 - Mudlet Port
 ---------------------------------------------------------------------------
 
-G_RemindMe = G_RemindMe or {}
-G_RemindMe.version = "1.1"
+if type(G_RemindMe) == "table" then
+  if type(G_RemindMe.shutdown) == "function" then
+    pcall(G_RemindMe.shutdown)
+  else
+    for _, handler_id in pairs(G_RemindMe.event_handlers or {}) do
+      if handler_id and type(killAnonymousEventHandler) == "function" then
+        pcall(killAnonymousEventHandler, handler_id)
+      end
+    end
+  end
+end
+
+G_RemindMe = {}
+G_RemindMe.version = "1.1.1"
 
 local EVENT_DEFS = {
   level  = { path = "char.status.level",  broadcast = "gmcp.char.status" },
@@ -410,6 +422,17 @@ function RemindMe_Cmd_Add(matches)
   check_reminder(reminder)
 end
 
+function G_RemindMe.shutdown()
+  pcall(save_state)
+  for _, handler_id in pairs(G_RemindMe.event_handlers or {}) do
+    if handler_id and type(killAnonymousEventHandler) == "function" then
+      pcall(killAnonymousEventHandler, handler_id)
+    end
+  end
+  G_RemindMe.event_handlers = {}
+  G_RemindMe.handlers_registered = false
+end
+
 function RemindMe_Init()
   load_state()
 
@@ -422,12 +445,73 @@ function RemindMe_Init()
     }
   end
 
-  msg(string.format("Loaded (v%s). %d reminder(s) active.", G_RemindMe.version or "1.1", #G_RemindMe.reminders))
+  msg(string.format("Loaded (v%s). %d reminder(s) active.", G_RemindMe.version or "1.1.1", #G_RemindMe.reminders))
   msg("Type 'remindme help' for usage.")
 end
 
 RemindMe_Init()
         ]]></script>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>GRemindMeMCheckBridge</name>
+        <packageName>G_RemindMe</packageName>
+        <script><![CDATA[
+local function remindme_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_g_remindme_path.lua"
+end
+
+local function remindme_mcheck_load_path()
+  local ok, saved = pcall(dofile, remindme_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function remindme_mcheck_save_path(path)
+  local file = io.open(remindme_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+G_RemindMe.mcheck = {
+  protocol = "1",
+  addon_id = "g_remindme",
+  package_name = "g_RemindMe",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "g_RemindMe.xml",
+  source_path = remindme_mcheck_load_path(),
+}
+
+function GRemindMeMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(G_RemindMe) == "table" and G_RemindMe.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, G_RemindMe.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      remindme_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(G_RemindMe.shutdown) == "function" then pcall(G_RemindMe.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

@@ -2,7 +2,7 @@
 <!DOCTYPE MudletPackage>
 <MudletPackage version="1.001">
   <!-- ============================================================
-       Bypass v1.1.2 – Mudlet Port
+       Bypass v1.1.3 – Mudlet Port
        Original Author: Durel (MUSHclient plugin)
        Purpose: Sets bypass list automatically on level-up.
        ============================================================ -->
@@ -120,8 +120,16 @@
       <Script isActive="yes" isFolder="no">
         <name>Bypass_Script</name>
         <script><![CDATA[
-Bypass = Bypass or {}
-Bypass.version = "1.1.2"
+if type(Bypass) == "table" then
+  if type(Bypass.shutdown) == "function" then
+    pcall(Bypass.shutdown)
+  elseif Bypass.summary_timer and type(killTimer) == "function" then
+    pcall(killTimer, Bypass.summary_timer)
+  end
+end
+
+Bypass = {}
+Bypass.version = "1.1.3"
 
 local function bypass_note(msg)
   if type(cecho) == "function" then
@@ -477,7 +485,7 @@ function Bypass_Cmd_Config()
   local cfg = Bypass.config or { version = 1, wishes = 0, instinct = false }
 
   bypass_note("--------------------------------------------------")
-  bypass_note(string.format("Bypass Configuration (v%s)", Bypass.version or "1.1.2"))
+  bypass_note(string.format("Bypass Configuration (v%s)", Bypass.version or "1.1.3"))
   bypass_note(string.format("  Wishes:    %d slot(s) (configured: 0-2)", cfg.wishes or 0))
   bypass_note(string.format("  Instinct:  %s (%s)",
     cfg.instinct and "ON" or "OFF",
@@ -524,8 +532,77 @@ function Bypass.init()
   bypass_note("Loaded (v" .. Bypass.version .. "). Use 'bypass config' or 'bypass apply'.")
 end
 
+function Bypass.shutdown()
+  if type(Bypass.save_config) == "function" then pcall(Bypass.save_config) end
+  if Bypass.summary_timer and type(killTimer) == "function" then
+    pcall(killTimer, Bypass.summary_timer)
+    Bypass.summary_timer = nil
+  end
+end
+
 Bypass.init()
         ]]></script>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>BypassMCheckBridge</name>
+        <packageName>Bypass</packageName>
+        <script><![CDATA[
+local function bypass_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_bypass_mudlet_path.lua"
+end
+
+local function bypass_mcheck_load_path()
+  local ok, saved = pcall(dofile, bypass_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function bypass_mcheck_save_path(path)
+  local file = io.open(bypass_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+Bypass.mcheck = {
+  protocol = "1",
+  addon_id = "bypass_mudlet",
+  package_name = "Bypass_Mudlet",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "Bypass_Mudlet.xml",
+  source_path = bypass_mcheck_load_path(),
+}
+
+function BypassMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(Bypass) == "table" and Bypass.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, Bypass.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      bypass_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(Bypass.shutdown) == "function" then pcall(Bypass.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

@@ -31,7 +31,7 @@
       <name>m_dulltracker_main</name>
       <packageName>m_dulltracker</packageName>
       <script><![CDATA[DULL = DULL or {}
-DULL.version = "1.3.3"
+DULL.version = "1.3.4"
 DULL.ids = DULL.ids or { triggers = {}, timers = {} }
 DULL.ids.triggers = DULL.ids.triggers or {}
 DULL.ids.handlers = DULL.ids.handlers or {}
@@ -2742,6 +2742,11 @@ function DULL.kill_temp()
   DULL.ids.session_rollover = nil
   if DULL.ids.kill_finalize then pcall(killTimer, DULL.ids.kill_finalize) end
   DULL.ids.kill_finalize = nil
+  if DULL.ids.timed_session_timer then pcall(killTimer, DULL.ids.timed_session_timer) end
+  DULL.ids.timed_session_timer = nil
+  local capture_names = {}
+  for name in pairs(DULL.capture or {}) do capture_names[#capture_names + 1] = name end
+  for _, name in ipairs(capture_names) do DULL.kill_capture(name) end
   DULL.pendingKill = nil
   DULL.pendingLevel = nil
 end
@@ -3071,8 +3076,77 @@ function DULL.install()
   DULL.note("m_dulltracker v" .. DULL.version .. " loaded. Type 'dull help'.")
 end
 
+function DULL.shutdown()
+  pcall(DULL.save_state_now)
+  DULL.kill_temp()
+  if DULL.db then
+    pcall(function() DULL.db:close() end)
+    DULL.db = nil
+  end
+end
+
 DULL.install()
 ]]></script>
+      </Script>
+      <Script isActive="yes" isFolder="no">
+        <name>DullTrackerMCheckBridge</name>
+        <packageName>m_dulltracker</packageName>
+        <script><![CDATA[
+local function dulltracker_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_m_dulltracker_path.lua"
+end
+
+local function dulltracker_mcheck_load_path()
+  local ok, saved = pcall(dofile, dulltracker_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function dulltracker_mcheck_save_path(path)
+  local file = io.open(dulltracker_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+DULL.mcheck = {
+  protocol = "1",
+  addon_id = "m_dulltracker",
+  package_name = "m_dulltracker",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "m_dulltracker.xml",
+  source_path = dulltracker_mcheck_load_path(),
+}
+
+function DullTrackerMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(DULL) == "table" and DULL.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, DULL.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      dulltracker_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(DULL.shutdown) == "function" then pcall(DULL.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

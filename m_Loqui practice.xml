@@ -77,8 +77,10 @@
       <Script isActive="yes" isFolder="no">
         <name>LoquiPracticeCore</name>
         <script><![CDATA[-- Mudlet edition of Loqui Practice
-LoquiPractice = LoquiPractice or {}
-LoquiPractice.version = "1.1"
+if type(LoquiPractice) == "table" and type(LoquiPractice.shutdown) == "function" then
+  pcall(LoquiPractice.shutdown)
+end
+LoquiPractice = { version = "1.1.1", handlers = {} }
 
 local function persistence_dir()
   local home = (type(getMudletHomeDir) == "function" and getMudletHomeDir() or ".")
@@ -222,7 +224,7 @@ local function GetPluginInfo(_, field)
   if field == 3 then
     return [[
 .----------------------------------------------------------------------------|
-|                     Loqui Practice Helper v1.1                             |
+|                    Loqui Practice Helper v1.1.1                            |
 |----------------------------------------------------------------------------|
 |lph help -- Brings up the help section. (What you are reading now)          |
 |                                                                            |
@@ -1048,15 +1050,87 @@ function lph_sync()
   end
 end
 
-registerAnonymousEventHandler("gmcp.char.base", "lph_sync")
-registerAnonymousEventHandler("gmcp.char.status", "lph_sync")
-registerAnonymousEventHandler("gmcp.Char.Base", "lph_sync")
-registerAnonymousEventHandler("gmcp.Char.Status", "lph_sync")
+function LoquiPractice.shutdown()
+  pcall(lph_save_state)
+  if type(killAnonymousEventHandler) == "function" then
+    for _, id in ipairs(LoquiPractice.handlers or {}) do
+      pcall(killAnonymousEventHandler, id)
+    end
+  end
+  LoquiPractice.handlers = {}
+end
+
+if type(registerAnonymousEventHandler) == "function" then
+  for _, event_name in ipairs({"gmcp.char.base", "gmcp.char.status", "gmcp.Char.Base", "gmcp.Char.Status"}) do
+    local id = registerAnonymousEventHandler(event_name, "lph_sync")
+    if id ~= nil then LoquiPractice.handlers[#LoquiPractice.handlers + 1] = id end
+  end
+end
 OnPluginInstall()
 lph_sync()
 
 ]]></script>
         <eventHandlerList/>
+      </Script>
+      <Script isActive="yes" isFolder="no">
+        <name>LoquiPracticeMCheckBridge</name>
+        <packageName>Loqui_Practice</packageName>
+        <script><![CDATA[
+local function loqui_practice_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_m_loqui_practice_path.lua"
+end
+
+local function loqui_practice_mcheck_load_path()
+  local ok, saved = pcall(dofile, loqui_practice_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function loqui_practice_mcheck_save_path(path)
+  local file = io.open(loqui_practice_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+LoquiPractice.mcheck = {
+  protocol = "1",
+  addon_id = "m_loqui_practice",
+  package_name = "m_Loqui practice",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "m_Loqui practice.xml",
+  source_path = loqui_practice_mcheck_load_path(),
+}
+
+function LoquiPracticeMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(LoquiPractice) == "table" and LoquiPractice.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, LoquiPractice.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      loqui_practice_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(LoquiPractice.shutdown) == "function" then pcall(LoquiPractice.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

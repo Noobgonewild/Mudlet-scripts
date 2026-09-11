@@ -39,7 +39,7 @@ end]]></script>
 GENVENOM = GENVENOM or {}
 local genv = GENVENOM
 
-genv.version = "1.0.12"
+genv.version = "1.0.13"
 genv.config = genv.config or {}
 genv.runtime = genv.runtime or {}
 genv.triggers = genv.triggers or {}
@@ -1440,6 +1440,11 @@ function genv.shutdownRuntime()
     genv.triggers, genv.handlers, genv.timers = {}, {}, {}
 end
 
+function genv.shutdown()
+    if type(genv.saveSettings) == "function" then pcall(genv.saveSettings) end
+    genv.shutdownRuntime()
+end
+
 function genv.installRuntime()
     genv.shutdownRuntime()
     genv.loadSettings()
@@ -1498,6 +1503,66 @@ end
 genv.installRuntime()
 ]]></script>
         <eventHandlerList/>
+      </Script>
+      <Script isActive="yes" isFolder="no">
+        <name>GEnvenomMCheckBridge</name>
+        <packageName>GEnvenom</packageName>
+        <script><![CDATA[
+local function genvenom_mcheck_state_file()
+    local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+    local dir = home .. "/persistence"
+    if type(mkdir) == "function" then pcall(mkdir, dir) end
+    if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+    return dir .. "/mcheck_g_envenom_path.lua"
+end
+
+local function genvenom_mcheck_load_path()
+    local ok, saved = pcall(dofile, genvenom_mcheck_state_file())
+    return ok and type(saved) == "string" and saved or ""
+end
+
+local function genvenom_mcheck_save_path(path)
+    local file = io.open(genvenom_mcheck_state_file(), "w")
+    if not file then return end
+    file:write("return " .. string.format("%q", path))
+    file:close()
+end
+
+GENVENOM.mcheck = {
+    protocol = "1",
+    addon_id = "g_envenom",
+    package_name = "g_envenom",
+    repository_id = "noobgonewild-mudlet-scripts",
+    filename = "g_envenom.xml",
+    source_path = genvenom_mcheck_load_path(),
+}
+
+function GEnvenomMCheckBridge(event_name, ...)
+    local args = {...}
+    local metadata = type(GENVENOM) == "table" and GENVENOM.mcheck or nil
+    if not metadata then return end
+    if event_name == "mcheck.scan.request" then
+        local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+        if protocol ~= metadata.protocol then return end
+        if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+        raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+            metadata.package_name, GENVENOM.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+    elseif event_name == "sysInstallPackage" then
+        local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+        if package_name == metadata.package_name and source_path ~= "" then
+            metadata.source_path = source_path
+            genvenom_mcheck_save_path(source_path)
+        end
+    elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+        if type(GENVENOM.shutdown) == "function" then pcall(GENVENOM.shutdown) end
+    end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

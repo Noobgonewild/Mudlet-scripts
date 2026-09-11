@@ -554,12 +554,21 @@ hspskillgain()</script>
  <script>-- ============================================================================
 -- Hadar_Spellup_Caster for Mudlet
 -- Ported from MUSHclient plugin by Hadar
- -- Version: 1.37
+ -- Version: 1.37.1
 -- Purpose: Spellup Script for Aardwolf MUD
 -- ============================================================================
 
-HSP = HSP or {}
-HSP.version = &quot;1.37&quot;
+local previous_HSP = type(HSP) == &quot;table&quot; and HSP or nil
+if previous_HSP then
+  if type(previous_HSP.shutdown) == &quot;function&quot; then
+    pcall(previous_HSP.shutdown)
+  elseif type(killTimer) == &quot;function&quot; then
+    for _, timer_id in pairs(previous_HSP.timerIDs or {}) do pcall(killTimer, timer_id) end
+    for timer_id in pairs(previous_HSP.runtimeTimerIDs or {}) do pcall(killTimer, timer_id) end
+  end
+end
+HSP = previous_HSP or {}
+HSP.version = &quot;1.37.1&quot;
 HSP.pluginName = &quot;Hadar_Spellup_Caster&quot;
 HSP.combatDefaultsVersion = 2
 local function hsp_persistence_dir()
@@ -571,6 +580,22 @@ local function hsp_persistence_dir()
 end
 HSP.savefile = hsp_persistence_dir() .. &quot;/hadar_spellups.lua&quot;
 HSP.timerIDs = HSP.timerIDs or {}
+HSP.runtimeTimerIDs = {}
+local mudletTempTimer = _G.tempTimer
+local function tempTimer(seconds, callback)
+  if type(mudletTempTimer) ~= &quot;function&quot; then return nil end
+  local timer_id
+  local wrapped = callback
+  if type(callback) == &quot;function&quot; then
+    wrapped = function()
+      if type(HSP.runtimeTimerIDs) == &quot;table&quot; then HSP.runtimeTimerIDs[timer_id] = nil end
+      return callback()
+    end
+  end
+  timer_id = mudletTempTimer(seconds, wrapped)
+  if timer_id ~= nil then HSP.runtimeTimerIDs[timer_id] = true end
+  return timer_id
+end
 HSP.currentState = -1
 HSP.maxmana = -1
 HSP.currentmana = -1
@@ -3712,6 +3737,19 @@ function HSP.onSaveProfile()
   HSP.SaveState()
 end
 
+function HSP.shutdown()
+  if type(HSP.SaveState) == &quot;function&quot; then pcall(HSP.SaveState) end
+  if type(killTimer) == &quot;function&quot; then
+    for _, timer_id in pairs(HSP.timerIDs or {}) do pcall(killTimer, timer_id) end
+    for timer_id in pairs(HSP.runtimeTimerIDs or {}) do pcall(killTimer, timer_id) end
+  end
+  HSP.timerIDs = {}
+  HSP.runtimeTimerIDs = {}
+  HSP.spellupAllPending = false
+  HSP.awaitingCastPromptTerminator = false
+  HSP.pendingCastPrompts = 0
+end
+
 -- Initialize on load
 HSP.OnPluginInstall()
 </script>
@@ -3756,6 +3794,66 @@ end</script>
   <string>gmcp.char.vitals</string>
   <string>gmcp.char.maxstats</string>
   <string>sysExitEvent</string>
+ </eventHandlerList>
+</Script>
+  <Script isActive="yes" isFolder="no">
+ <name>HadarMCheckBridge</name>
+ <packageName></packageName>
+ <script><![CDATA[
+local function hadar_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_hadar_spellup_caster_path.lua"
+end
+
+local function hadar_mcheck_load_path()
+  local ok, saved = pcall(dofile, hadar_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function hadar_mcheck_save_path(path)
+  local file = io.open(hadar_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+HSP.mcheck = {
+  protocol = "1",
+  addon_id = "hadar_spellup_caster",
+  package_name = "Hadar_Spellup_Caster",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "Hadar_Spellup_Caster.xml",
+  source_path = hadar_mcheck_load_path(),
+}
+
+function HadarMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(HSP) == "table" and HSP.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, HSP.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      hadar_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(HSP.shutdown) == "function" then pcall(HSP.shutdown) end
+  end
+end
+ ]]></script>
+ <eventHandlerList>
+  <string>mcheck.scan.request</string>
+  <string>sysInstallPackage</string>
+  <string>sysUninstallPackage</string>
  </eventHandlerList>
 </Script>
  </ScriptPackage>

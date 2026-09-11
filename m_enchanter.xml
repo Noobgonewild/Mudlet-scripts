@@ -15,8 +15,25 @@
 -- m_Enchanter - Mudlet enchanting helper backed by DINV persistence
 ----------------------------------------------------------------------------------------------------
 
-m_Enchanter = m_Enchanter or {}
-m_Enchanter.version = "1.2.3"
+local previous_enchanter = type(m_Enchanter) == "table" and m_Enchanter or nil
+if previous_enchanter then
+    if type(previous_enchanter.shutdown) == "function" then
+        pcall(previous_enchanter.shutdown)
+    else
+        for _, pair in ipairs({
+            { previous_enchanter.aliases, killAlias },
+            { previous_enchanter.triggers, killTrigger },
+            { previous_enchanter.events, killAnonymousEventHandler },
+            { previous_enchanter.timers, killTimer },
+        }) do
+            if type(pair[2]) == "function" then
+                for _, id in pairs(pair[1] or {}) do if id then pcall(pair[2], id) end end
+            end
+        end
+    end
+end
+m_Enchanter = previous_enchanter or {}
+m_Enchanter.version = "1.2.4"
 m_Enchanter.aliases = m_Enchanter.aliases or {}
 m_Enchanter.triggers = m_Enchanter.triggers or {}
 m_Enchanter.timers = m_Enchanter.timers or {}
@@ -25,6 +42,25 @@ m_Enchanter.pending_identifies = m_Enchanter.pending_identifies or {}
 m_Enchanter.active_command_queue = m_Enchanter.active_command_queue or nil
 m_Enchanter.next_operation_id = tonumber(m_Enchanter.next_operation_id) or 0
 m_Enchanter.batch = m_Enchanter.batch or { status = "idle" }
+m_Enchanter.runtime_timer_ids = {}
+
+local mudlet_temp_timer = _G.tempTimer
+local function tempTimer(seconds, callback)
+    if type(mudlet_temp_timer) ~= "function" then return nil end
+    local timerId
+    local wrapped = callback
+    if type(callback) == "function" then
+        wrapped = function()
+            if type(m_Enchanter.runtime_timer_ids) == "table" then
+                m_Enchanter.runtime_timer_ids[timerId] = nil
+            end
+            return callback()
+        end
+    end
+    timerId = mudlet_temp_timer(seconds, wrapped)
+    if timerId ~= nil then m_Enchanter.runtime_timer_ids[timerId] = true end
+    return timerId
+end
 
 m_Enchanter.settings = m_Enchanter.settings or {
     debug = false,
@@ -4625,9 +4661,89 @@ function m_Enchanter.initialize()
     m_Enchanter.info("v" .. m_Enchanter.version .. " loaded. Use 'eqenchant help' or 'eqb help'.")
 end
 
+function m_Enchanter.shutdown()
+    if type(m_Enchanter.saveSettings) == "function" then pcall(m_Enchanter.saveSettings) end
+    killKnownIds(m_Enchanter.aliases, killAlias)
+    killKnownIds(m_Enchanter.triggers, killTrigger)
+    killKnownIds(m_Enchanter.events, killAnonymousEventHandler)
+    killKnownIds(m_Enchanter.timers, killTimer)
+    for timerId in pairs(m_Enchanter.runtime_timer_ids or {}) do
+        if type(killTimer) == "function" then pcall(killTimer, timerId) end
+    end
+    m_Enchanter.runtime_timer_ids = {}
+    for _, pending in pairs(m_Enchanter.pending_identifies or {}) do
+        if pending.timeoutTimer and type(killTimer) == "function" then pcall(killTimer, pending.timeoutTimer) end
+    end
+    m_Enchanter.pending_identifies = {}
+    local queue = m_Enchanter.active_command_queue
+    if queue and queue.timeoutTimer and type(killTimer) == "function" then pcall(killTimer, queue.timeoutTimer) end
+    m_Enchanter.active_command_queue = nil
+    m_Enchanter.batch = { status = "idle" }
+end
+
 m_Enchanter.initialize()
 ]]></script>
         <eventHandlerList/>
+      </Script>
+      <Script isActive="yes" isFolder="no">
+        <name>EnchanterMCheckBridge</name>
+        <packageName>m_enchanter</packageName>
+        <script><![CDATA[
+local function enchanter_mcheck_state_file()
+    local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+    local dir = home .. "/persistence"
+    if type(mkdir) == "function" then pcall(mkdir, dir) end
+    if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+    return dir .. "/mcheck_m_enchanter_path.lua"
+end
+
+local function enchanter_mcheck_load_path()
+    local ok, saved = pcall(dofile, enchanter_mcheck_state_file())
+    return ok and type(saved) == "string" and saved or ""
+end
+
+local function enchanter_mcheck_save_path(path)
+    local file = io.open(enchanter_mcheck_state_file(), "w")
+    if not file then return end
+    file:write("return " .. string.format("%q", path))
+    file:close()
+end
+
+m_Enchanter.mcheck = {
+    protocol = "1",
+    addon_id = "m_enchanter",
+    package_name = "m_enchanter",
+    repository_id = "noobgonewild-mudlet-scripts",
+    filename = "m_enchanter.xml",
+    source_path = enchanter_mcheck_load_path(),
+}
+
+function EnchanterMCheckBridge(event_name, ...)
+    local args = {...}
+    local metadata = type(m_Enchanter) == "table" and m_Enchanter.mcheck or nil
+    if not metadata then return end
+    if event_name == "mcheck.scan.request" then
+        local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+        if protocol ~= metadata.protocol then return end
+        if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+        raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+            metadata.package_name, m_Enchanter.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+    elseif event_name == "sysInstallPackage" then
+        local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+        if package_name == metadata.package_name and source_path ~= "" then
+            metadata.source_path = source_path
+            enchanter_mcheck_save_path(source_path)
+        end
+    elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+        if type(m_Enchanter.shutdown) == "function" then pcall(m_Enchanter.shutdown) end
+    end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

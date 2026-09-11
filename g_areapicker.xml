@@ -151,9 +151,20 @@
         <name>AreaPickerScript</name>
         <script><![CDATA[
 ---------------------------------------------------------------------------
--- G_areapicker v4.5 (Mudlet Port)
+-- G_areapicker v4.5.1 (Mudlet Port)
 -- Persistence uses file-only state (g_areapicker_state.lua)
 ---------------------------------------------------------------------------
+
+if type(G_AreaPicker) == "table" then
+  if type(G_AreaPicker.shutdown) == "function" then
+    pcall(G_AreaPicker.shutdown)
+  elseif type(killAnonymousEventHandler) == "function" then
+    for _, id in ipairs(G_AreaPicker.handlers or {}) do
+      pcall(killAnonymousEventHandler, id)
+    end
+  end
+end
+G_AreaPicker = { version = "4.5.1", handlers = {} }
 
 if not string.trim then
   function string.trim(s)
@@ -1075,16 +1086,89 @@ local function init_areapicker()
   update_level_from_gmcp()
 
   if type(registerAnonymousEventHandler) == "function" then
-    registerAnonymousEventHandler("gmcp.char.status", "AreaPicker_OnGMCP")
-    registerAnonymousEventHandler("gmcp.char.base", "AreaPicker_OnGMCP")
+    local status_handler = registerAnonymousEventHandler("gmcp.char.status", "AreaPicker_OnGMCP")
+    local base_handler = registerAnonymousEventHandler("gmcp.char.base", "AreaPicker_OnGMCP")
+    if status_handler then table.insert(G_AreaPicker.handlers, status_handler) end
+    if base_handler then table.insert(G_AreaPicker.handlers, base_handler) end
     dbg("Registered GMCP handlers for gmcp.char.status/base.")
   end
 
-  msg("Addon loaded (v4.5). Type 'lvl help' for commands.")
+  msg("Addon loaded (v" .. G_AreaPicker.version .. "). Type 'lvl help' for commands.")
+end
+
+function G_AreaPicker.shutdown()
+  pcall(persist_save)
+  if type(killAnonymousEventHandler) == "function" then
+    for _, id in ipairs(G_AreaPicker.handlers or {}) do
+      pcall(killAnonymousEventHandler, id)
+    end
+  end
+  G_AreaPicker.handlers = {}
 end
 
 init_areapicker()
 ]]></script>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>AreaPickerMCheckBridge</name>
+        <packageName>G_areapicker</packageName>
+        <script><![CDATA[
+local function areapicker_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_g_areapicker_path.lua"
+end
+
+local function areapicker_mcheck_load_path()
+  local ok, saved = pcall(dofile, areapicker_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function areapicker_mcheck_save_path(path)
+  local file = io.open(areapicker_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+G_AreaPicker.mcheck = {
+  protocol = "1",
+  addon_id = "g_areapicker",
+  package_name = "g_areapicker",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "g_areapicker.xml",
+  source_path = areapicker_mcheck_load_path(),
+}
+
+function AreaPickerMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(G_AreaPicker) == "table" and G_AreaPicker.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, G_AreaPicker.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      areapicker_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(G_AreaPicker.shutdown) == "function" then pcall(G_AreaPicker.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

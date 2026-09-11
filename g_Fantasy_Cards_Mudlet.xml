@@ -47,13 +47,17 @@ function FantasyCards_Alias_Scan(matches)
 end
 ]]></script><eventHandlerList/><packageName></packageName></Script>
     <Script isActive="yes" isFolder="no"><name>FantasyCardsScript</name><script><![CDATA[-- Fantasy Cards Mudlet script (initial)
+if type(FantasyCards) == "table" and type(FantasyCards.shutdown) == "function" then
+  pcall(FantasyCards.shutdown)
+end
+FantasyCards = { version = "1.0.1" }
+
 local fateTable = {}
 local scanInProgress = false
 local captureInProgress = false
 local scanCapturedCards = 0
 local scanReportedTotal = 0
 local casesScanned = 0
-FantasyCards = FantasyCards or {}
 
 local function plain_from_colours(...)
   local args={...}
@@ -1089,6 +1093,14 @@ function FantasyCards_Init()
   FantasyCards_OnPluginInstall()
 end
 
+function FantasyCards.shutdown()
+  pcall(persist_save)
+  scanInProgress = false
+  captureInProgress = false
+  EnableTrigger("fate_capture", false)
+  EnableTrigger("scan_done", false)
+end
+
 function FantasyCards_Alias_Help(matches) FantasyCards_Help() end
 function FantasyCards_Alias_Cost(matches) FantasyCards_CostReport() end
 function FantasyCards_Alias_Summary(matches) Summary(nil,nil,{case=matches[2]}) end
@@ -1111,5 +1123,56 @@ function FantasyCards_TR_ScanDone(matches) ScanComplete() end
 
 FantasyCards_Init()
 ]]></script><eventHandlerList/><packageName></packageName></Script>
+    <Script isActive="yes" isFolder="no"><name>FantasyCardsMCheckBridge</name><script><![CDATA[
+local function fantasy_cards_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_g_fantasy_cards_mudlet_path.lua"
+end
+
+local function fantasy_cards_mcheck_load_path()
+  local ok, saved = pcall(dofile, fantasy_cards_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function fantasy_cards_mcheck_save_path(path)
+  local file = io.open(fantasy_cards_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+FantasyCards.mcheck = {
+  protocol = "1",
+  addon_id = "g_fantasy_cards_mudlet",
+  package_name = "g_Fantasy_Cards_Mudlet",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "g_Fantasy_Cards_Mudlet.xml",
+  source_path = fantasy_cards_mcheck_load_path(),
+}
+
+function FantasyCardsMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(FantasyCards) == "table" and FantasyCards.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, FantasyCards.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      fantasy_cards_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(FantasyCards.shutdown) == "function" then pcall(FantasyCards.shutdown) end
+  end
+end
+    ]]></script><eventHandlerList><string>mcheck.scan.request</string><string>sysInstallPackage</string><string>sysUninstallPackage</string></eventHandlerList><packageName>Fantasy_Cards</packageName></Script>
   </ScriptGroup></ScriptPackage>
 </MudletPackage>

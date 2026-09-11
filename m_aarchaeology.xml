@@ -37,10 +37,13 @@
     <ScriptGroup isActive="yes" isFolder="yes"><name>m_aarchaeology</name><script></script><packageName>m_aarchaeology</packageName>
       <Script isActive="yes" isFolder="no"><name>m_aarchaeology_main</name><script><![CDATA[
 -- Mudlet port of Endymion's Aarchaeology 2 MUSHclient plugin.
+if type(m_aarchaeology) == "table" and type(m_aarchaeology.shutdown) == "function" then
+  pcall(m_aarchaeology.shutdown)
+end
 m_aarchaeology = m_aarchaeology or {}
 local A = m_aarchaeology
 
-A.version = "1.4.2"
+A.version = "1.4.3"
 A.default_settings = {
   bags = "'collection satchel'",
   sounds = "on",
@@ -1267,6 +1270,17 @@ function A.init()
   A.show_bags()
 end
 
+function A.shutdown()
+  pcall(A.save_settings)
+  clear_turnin_timeout()
+  A.turnin_pending = nil
+  A.scan_in_progress = false
+  if type(killAnonymousEventHandler) == "function" then
+    for _, id in ipairs(A.handler_ids or {}) do pcall(killAnonymousEventHandler, id) end
+  end
+  A.handler_ids = {}
+end
+
 function m_aarchaeology_Alias_Report() A.run_report() end
 function m_aarchaeology_Alias_Turnin(matches) A.turnin(matches and matches[2]) end
 function m_aarchaeology_Alias_Cost() A.remaining_cost() end
@@ -1294,6 +1308,58 @@ function m_aarchaeology_OnDisconnect() A.on_disconnect() end
 
 A.init()
 ]]></script><eventHandlerList/><packageName></packageName></Script>
+      <Script isActive="yes" isFolder="no"><name>ArchaeologyMCheckBridge</name><script><![CDATA[
+local function archaeology_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_m_aarchaeology_path.lua"
+end
+
+local function archaeology_mcheck_load_path()
+  local ok, saved = pcall(dofile, archaeology_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+
+local function archaeology_mcheck_save_path(path)
+  local file = io.open(archaeology_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+m_aarchaeology.mcheck = {
+  protocol = "1",
+  addon_id = "m_aarchaeology",
+  package_name = "m_aarchaeology",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "m_aarchaeology.xml",
+  source_path = archaeology_mcheck_load_path(),
+}
+
+function ArchaeologyMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(m_aarchaeology) == "table" and m_aarchaeology.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, m_aarchaeology.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      archaeology_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(m_aarchaeology.shutdown) == "function" then pcall(m_aarchaeology.shutdown) end
+  end
+end
+      ]]></script><eventHandlerList><string>mcheck.scan.request</string><string>sysInstallPackage</string><string>sysUninstallPackage</string></eventHandlerList><packageName>m_aarchaeology</packageName></Script>
     </ScriptGroup>
   </ScriptPackage>
 </MudletPackage>

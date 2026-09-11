@@ -49,7 +49,11 @@
       <Script isActive="yes" isFolder="no">
         <name>RainbowChat_Script</name>
         <script><![CDATA[
-RainbowChat = RainbowChat or {}
+if type(RainbowChat) == "table" and type(RainbowChat.shutdown) == "function" then
+  pcall(RainbowChat.shutdown)
+end
+RainbowChat = {}
+RainbowChat.version = "1.0.1"
 
 local DEFAULT_ENABLED = true
 local DEFAULT_MODE = "rainbow"
@@ -696,8 +700,73 @@ function RainbowChat.command(arguments)
   note("Unknown option. Type 'rainbow help'.")
 end
 
+function RainbowChat.shutdown()
+  pcall(saveState)
+end
+
 loadState()
 ]]></script>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>RainbowChatMCheckBridge</name>
+        <packageName>G_RainbowChat</packageName>
+        <script><![CDATA[
+local function rainbow_chat_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_g_rainbow_chat_path.lua"
+end
+
+local function rainbow_chat_mcheck_load_path()
+  local ok, saved = pcall(dofile, rainbow_chat_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function rainbow_chat_mcheck_save_path(path)
+  local file = io.open(rainbow_chat_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+RainbowChat.mcheck = {
+  protocol = "1",
+  addon_id = "g_rainbow_chat",
+  package_name = "g_rainbow_chat",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "g_rainbow_chat.xml",
+  source_path = rainbow_chat_mcheck_load_path(),
+}
+
+function RainbowChatMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(RainbowChat) == "table" and RainbowChat.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, RainbowChat.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      rainbow_chat_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(RainbowChat.shutdown) == "function" then pcall(RainbowChat.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

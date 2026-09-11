@@ -199,10 +199,40 @@
         <name>AutoTrainerScript</name>
         <script><![CDATA[
 ---------------------------------------------------------------------------
--- AutoTrainer v6.8 (Mudlet Port)
+-- AutoTrainer v6.8.1 (Mudlet Port)
 -- Changes from v6.8:
 -- 1. Training profiles are selected per subclass and inherit their class template.
 ---------------------------------------------------------------------------
+
+if type(G_AUTOTRAIN) == "table" then
+  if type(G_AUTOTRAIN.shutdown) == "function" then
+    pcall(G_AUTOTRAIN.shutdown)
+  else
+    if G_AUTOTRAIN.gmcp_handler_id and type(killAnonymousEventHandler) == "function" then
+      pcall(killAnonymousEventHandler, G_AUTOTRAIN.gmcp_handler_id)
+    end
+    if type(killTimer) == "function" then
+      for timer_id in pairs(G_AUTOTRAIN.timers or {}) do pcall(killTimer, timer_id) end
+    end
+  end
+end
+G_AUTOTRAIN = { version = "6.8.1", timers = {} }
+
+local function autotrain_schedule(seconds, callback)
+  if type(tempTimer) ~= "function" then
+    callback()
+    return nil
+  end
+  local timer_id
+  timer_id = tempTimer(seconds, function()
+    if type(G_AUTOTRAIN) == "table" and type(G_AUTOTRAIN.timers) == "table" then
+      G_AUTOTRAIN.timers[timer_id] = nil
+    end
+    callback()
+  end)
+  if timer_id ~= nil then G_AUTOTRAIN.timers[timer_id] = true end
+  return timer_id
+end
 
 local function local_trim(s)
   if not s then return "" end
@@ -834,7 +864,7 @@ function StartTrainSnapshot(mode)
   state._timer_id = state._timer_id + 1
   state._fb_tries = 0
   local id = state._timer_id
-  tempTimer(0.50, function() SafeEndTrainSnapshot(id) end)
+  autotrain_schedule(0.50, function() SafeEndTrainSnapshot(id) end)
 end
 
 function SafeEndTrainSnapshot(id)
@@ -842,7 +872,7 @@ function SafeEndTrainSnapshot(id)
   if saw_end and snapshot_rows > 0 then EndTrainSnapshot() return end
   state._fb_tries = state._fb_tries + 1
   if state._fb_tries >= 8 then EndTrainSnapshot() return end
-  tempTimer(0.25, function() SafeEndTrainSnapshot(id) end)
+  autotrain_schedule(0.25, function() SafeEndTrainSnapshot(id) end)
 end
 
 function CaptureTrainFull(matches)
@@ -1304,21 +1334,41 @@ function AutoTrainer_Initialize()
 
   -- Deferred init message so Mudlet UI is ready
   if type(tempTimer) == "function" then
-    tempTimer(0.1, function()
-      msg("Loaded (v6.8). JSON: " .. json_module_name)
+    autotrain_schedule(0.1, function()
+      msg("Loaded (v" .. G_AUTOTRAIN.version .. "). JSON: " .. json_module_name)
       debug_gmcp_snapshot("init")
       AutoTrain_OnGMCP()
     end)
   else
     -- Fallback if tempTimer not available
-    msg("Loaded (v6.8). JSON: " .. json_module_name)
+    msg("Loaded (v" .. G_AUTOTRAIN.version .. "). JSON: " .. json_module_name)
     AutoTrain_OnGMCP()
   end
 
   -- Register GMCP event handler
   if type(registerAnonymousEventHandler) == "function" then
-    registerAnonymousEventHandler("gmcp.char.base", "AutoTrain_OnGMCP")
+    G_AUTOTRAIN.gmcp_handler_id = registerAnonymousEventHandler("gmcp.char.base", "AutoTrain_OnGMCP")
     dbg("Registered GMCP handler for gmcp.char.base.")
+  end
+end
+
+function G_AUTOTRAIN.shutdown()
+  if type(save_all_settings) == "function" then pcall(save_all_settings) end
+  pending = false
+  if type(state) == "table" then state._timer_id = (tonumber(state._timer_id) or 0) + 1 end
+  if type(killTimer) == "function" then
+    for timer_id in pairs(G_AUTOTRAIN.timers or {}) do pcall(killTimer, timer_id) end
+  end
+  G_AUTOTRAIN.timers = {}
+  if G_AUTOTRAIN.gmcp_handler_id and type(killAnonymousEventHandler) == "function" then
+    pcall(killAnonymousEventHandler, G_AUTOTRAIN.gmcp_handler_id)
+  end
+  G_AUTOTRAIN.gmcp_handler_id = nil
+  for _, trigger_name in ipairs({
+    "TR_TRAIN_FULL", "TR_TRAIN_MIN", "TR_TRAIN_TRN1", "TR_TRAIN_TRN2",
+    "TR_TRAIN_END", "TR_TRAIN_END2", "TR_TRAIN_END3",
+  }) do
+    pcall(set_trigger, trigger_name, false)
   end
 end
 
@@ -1326,6 +1376,67 @@ AutoTrainer_Initialize()
 ]]></script>
         <eventHandlerList>
           <string>sysLoadEvent</string>
+        </eventHandlerList>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>AutoTrainerMCheckBridge</name>
+        <packageName>Gizmmo_AutoTrainer</packageName>
+        <script><![CDATA[
+local function autotrain_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_g_autotrain_path.lua"
+end
+
+local function autotrain_mcheck_load_path()
+  local ok, saved = pcall(dofile, autotrain_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function autotrain_mcheck_save_path(path)
+  local file = io.open(autotrain_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+G_AUTOTRAIN.mcheck = {
+  protocol = "1",
+  addon_id = "g_autotrain",
+  package_name = "g_autotrain",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "g_autotrain.xml",
+  source_path = autotrain_mcheck_load_path(),
+}
+
+function AutoTrainerMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(G_AUTOTRAIN) == "table" and G_AUTOTRAIN.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, G_AUTOTRAIN.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      autotrain_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(G_AUTOTRAIN.shutdown) == "function" then pcall(G_AUTOTRAIN.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
         </eventHandlerList>
       </Script>
     </ScriptGroup>

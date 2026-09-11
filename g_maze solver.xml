@@ -71,7 +71,7 @@
 G_MazeSolver = type(G_MazeSolver) == "table" and G_MazeSolver or {}
 local M = G_MazeSolver
 
-M.version = "1.1"
+M.version = "1.1.1"
 M.ms_basearea = M.ms_basearea or ""
 M.ms_room_table = M.ms_room_table or {}
 M.lastroom = M.lastroom or ""
@@ -155,7 +155,7 @@ end
 
 function MazeShowHelp()
   maze_note("----------------------------------------------------------------------------")
-  maze_note("Maze solver v" .. (M.version or "1.1"))
+  maze_note("Maze solver v" .. (M.version or "1.1.1"))
   maze_note("#maze_help       - this info")
   maze_note("#maze            - clear Maze Solver tables")
   maze_note("#maze_dump       - display rooms visited so far and exits")
@@ -354,13 +354,17 @@ function MazeSolver_OnRoomInfo()
   end
 end
 
-function MazeSolverInstall()
+function M.shutdown()
   if type(killAnonymousEventHandler) == "function" then
     for _, id in ipairs(M.handlers) do
       pcall(killAnonymousEventHandler, id)
     end
   end
   M.handlers = {}
+end
+
+function MazeSolverInstall()
+  M.shutdown()
 
   if type(registerAnonymousEventHandler) == "function" then
     table.insert(M.handlers, registerAnonymousEventHandler("gmcp.room.info", "MazeSolver_OnRoomInfo"))
@@ -374,6 +378,67 @@ end
 
 MazeSolverInstall()
         ]]></script>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>MazeSolverMCheckBridge</name>
+        <packageName>g_maze solver</packageName>
+        <script><![CDATA[
+local function maze_solver_mcheck_state_file()
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local dir = home .. "/persistence"
+  if type(mkdir) == "function" then pcall(mkdir, dir) end
+  if type(lfs) == "table" and type(lfs.mkdir) == "function" then pcall(lfs.mkdir, dir) end
+  return dir .. "/mcheck_g_maze_solver_path.lua"
+end
+
+local function maze_solver_mcheck_load_path()
+  local ok, saved = pcall(dofile, maze_solver_mcheck_state_file())
+  return ok and type(saved) == "string" and saved or ""
+end
+
+local function maze_solver_mcheck_save_path(path)
+  local file = io.open(maze_solver_mcheck_state_file(), "w")
+  if not file then return end
+  file:write("return " .. string.format("%q", path))
+  file:close()
+end
+
+G_MazeSolver.mcheck = {
+  protocol = "1",
+  addon_id = "g_maze_solver",
+  package_name = "g_maze solver",
+  repository_id = "noobgonewild-mudlet-scripts",
+  filename = "g_maze solver.xml",
+  source_path = maze_solver_mcheck_load_path(),
+}
+
+function MazeSolverMCheckBridge(event_name, ...)
+  local args = {...}
+  local metadata = type(G_MazeSolver) == "table" and G_MazeSolver.mcheck or nil
+  if not metadata then return end
+  if event_name == "mcheck.scan.request" then
+    local scan_id, protocol, requested_addon_id = args[1], tostring(args[2] or ""), tostring(args[3] or "")
+    if protocol ~= metadata.protocol then return end
+    if requested_addon_id ~= "" and requested_addon_id ~= metadata.addon_id then return end
+    raiseEvent("mcheck.scan.response", tostring(scan_id or ""), metadata.protocol, metadata.addon_id,
+      metadata.package_name, G_MazeSolver.version, metadata.repository_id, metadata.filename, metadata.source_path or "")
+  elseif event_name == "sysInstallPackage" then
+    local package_name, source_path = tostring(args[1] or ""), tostring(args[2] or "")
+    if package_name == metadata.package_name and source_path ~= "" then
+      metadata.source_path = source_path
+      maze_solver_mcheck_save_path(source_path)
+    end
+  elseif event_name == "sysUninstallPackage" and tostring(args[1] or "") == metadata.package_name then
+    if type(G_MazeSolver.shutdown) == "function" then pcall(G_MazeSolver.shutdown) end
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.request</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
       </Script>
     </ScriptGroup>
   </ScriptPackage>

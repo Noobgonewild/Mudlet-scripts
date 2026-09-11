@@ -34,7 +34,7 @@ if type(MCheck) == "table" and type(MCheck.shutdown) == "function" then
 end
 
 MCheck = {
-  version = "0.1.0",
+  version = "0.1.5",
   protocol = "1",
   package_name = "mcheck",
   repository_id = "noobgonewild-mudlet-scripts",
@@ -44,6 +44,7 @@ MCheck = {
   transaction = nil,
   update_queue = nil,
   timer = nil,
+  hash_job = nil,
 }
 
 local MOD32 = 4294967296
@@ -57,12 +58,56 @@ local function lower(value)
   return trim(value):lower()
 end
 
+local OUTPUT_COLORS = {
+  white = "ansi_white",
+  cyan = "ansi_light_cyan",
+  orange = "ansi_light_yellow",
+  red = "ansi_light_red",
+  green = "ansi_light_green",
+  yellow = "ansi_light_yellow",
+  light_grey = "ansi_white",
+  dim_grey = "ansi_light_black",
+}
+
 local function out(color, message)
   message = tostring(message or "")
   if type(cecho) == "function" then
-    cecho(string.format("<%s>[MCheck] %s\n", color or "white", message))
+    cecho(string.format("<ansi_light_cyan>[MCheck] <%s>%s\n", OUTPUT_COLORS[color] or "ansi_white", message))
   elseif type(echo) == "function" then
     echo("[MCheck] " .. message .. "\n")
+  end
+end
+
+local function command_hint(label, command)
+  if type(cecho) == "function" and type(echo) == "function" then
+    cecho("<ansi_light_cyan>[MCheck] <ansi_light_yellow>" .. tostring(label) .. ": <ansi_light_green>")
+    echo(tostring(command) .. "\n")
+  else
+    out("white", tostring(label) .. ": " .. tostring(command))
+  end
+end
+
+local STATUS_COLORS = {
+  ["[CURRENT]"] = "ansi_light_green",
+  ["[UPDATE AVAILABLE]"] = "ansi_light_yellow",
+  ["[LOCAL MODIFIED]"] = "ansi_light_red",
+  ["[LOCAL VERSION AHEAD]"] = "ansi_light_cyan",
+  ["[NOT IN INDEX]"] = "ansi_light_black",
+  ["[IDENTITY MISMATCH]"] = "ansi_light_red",
+  ["[NOT INSTALLED]"] = "ansi_light_red",
+  ["[PATH UNKNOWN]"] = "ansi_light_red",
+  ["[PATH IDENTITY MISMATCH]"] = "ansi_light_red",
+  ["[LOCAL FILE MISSING]"] = "ansi_light_red",
+  ["[INVALID VERSION]"] = "ansi_light_red",
+}
+
+local function status_line(index, row, available)
+  local details = string.format("%d) %s  %s -> %s  ", index, row.addon_id, row.installed_version, available)
+  if type(cecho) == "function" then
+    cecho("<ansi_light_cyan>[MCheck] <ansi_white>" .. details)
+    cecho("<" .. (STATUS_COLORS[row.status] or "ansi_white") .. ">" .. row.status .. "\n")
+  elseif type(echo) == "function" then
+    echo("[MCheck] " .. details .. row.status .. "\n")
   end
 end
 
@@ -134,15 +179,15 @@ if not bitlib then
   if ok then bitlib = loaded end
 end
 
-local SLOW_AND8, SLOW_XOR8
+local SLOW_AND4, SLOW_XOR4
 if not bitlib then
-  SLOW_AND8, SLOW_XOR8 = {}, {}
-  for left = 0, 255 do
+  SLOW_AND4, SLOW_XOR4 = {}, {}
+  for left = 0, 15 do
     local and_row, xor_row = {}, {}
-    SLOW_AND8[left + 1], SLOW_XOR8[left + 1] = and_row, xor_row
-    for right = 0, 255 do
+    SLOW_AND4[left + 1], SLOW_XOR4[left + 1] = and_row, xor_row
+    for right = 0, 15 do
       local a, b, and_value, xor_value, place = left, right, 0, 0, 1
-      for _ = 1, 8 do
+      for _ = 1, 4 do
         local abit, bbit = a % 2, b % 2
         if abit == 1 and bbit == 1 then and_value = and_value + place end
         if abit ~= bbit then xor_value = xor_value + place end
@@ -160,11 +205,11 @@ end
 local function slow_bitop(a, b, mode)
   a, b = unsigned(a), unsigned(b)
   local result, place = 0, 1
-  local lookup = mode == "and" and SLOW_AND8 or SLOW_XOR8
-  for _ = 1, 4 do
-    local abyte, bbyte = a % 256, b % 256
-    result = result + lookup[abyte + 1][bbyte + 1] * place
-    a, b, place = floor(a / 256), floor(b / 256), place * 256
+  local lookup = mode == "and" and SLOW_AND4 or SLOW_XOR4
+  for _ = 1, 8 do
+    local anibble, bnibble = a % 16, b % 16
+    result = result + lookup[anibble + 1][bnibble + 1] * place
+    a, b, place = floor(a / 16), floor(b / 16), place * 16
   end
   return result
 end
@@ -240,7 +285,7 @@ local function hex_word(value)
   return table.concat(chars)
 end
 
-function MCheck.sha256(message)
+local function sha256_context(message)
   message = tostring(message or "")
   local byte_length = #message
   local bit_high = floor(byte_length / 536870912)
@@ -257,34 +302,84 @@ function MCheck.sha256(message)
   local padding = (56 - (#message % 64)) % 64
   message = message .. string.rep(string.char(0), padding) .. word_bytes(bit_high) .. word_bytes(bit_low)
 
-  local h = {0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19}
-  local w = {}
-  for offset = 1, #message, 64 do
-    for i = 0, 15 do
-      local p = offset + i * 4
-      w[i] = message:byte(p) * 16777216 + message:byte(p + 1) * 65536 + message:byte(p + 2) * 256 + message:byte(p + 3)
-    end
-    for i = 16, 63 do
-      local s0 = bxor(rrotate(w[i - 15], 7), rrotate(w[i - 15], 18), rshift(w[i - 15], 3))
-      local s1 = bxor(rrotate(w[i - 2], 17), rrotate(w[i - 2], 19), rshift(w[i - 2], 10))
-      w[i] = add32(w[i - 16], s0, w[i - 7], s1)
-    end
-    local a,b,c,d,e,f,g,hh = h[1],h[2],h[3],h[4],h[5],h[6],h[7],h[8]
-    for i = 0, 63 do
-      local s1 = bxor(rrotate(e, 6), rrotate(e, 11), rrotate(e, 25))
-      local ch = bxor(band(e, f), band(bnot(e), g))
-      local t1 = add32(hh, s1, ch, SHA256_K[i + 1], w[i])
-      local s0 = bxor(rrotate(a, 2), rrotate(a, 13), rrotate(a, 22))
-      local maj = bxor(band(a, b), band(a, c), band(b, c))
-      local t2 = add32(s0, maj)
-      hh,g,f,e,d,c,b,a = g,f,e,add32(d,t1),c,b,a,add32(t1,t2)
-    end
-    h[1],h[2],h[3],h[4] = add32(h[1],a),add32(h[2],b),add32(h[3],c),add32(h[4],d)
-    h[5],h[6],h[7],h[8] = add32(h[5],e),add32(h[6],f),add32(h[7],g),add32(h[8],hh)
+  return {
+    message = message,
+    offset = 1,
+    h = {0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19},
+    w = {},
+    timer = nil,
+  }
+end
+
+local function sha256_process_block(context)
+  local message, offset, h, w = context.message, context.offset, context.h, context.w
+  for i = 0, 15 do
+    local p = offset + i * 4
+    w[i] = message:byte(p) * 16777216 + message:byte(p + 1) * 65536 + message:byte(p + 2) * 256 + message:byte(p + 3)
   end
+  for i = 16, 63 do
+    local s0 = bxor(rrotate(w[i - 15], 7), rrotate(w[i - 15], 18), rshift(w[i - 15], 3))
+    local s1 = bxor(rrotate(w[i - 2], 17), rrotate(w[i - 2], 19), rshift(w[i - 2], 10))
+    w[i] = add32(w[i - 16], s0, w[i - 7], s1)
+  end
+  local a,b,c,d,e,f,g,hh = h[1],h[2],h[3],h[4],h[5],h[6],h[7],h[8]
+  for i = 0, 63 do
+    local s1 = bxor(rrotate(e, 6), rrotate(e, 11), rrotate(e, 25))
+    local ch = bxor(band(e, f), band(bnot(e), g))
+    local t1 = add32(hh, s1, ch, SHA256_K[i + 1], w[i])
+    local s0 = bxor(rrotate(a, 2), rrotate(a, 13), rrotate(a, 22))
+    local maj = bxor(band(a, b), band(a, c), band(b, c))
+    local t2 = add32(s0, maj)
+    hh,g,f,e,d,c,b,a = g,f,e,add32(d,t1),c,b,a,add32(t1,t2)
+  end
+  h[1],h[2],h[3],h[4] = add32(h[1],a),add32(h[2],b),add32(h[3],c),add32(h[4],d)
+  h[5],h[6],h[7],h[8] = add32(h[5],e),add32(h[6],f),add32(h[7],g),add32(h[8],hh)
+  context.offset = offset + 64
+end
+
+local function sha256_result(context)
   local result = {}
-  for i = 1, 8 do result[i] = hex_word(h[i]) end
+  for i = 1, 8 do result[i] = hex_word(context.h[i]) end
   return table.concat(result)
+end
+
+function MCheck.sha256(message)
+  local context = sha256_context(message)
+  while context.offset <= #context.message do sha256_process_block(context) end
+  return sha256_result(context)
+end
+
+local function cancel_hash_job()
+  local job = MCheck.hash_job
+  if job and job.timer and type(killTimer) == "function" then pcall(killTimer, job.timer) end
+  MCheck.hash_job = nil
+end
+
+function MCheck.sha256_async(message, callback)
+  cancel_hash_job()
+  if type(tempTimer) ~= "function" then
+    callback(MCheck.sha256(message))
+    return
+  end
+
+  local job = sha256_context(message)
+  MCheck.hash_job = job
+  local function step()
+    if MCheck.hash_job ~= job then return end
+    job.timer = nil
+    local started = os.clock()
+    repeat
+      sha256_process_block(job)
+    until job.offset > #job.message or os.clock() - started >= 0.006
+
+    if job.offset <= #job.message then
+      job.timer = tempTimer(0, step)
+      return
+    end
+    MCheck.hash_job = nil
+    callback(sha256_result(job))
+  end
+  job.timer = tempTimer(0, step)
 end
 
 local function semver_parts(version)
@@ -375,11 +470,36 @@ local function validate_manifest(manifest)
   return by_id
 end
 
-local function build_rows(manifest_by_id)
+local function apply_hash_status(row, hash)
+  row.local_sha256 = hash
+  row.local_clean = known_official_hash(row.entry, hash)
+  local comparison = compare_versions(row.report.version, row.entry.version)
+  if not row.local_clean then
+    row.status = "[LOCAL MODIFIED]"
+  elseif comparison == nil then
+    row.status = "[INVALID VERSION]"
+  elseif comparison < 0 then
+    row.status = "[UPDATE AVAILABLE]"
+    row.eligible = true
+  elseif comparison == 0 then
+    row.status = "[CURRENT]"
+  else
+    row.status = "[LOCAL VERSION AHEAD]"
+  end
+end
+
+local function build_rows_async(manifest_by_id, done)
   local rows, ids = {}, {}
   for id in pairs(MCheck.scan.responses) do ids[#ids + 1] = id end
   table.sort(ids)
-  for _, id in ipairs(ids) do
+  local active_scan = MCheck.scan
+  local position = 0
+
+  local function next_row()
+    if MCheck.scan ~= active_scan then return end
+    position = position + 1
+    local id = ids[position]
+    if not id then done(rows); return end
     local report = MCheck.scan.responses[id]
     local entry = manifest_by_id[id]
     local row = {
@@ -398,8 +518,6 @@ local function build_rows(manifest_by_id)
         or report.filename ~= tostring(entry.filename)
       then
         row.status = "[IDENTITY MISMATCH]"
-      elseif hard_denied(id, report.package_name, report.filename) then
-        row.status = "[PROTECTED]"
       elseif not package_is_installed(report.package_name) then
         row.status = "[NOT INSTALLED]"
       elseif report.source_path == "" then
@@ -411,27 +529,20 @@ local function build_rows(manifest_by_id)
         if not bytes then
           row.status = "[LOCAL FILE MISSING]"
         else
-          row.local_sha256 = MCheck.sha256(bytes)
-          row.local_clean = known_official_hash(entry, row.local_sha256)
-          local comparison = compare_versions(report.version, entry.version)
-          if not row.local_clean then
-            row.status = "[LOCAL MODIFIED]"
-          elseif comparison == nil then
-            row.status = "[INVALID VERSION]"
-          elseif comparison < 0 then
-            row.status = "[UPDATE AVAILABLE]"
-            row.eligible = true
-          elseif comparison == 0 then
-            row.status = "[CURRENT]"
-          else
-            row.status = "[INSTALLED NEWER]"
-          end
+          MCheck.sha256_async(bytes, function(hash)
+            if MCheck.scan ~= active_scan then return end
+            apply_hash_status(row, hash)
+            rows[#rows + 1] = row
+            next_row()
+          end)
+          return
         end
       end
     end
     rows[#rows + 1] = row
+    next_row()
   end
-  return rows
+  next_row()
 end
 
 local function print_rows()
@@ -442,11 +553,11 @@ local function print_rows()
   out("cyan", "Installed add-ons:")
   for index, row in ipairs(MCheck.rows) do
     local available = row.entry and tostring(row.entry.version) or "--"
-    out("white", string.format("%d) %s  %s -> %s  %s", index, row.addon_id, row.installed_version, available, row.status))
+    status_line(index, row, available)
     out("dim_grey", "   path: " .. (row.source_path ~= "" and row.source_path or "(not captured)"))
   end
-  out("light_grey", "Accept one update with: mcheck update <number>")
-  out("light_grey", "Force one exact row with: mcheck update <number> force")
+  command_hint("Accept one update with", "mcheck update <number>")
+  command_hint("Force one exact row with", "mcheck update <number> force")
 end
 
 function MCheck.scan_now()
@@ -511,13 +622,18 @@ function MCheck.on_http_done(url, body)
     out("red", "Rejected repository index: " .. tostring(err))
     return
   end
-  MCheck.rows = build_rows(by_id)
   MCheck.scan.manifest = manifest
   MCheck.scan.manifest_by_id = by_id
-  local completed = MCheck.scan
-  MCheck.scan = nil
-  MCheck.last_scan = completed
-  print_rows()
+  MCheck.scan.phase = "hashing"
+  out("light_grey", "Checking local XML files in small background slices...")
+  build_rows_async(by_id, function(rows)
+    local completed = MCheck.scan
+    if not completed then return end
+    MCheck.rows = rows
+    MCheck.scan = nil
+    MCheck.last_scan = completed
+    print_rows()
+  end)
 end
 
 function MCheck.on_http_error(error_message, url)
@@ -548,6 +664,7 @@ end
 local function finish_without_rollback(message, color)
   local transaction = MCheck.transaction
   stop_timer()
+  cancel_hash_job()
   cleanup_transaction_files(transaction, false)
   MCheck.transaction = nil
   out(color or "red", message)
@@ -662,14 +779,8 @@ local function atomic_place_new(transaction, new_bytes)
   return true
 end
 
-function MCheck.on_download_done(local_path, used_url)
-  local transaction = MCheck.transaction
-  if not transaction or transaction.phase ~= "downloading" or path_key(local_path) ~= path_key(transaction.stage_path) then return end
-  stop_timer()
-  local new_bytes, read_err = read_file(transaction.stage_path)
-  if not new_bytes then finish_without_rollback("Could not read downloaded XML: " .. tostring(read_err)); return end
-  if not new_bytes:find("<MudletPackage", 1, true) then finish_without_rollback("Downloaded file is not a Mudlet XML package."); return end
-  local actual_hash = MCheck.sha256(new_bytes)
+local function install_downloaded_xml(transaction, new_bytes, actual_hash)
+  if MCheck.transaction ~= transaction or transaction.phase ~= "hashing_download" then return end
   if lower(actual_hash) ~= lower(transaction.row.entry.sha256) then
     finish_without_rollback("Downloaded XML failed SHA-256 validation; nothing was uninstalled.")
     return
@@ -705,6 +816,20 @@ function MCheck.on_download_done(local_path, used_url)
   end)
 end
 
+function MCheck.on_download_done(local_path, used_url)
+  local transaction = MCheck.transaction
+  if not transaction or transaction.phase ~= "downloading" or path_key(local_path) ~= path_key(transaction.stage_path) then return end
+  stop_timer()
+  local new_bytes, read_err = read_file(transaction.stage_path)
+  if not new_bytes then finish_without_rollback("Could not read downloaded XML: " .. tostring(read_err)); return end
+  if not new_bytes:find("<MudletPackage", 1, true) then finish_without_rollback("Downloaded file is not a Mudlet XML package."); return end
+  transaction.phase = "hashing_download"
+  out("light_grey", "Validating the downloaded XML...")
+  MCheck.sha256_async(new_bytes, function(actual_hash)
+    install_downloaded_xml(transaction, new_bytes, actual_hash)
+  end)
+end
+
 function MCheck.on_download_error(error_message, local_path, used_url)
   local transaction = MCheck.transaction
   if not transaction or transaction.phase ~= "downloading" then return end
@@ -731,6 +856,30 @@ function MCheck.on_uninstall_event(package_name)
   if lower(package_name) == lower(MCheck.package_name) then MCheck.shutdown() end
 end
 
+local function begin_download(transaction)
+  if MCheck.transaction ~= transaction then return end
+  local row = transaction.row
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local stage_dir = home .. "/mcheck/staging/" .. fresh_id(row.addon_id)
+  ensure_dir(stage_dir)
+  transaction.stage_path = stage_dir .. "/" .. row.entry.filename
+  transaction.phase = "downloading"
+  pcall(os.remove, transaction.stage_path)
+  out("cyan", string.format("Downloading %s %s%s...", row.addon_id, row.entry.version, transaction.force and " (forced reinstall)" or ""))
+  local separator = row.entry.url:find("?", 1, true) and "&" or "?"
+  local download_url = row.entry.url .. separator .. "mcheck=" .. tostring(os.time())
+  local ok, result = pcall(downloadFile, transaction.stage_path, download_url)
+  if not ok or result == false then
+    finish_without_rollback("Could not start download: " .. tostring(result))
+  else
+    start_timer(60, function()
+      if MCheck.transaction and MCheck.transaction.phase == "downloading" then
+        finish_without_rollback("Download timed out; nothing was uninstalled.")
+      end
+    end)
+  end
+end
+
 function MCheck.start_update(row, force, queued)
   if MCheck.transaction then out("orange", "An update is already running."); return end
   if type(row) ~= "table" or type(row.entry) ~= "table" then out("red", "That row is not in the repository index."); return end
@@ -750,35 +899,28 @@ function MCheck.start_update(row, force, queued)
   if row.source_path == "" or basename(row.source_path) ~= row.entry.filename then out("red", "The row has no safe reinstall path."); return end
   local current_bytes = read_file(row.source_path)
   if not current_bytes then out("red", "The current XML is missing; update stopped because rollback would be impossible."); return end
-  local current_hash = MCheck.sha256(current_bytes)
-  if lower(current_hash) ~= lower(row.local_sha256 or "") then out("red", "The local XML changed after the scan. Run 'mcheck scan' again."); return end
   if not package_is_installed(row.report.package_name) then out("red", "The selected package is no longer installed."); return end
 
-  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
-  local stage_dir = home .. "/mcheck/staging/" .. fresh_id(row.addon_id)
-  ensure_dir(stage_dir)
-  local stage_path = stage_dir .. "/" .. row.entry.filename
-  pcall(os.remove, stage_path)
-  MCheck.transaction = {
+  local transaction = {
     row = row,
     force = force == true,
     queued = queued == true,
-    phase = "downloading",
-    stage_path = stage_path,
+    phase = "hashing_preflight",
   }
-  out("cyan", string.format("Downloading %s %s%s...", row.addon_id, row.entry.version, force and " (forced reinstall)" or ""))
-  local separator = row.entry.url:find("?", 1, true) and "&" or "?"
-  local download_url = row.entry.url .. separator .. "mcheck=" .. tostring(os.time())
-  local ok, result = pcall(downloadFile, stage_path, download_url)
-  if not ok or result == false then
-    finish_without_rollback("Could not start download: " .. tostring(result))
-  else
-    start_timer(60, function()
-      if MCheck.transaction and MCheck.transaction.phase == "downloading" then
-        finish_without_rollback("Download timed out; nothing was uninstalled.")
-      end
-    end)
-  end
+  MCheck.transaction = transaction
+  out("light_grey", "Verifying the selected local XML...")
+  MCheck.sha256_async(current_bytes, function(current_hash)
+    if MCheck.transaction ~= transaction or transaction.phase ~= "hashing_preflight" then return end
+    if lower(current_hash) ~= lower(row.local_sha256 or "") then
+      finish_without_rollback("The local XML changed after the scan. Run 'mcheck scan' again.")
+      return
+    end
+    if not package_is_installed(row.report.package_name) then
+      finish_without_rollback("The selected package is no longer installed.")
+      return
+    end
+    begin_download(transaction)
+  end)
 end
 
 local function update_one(index, force)
@@ -801,10 +943,10 @@ end
 
 local function help()
   out("cyan", "Commands:")
-  out("white", "  mcheck scan")
-  out("white", "  mcheck update <number>")
-  out("white", "  mcheck update <number> force")
-  out("white", "  mcheck update all")
+  command_hint("Scan installed add-ons", "mcheck scan")
+  command_hint("Accept one update", "mcheck update <number>")
+  command_hint("Force one exact row", "mcheck update <number> force")
+  command_hint("Accept every eligible update", "mcheck update all")
   out("orange", "Force is intentionally limited to one numbered row; 'all force', lists, and ranges are rejected.")
 end
 
@@ -839,6 +981,7 @@ end
 
 function MCheck.shutdown()
   stop_timer()
+  cancel_hash_job()
   MCheck.scan = nil
   MCheck.transaction = nil
   MCheck.update_queue = nil

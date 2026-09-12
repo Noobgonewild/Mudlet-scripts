@@ -34,7 +34,7 @@ if type(MCheck) == "table" and type(MCheck.shutdown) == "function" then
 end
 
 MCheck = {
-  version = "0.2.0",
+  version = "0.2.1",
   protocol = "1",
   package_name = "mcheck",
   repository_id = "noobgonewild-mudlet-scripts",
@@ -534,13 +534,9 @@ local function validate_manifest(manifest)
   return by_id
 end
 
-local function apply_hash_status(row, hash)
-  row.local_sha256 = hash
-  row.local_clean = known_official_hash(row.entry, hash)
+local function apply_version_status(row)
   local comparison = compare_versions(row.report.version, row.entry.version)
-  if not row.local_clean then
-    row.status = "[LOCAL MODIFIED]"
-  elseif comparison == nil then
+  if comparison == nil then
     row.status = "[INVALID VERSION]"
   elseif comparison < 0 then
     row.status = "[UPDATE AVAILABLE]"
@@ -549,6 +545,16 @@ local function apply_hash_status(row, hash)
     row.status = "[CURRENT]"
   else
     row.status = "[LOCAL VERSION AHEAD]"
+  end
+end
+
+local function apply_hash_status(row, hash)
+  row.local_sha256 = hash
+  row.local_clean = known_official_hash(row.entry, hash)
+  if not row.local_clean then
+    row.status = "[LOCAL MODIFIED]"
+  else
+    apply_version_status(row)
   end
 end
 
@@ -594,6 +600,9 @@ local function build_rows_async(manifest_by_id, done)
         row.status = "[IDENTITY MISMATCH]"
       elseif not package_is_installed(report.package_name) then
         row.status = "[NOT INSTALLED]"
+      elseif entry.artifact_type == "mpackage" then
+        row.remote_only = true
+        apply_version_status(row)
       elseif report.source_path == "" then
         row.status = "[PATH UNKNOWN]"
       elseif basename(report.source_path) ~= report.filename then
@@ -628,7 +637,6 @@ local function print_rows()
   for index, row in ipairs(MCheck.rows) do
     local available = row.entry and tostring(row.entry.version) or "--"
     status_line(index, row, available)
-    out("dim_grey", "   path: " .. (row.source_path ~= "" and row.source_path or "(not captured)"))
   end
   command_hint("Accept one update with", "mcheck update <number>")
   command_hint("Force one exact row with", "mcheck update <number> force")
@@ -747,6 +755,23 @@ local function finish_without_rollback(message, color)
   end
 end
 
+local function finish_remote_package_failure(message)
+  local transaction = MCheck.transaction
+  stop_timer()
+  cancel_hash_job()
+  local recovery_path = transaction and transaction.stage_path or nil
+  if transaction then transaction.stage_path = nil end
+  cleanup_transaction_files(transaction, false)
+  MCheck.transaction = nil
+  out("red", tostring(message))
+  if recovery_path then
+    out("orange", "The SHA-verified repository package was kept for manual recovery: " .. tostring(recovery_path))
+  end
+  if MCheck.update_queue then
+    if type(tempTimer) == "function" then tempTimer(0.1, continue_queue) else continue_queue() end
+  end
+end
+
 local function verify_identity(report, transaction, expected_version)
   if type(report) ~= "table" then return false, "the installed add-on did not answer verification" end
   local row, entry = transaction.row, transaction.row.entry
@@ -758,7 +783,9 @@ local function verify_identity(report, transaction, expected_version)
     return false, "the installed add-on reported a different identity"
   end
   if report.version ~= expected_version then return false, "the installed add-on reported version " .. report.version end
-  if path_key(report.source_path) ~= path_key(row.source_path) then return false, "the installed add-on reported a different source path" end
+  if entry.artifact_type ~= "mpackage" and path_key(report.source_path) ~= path_key(row.source_path) then
+    return false, "the installed add-on reported a different source path"
+  end
   return true
 end
 
@@ -768,7 +795,11 @@ function MCheck.finish_success()
   stop_timer()
   cleanup_transaction_files(transaction, false)
   MCheck.transaction = nil
-  out("green", string.format("Reinstalled %s at repository version %s. Backup: %s", transaction.row.addon_id, transaction.row.entry.version, transaction.backup_path))
+  if transaction.row.entry.artifact_type == "mpackage" then
+    out("green", string.format("Reinstalled %s at repository version %s from its trusted remote package.", transaction.row.addon_id, transaction.row.entry.version))
+  else
+    out("green", string.format("Reinstalled %s at repository version %s. Backup: %s", transaction.row.addon_id, transaction.row.entry.version, transaction.backup_path))
+  end
   out("light_grey", "Run 'mcheck scan' to refresh versions and modification tags.")
   if MCheck.update_queue then
     if type(tempTimer) == "function" then tempTimer(0.1, continue_queue) else continue_queue() end
@@ -809,6 +840,10 @@ end
 function MCheck.rollback(reason)
   local transaction = MCheck.transaction
   if not transaction or transaction.rolling_back then return end
+  if transaction.row.entry.artifact_type == "mpackage" then
+    finish_remote_package_failure(tostring(reason or "Package update failed."))
+    return
+  end
   transaction.rolling_back = true
   transaction.failure_reason = tostring(reason or "Update failed.")
   stop_timer()
@@ -859,26 +894,36 @@ local function install_downloaded_artifact(transaction, new_bytes, actual_hash)
     finish_without_rollback("Downloaded artifact failed SHA-256 validation; nothing was uninstalled.")
     return
   end
-  local old_bytes, old_err = read_file(transaction.row.source_path)
-  if not old_bytes then finish_without_rollback("Could not read current artifact for backup: " .. tostring(old_err)); return end
-  transaction.old_bytes = old_bytes
-  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
-  local backup_dir = home .. "/mcheck/backups/" .. transaction.row.addon_id .. "/" .. os.date("%Y%m%d-%H%M%S")
-  ensure_dir(backup_dir)
-  transaction.backup_path = backup_dir .. "/" .. transaction.row.entry.filename
-  local backup_ok, backup_err = write_file(transaction.backup_path, old_bytes)
-  if not backup_ok then finish_without_rollback("Could not create backup: " .. tostring(backup_err)); return end
-  local placed, place_err = atomic_place_new(transaction, new_bytes)
-  if not placed then finish_without_rollback(place_err); return end
+  local is_remote_package = transaction.row.entry.artifact_type == "mpackage"
+  if is_remote_package then
+    transaction.install_path = transaction.stage_path
+  else
+    local old_bytes, old_err = read_file(transaction.row.source_path)
+    if not old_bytes then finish_without_rollback("Could not read current artifact for backup: " .. tostring(old_err)); return end
+    transaction.old_bytes = old_bytes
+    local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+    local backup_dir = home .. "/mcheck/backups/" .. transaction.row.addon_id .. "/" .. os.date("%Y%m%d-%H%M%S")
+    ensure_dir(backup_dir)
+    transaction.backup_path = backup_dir .. "/" .. transaction.row.entry.filename
+    local backup_ok, backup_err = write_file(transaction.backup_path, old_bytes)
+    if not backup_ok then finish_without_rollback("Could not create backup: " .. tostring(backup_err)); return end
+    local placed, place_err = atomic_place_new(transaction, new_bytes)
+    if not placed then finish_without_rollback(place_err); return end
+    transaction.install_path = transaction.row.source_path
+  end
 
   transaction.phase = "installing"
   local ok_uninstall, uninstall_result = pcall(uninstallPackage, transaction.row.report.package_name)
   if not ok_uninstall or uninstall_result == false then
-    MCheck.rollback("Could not uninstall " .. transaction.row.addon_id .. ".")
+    if is_remote_package then
+      finish_remote_package_failure("Could not uninstall " .. transaction.row.addon_id .. ".")
+    else
+      MCheck.rollback("Could not uninstall " .. transaction.row.addon_id .. ".")
+    end
     return
   end
   transaction.phase = "waiting_install"
-  local ok_install, install_result = pcall(installPackage, transaction.row.source_path)
+  local ok_install, install_result = pcall(installPackage, transaction.install_path)
   if not ok_install or install_result == false then
     MCheck.rollback("Could not install repository artifact for " .. transaction.row.addon_id .. ".")
     return
@@ -925,7 +970,11 @@ end
 function MCheck.on_install_event(package_name, source_path)
   local transaction = MCheck.transaction
   if not transaction or tostring(package_name) ~= tostring(transaction.row.report.package_name) then return end
-  if path_key(source_path) ~= path_key(transaction.row.source_path) then return end
+  if transaction.row.entry.artifact_type ~= "mpackage"
+    and path_key(source_path) ~= path_key(transaction.install_path)
+  then
+    return
+  end
   stop_timer()
   if transaction.phase == "waiting_install" then
     transaction.phase = "waiting_verify"
@@ -988,18 +1037,28 @@ function MCheck.start_update(row, force, queued)
     out("orange", "That row does not have an eligible normal update. Use force only if you intend to reinstall this exact row.")
     return
   end
-  if row.source_path == "" or basename(row.source_path) ~= row.entry.filename then out("red", "The row has no safe reinstall path."); return end
-  local current_bytes = read_file(row.source_path)
-  if not current_bytes then out("red", "The current artifact is missing; update stopped because rollback would be impossible."); return end
   if not package_is_installed(row.report.package_name) then out("red", "The selected package is no longer installed."); return end
 
   local transaction = {
     row = row,
     force = force == true,
     queued = queued == true,
-    phase = "hashing_preflight",
+    phase = row.entry.artifact_type == "mpackage" and "ready_to_download" or "hashing_preflight",
   }
   MCheck.transaction = transaction
+  if row.entry.artifact_type == "mpackage" then
+    begin_download(transaction)
+    return
+  end
+  if row.source_path == "" or basename(row.source_path) ~= row.entry.filename then
+    finish_without_rollback("The row has no safe reinstall path.")
+    return
+  end
+  local current_bytes = read_file(row.source_path)
+  if not current_bytes then
+    finish_without_rollback("The current artifact is missing; update stopped because rollback would be impossible.")
+    return
+  end
   out("light_grey", "Verifying the selected local artifact...")
   MCheck.sha256_async(current_bytes, function(current_hash)
     if MCheck.transaction ~= transaction or transaction.phase ~= "hashing_preflight" then return end

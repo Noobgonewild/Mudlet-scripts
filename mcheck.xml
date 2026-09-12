@@ -34,11 +34,22 @@ if type(MCheck) == "table" and type(MCheck.shutdown) == "function" then
 end
 
 MCheck = {
-  version = "0.1.5",
+  version = "0.2.0",
   protocol = "1",
   package_name = "mcheck",
   repository_id = "noobgonewild-mudlet-scripts",
   index_url = "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mcheck-index.json",
+  trusted_repositories = {
+    ["noobgonewild-mudlet-scripts"] = {
+      url_prefix = "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/",
+      artifact_type = "xml",
+    },
+    ["noobgonewild-mudlet-dinv"] = {
+      url_prefix = "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/",
+      artifact_type = "mpackage",
+      filename = "DINV.mpackage",
+    },
+  },
   scan = nil,
   rows = {},
   transaction = nil,
@@ -84,6 +95,15 @@ local function command_hint(label, command)
     echo(tostring(command) .. "\n")
   else
     out("white", tostring(label) .. ": " .. tostring(command))
+  end
+end
+
+local function scan_progress(position, total, addon_id)
+  local progress = string.format("Progress %d/%d: ", position, total)
+  if type(cecho) == "function" then
+    cecho("<ansi_light_cyan>[MCheck] <ansi_light_yellow>" .. progress .. "<ansi_white>checking " .. tostring(addon_id) .. "\n")
+  elseif type(echo) == "function" then
+    echo("[MCheck] " .. progress .. "checking " .. tostring(addon_id) .. "\n")
   end
 end
 
@@ -443,9 +463,42 @@ local function known_official_hash(entry, hash)
   return false
 end
 
+local function url_encode_filename(value)
+  return (tostring(value or ""):gsub("([^%w%-%._~])", function(character)
+    return string.format("%%%02X", character:byte())
+  end))
+end
+
+local function validate_trusted_artifact(entry)
+  local repository_id = tostring(entry.repository_id or "")
+  local trusted = MCheck.trusted_repositories[repository_id]
+  if type(trusted) ~= "table" then return nil, "untrusted repository " .. repository_id end
+
+  local artifact_type = lower(entry.artifact_type or "xml")
+  if artifact_type ~= trusted.artifact_type then
+    return nil, "repository/artifact type mismatch for " .. tostring(entry.id or "")
+  end
+
+  local package_name = tostring(entry.package_name or "")
+  local filename = tostring(entry.filename or "")
+  local extension = artifact_type == "mpackage" and ".mpackage" or ".xml"
+  if filename ~= package_name .. extension or basename(filename) ~= filename then
+    return nil, "repository filename/package mismatch for " .. tostring(entry.id or "")
+  end
+  if trusted.filename and filename ~= trusted.filename then
+    return nil, "repository does not permit artifact " .. filename
+  end
+
+  local expected_url = trusted.url_prefix .. url_encode_filename(filename)
+  if tostring(entry.url or "") ~= expected_url then
+    return nil, "untrusted download URL for " .. tostring(entry.id or "")
+  end
+  return artifact_type
+end
+
 local function validate_manifest(manifest)
   if type(manifest) ~= "table" then return nil, "repository index is not an object" end
-  if tonumber(manifest.schema) ~= 1 then return nil, "unsupported repository index schema" end
+  if tonumber(manifest.schema) ~= 2 then return nil, "unsupported repository index schema" end
   if tostring(manifest.repository_id or "") ~= MCheck.repository_id then return nil, "repository identity mismatch" end
   if type(manifest.addons) ~= "table" then return nil, "repository index has no addons list" end
   local by_id = {}
@@ -455,15 +508,26 @@ local function validate_manifest(manifest)
     local package_name = tostring(entry.package_name or "")
     local filename = tostring(entry.filename or "")
     if id == "" or package_name == "" or filename == "" then return nil, "repository addon identity is incomplete" end
-    if filename ~= package_name .. ".xml" then return nil, "repository filename/package mismatch for " .. id end
+    entry.repository_id = tostring(entry.repository_id or manifest.repository_id or "")
+    entry.artifact_type = lower(entry.artifact_type or "xml")
+    local _, artifact_err = validate_trusted_artifact(entry)
+    if artifact_err then return nil, artifact_err end
     if hard_denied(id, package_name, filename) then return nil, "repository index attempted to target MCheck" end
     if by_id[id] then return nil, "repository index contains duplicate addon id " .. id end
     if not semver_parts(entry.version) then return nil, "invalid version for " .. id end
     if not tostring(entry.sha256 or ""):match("^[0-9a-fA-F]+$") or #tostring(entry.sha256) ~= 64 then
       return nil, "invalid SHA-256 for " .. id
     end
-    if type(entry.url) ~= "string" or not entry.url:match("^https://raw%.githubusercontent%.com/Noobgonewild/Mudlet%-scripts/") then
-      return nil, "untrusted download URL for " .. id
+    if entry.known_hashes ~= nil and type(entry.known_hashes) ~= "table" then
+      return nil, "invalid known hashes for " .. id
+    end
+    for known_version, known_hash in pairs(entry.known_hashes or {}) do
+      if not semver_parts(known_version)
+        or not tostring(known_hash):match("^[0-9a-fA-F]+$")
+        or #tostring(known_hash) ~= 64
+      then
+        return nil, "invalid known hash for " .. id
+      end
     end
     by_id[id] = entry
   end
@@ -494,12 +558,22 @@ local function build_rows_async(manifest_by_id, done)
   table.sort(ids)
   local active_scan = MCheck.scan
   local position = 0
+  local total = #ids
+
+  if total > 0 then
+    out("light_grey", string.format("Found %d compatible installed add-on%s. Comparing one at a time...", total, total == 1 and "" or "s"))
+  end
 
   local function next_row()
     if MCheck.scan ~= active_scan then return end
     position = position + 1
     local id = ids[position]
-    if not id then done(rows); return end
+    if not id then
+      if total > 0 then out("green", string.format("Progress %d/%d: comparison complete.", total, total)) end
+      done(rows)
+      return
+    end
+    scan_progress(position, total, id)
     local report = MCheck.scan.responses[id]
     local entry = manifest_by_id[id]
     local row = {
@@ -513,7 +587,7 @@ local function build_rows_async(manifest_by_id, done)
       local_clean = false,
     }
     if entry then
-      if report.repository_id ~= MCheck.repository_id
+      if report.repository_id ~= tostring(entry.repository_id)
         or report.package_name ~= tostring(entry.package_name)
         or report.filename ~= tostring(entry.filename)
       then
@@ -625,7 +699,7 @@ function MCheck.on_http_done(url, body)
   MCheck.scan.manifest = manifest
   MCheck.scan.manifest_by_id = by_id
   MCheck.scan.phase = "hashing"
-  out("light_grey", "Checking local XML files in small background slices...")
+  out("light_grey", "Checking local add-on files in small background slices...")
   build_rows_async(by_id, function(rows)
     local completed = MCheck.scan
     if not completed then return end
@@ -678,7 +752,7 @@ local function verify_identity(report, transaction, expected_version)
   local row, entry = transaction.row, transaction.row.entry
   if report.addon_id ~= row.addon_id
     or report.package_name ~= entry.package_name
-    or report.repository_id ~= MCheck.repository_id
+    or report.repository_id ~= entry.repository_id
     or report.filename ~= entry.filename
   then
     return false, "the installed add-on reported a different identity"
@@ -745,13 +819,13 @@ function MCheck.rollback(reason)
   local restored = transaction.swap_path and os.rename(transaction.swap_path, transaction.row.source_path)
   if not restored and transaction.old_bytes then restored = write_file(transaction.row.source_path, transaction.old_bytes) end
   if not restored then
-    finish_without_rollback(transaction.failure_reason .. " Could not restore the original XML. Recovery copy: " .. tostring(transaction.backup_path), "red")
+    finish_without_rollback(transaction.failure_reason .. " Could not restore the original artifact. Recovery copy: " .. tostring(transaction.backup_path), "red")
     return
   end
   transaction.phase = "waiting_rollback_install"
   local ok, result = pcall(installPackage, transaction.row.source_path)
   if not ok or result == false then
-    finish_without_rollback(transaction.failure_reason .. " Restored the XML but could not reinstall it. Recovery copy: " .. tostring(transaction.backup_path), "red")
+    finish_without_rollback(transaction.failure_reason .. " Restored the artifact but could not reinstall it. Recovery copy: " .. tostring(transaction.backup_path), "red")
     return
   end
   start_timer(12, function()
@@ -770,23 +844,23 @@ local function atomic_place_new(transaction, new_bytes)
   local ok, err = write_file(transaction.new_path, new_bytes)
   if not ok then return false, "could not write adjacent update file: " .. tostring(err) end
   local moved_old, move_err = os.rename(source_path, transaction.swap_path)
-  if not moved_old then return false, "could not move the current XML aside: " .. tostring(move_err) end
+  if not moved_old then return false, "could not move the current artifact aside: " .. tostring(move_err) end
   local moved_new, new_err = os.rename(transaction.new_path, source_path)
   if not moved_new then
     pcall(os.rename, transaction.swap_path, source_path)
-    return false, "could not place the new XML: " .. tostring(new_err)
+    return false, "could not place the new artifact: " .. tostring(new_err)
   end
   return true
 end
 
-local function install_downloaded_xml(transaction, new_bytes, actual_hash)
+local function install_downloaded_artifact(transaction, new_bytes, actual_hash)
   if MCheck.transaction ~= transaction or transaction.phase ~= "hashing_download" then return end
   if lower(actual_hash) ~= lower(transaction.row.entry.sha256) then
-    finish_without_rollback("Downloaded XML failed SHA-256 validation; nothing was uninstalled.")
+    finish_without_rollback("Downloaded artifact failed SHA-256 validation; nothing was uninstalled.")
     return
   end
   local old_bytes, old_err = read_file(transaction.row.source_path)
-  if not old_bytes then finish_without_rollback("Could not read current XML for backup: " .. tostring(old_err)); return end
+  if not old_bytes then finish_without_rollback("Could not read current artifact for backup: " .. tostring(old_err)); return end
   transaction.old_bytes = old_bytes
   local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
   local backup_dir = home .. "/mcheck/backups/" .. transaction.row.addon_id .. "/" .. os.date("%Y%m%d-%H%M%S")
@@ -806,7 +880,7 @@ local function install_downloaded_xml(transaction, new_bytes, actual_hash)
   transaction.phase = "waiting_install"
   local ok_install, install_result = pcall(installPackage, transaction.row.source_path)
   if not ok_install or install_result == false then
-    MCheck.rollback("Could not install repository XML for " .. transaction.row.addon_id .. ".")
+    MCheck.rollback("Could not install repository artifact for " .. transaction.row.addon_id .. ".")
     return
   end
   start_timer(12, function()
@@ -821,12 +895,22 @@ function MCheck.on_download_done(local_path, used_url)
   if not transaction or transaction.phase ~= "downloading" or path_key(local_path) ~= path_key(transaction.stage_path) then return end
   stop_timer()
   local new_bytes, read_err = read_file(transaction.stage_path)
-  if not new_bytes then finish_without_rollback("Could not read downloaded XML: " .. tostring(read_err)); return end
-  if not new_bytes:find("<MudletPackage", 1, true) then finish_without_rollback("Downloaded file is not a Mudlet XML package."); return end
+  if not new_bytes then finish_without_rollback("Could not read downloaded artifact: " .. tostring(read_err)); return end
+  local artifact_type = tostring(transaction.row.entry.artifact_type or "xml")
+  if artifact_type == "xml" and not new_bytes:find("<MudletPackage", 1, true) then
+    finish_without_rollback("Downloaded file is not a Mudlet XML package.")
+    return
+  elseif artifact_type == "mpackage" then
+    local signature = new_bytes:sub(1, 4)
+    if signature ~= "PK\003\004" and signature ~= "PK\005\006" and signature ~= "PK\007\008" then
+      finish_without_rollback("Downloaded file is not a Mudlet mpackage archive.")
+      return
+    end
+  end
   transaction.phase = "hashing_download"
-  out("light_grey", "Validating the downloaded XML...")
+  out("light_grey", "Validating the downloaded artifact...")
   MCheck.sha256_async(new_bytes, function(actual_hash)
-    install_downloaded_xml(transaction, new_bytes, actual_hash)
+    install_downloaded_artifact(transaction, new_bytes, actual_hash)
   end)
 end
 
@@ -859,6 +943,11 @@ end
 local function begin_download(transaction)
   if MCheck.transaction ~= transaction then return end
   local row = transaction.row
+  local _, trusted_err = validate_trusted_artifact(row.entry)
+  if trusted_err then
+    finish_without_rollback("Download blocked: " .. tostring(trusted_err))
+    return
+  end
   local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
   local stage_dir = home .. "/mcheck/staging/" .. fresh_id(row.addon_id)
   ensure_dir(stage_dir)
@@ -868,6 +957,7 @@ local function begin_download(transaction)
   out("cyan", string.format("Downloading %s %s%s...", row.addon_id, row.entry.version, transaction.force and " (forced reinstall)" or ""))
   local separator = row.entry.url:find("?", 1, true) and "&" or "?"
   local download_url = row.entry.url .. separator .. "mcheck=" .. tostring(os.time())
+  transaction.download_url = download_url
   local ok, result = pcall(downloadFile, transaction.stage_path, download_url)
   if not ok or result == false then
     finish_without_rollback("Could not start download: " .. tostring(result))
@@ -884,8 +974,10 @@ function MCheck.start_update(row, force, queued)
   if MCheck.transaction then out("orange", "An update is already running."); return end
   if type(row) ~= "table" or type(row.entry) ~= "table" then out("red", "That row is not in the repository index."); return end
   if hard_denied(row.addon_id, row.report.package_name, row.entry.filename) then out("red", "MCheck is protected and cannot target itself."); return end
+  local _, trusted_err = validate_trusted_artifact(row.entry)
+  if trusted_err then out("red", "The row has an untrusted update source: " .. tostring(trusted_err)); return end
   if row.addon_id ~= tostring(row.entry.id)
-    or row.report.repository_id ~= MCheck.repository_id
+    or row.report.repository_id ~= tostring(row.entry.repository_id)
     or row.report.package_name ~= tostring(row.entry.package_name)
     or row.report.filename ~= tostring(row.entry.filename)
   then
@@ -898,7 +990,7 @@ function MCheck.start_update(row, force, queued)
   end
   if row.source_path == "" or basename(row.source_path) ~= row.entry.filename then out("red", "The row has no safe reinstall path."); return end
   local current_bytes = read_file(row.source_path)
-  if not current_bytes then out("red", "The current XML is missing; update stopped because rollback would be impossible."); return end
+  if not current_bytes then out("red", "The current artifact is missing; update stopped because rollback would be impossible."); return end
   if not package_is_installed(row.report.package_name) then out("red", "The selected package is no longer installed."); return end
 
   local transaction = {
@@ -908,11 +1000,11 @@ function MCheck.start_update(row, force, queued)
     phase = "hashing_preflight",
   }
   MCheck.transaction = transaction
-  out("light_grey", "Verifying the selected local XML...")
+  out("light_grey", "Verifying the selected local artifact...")
   MCheck.sha256_async(current_bytes, function(current_hash)
     if MCheck.transaction ~= transaction or transaction.phase ~= "hashing_preflight" then return end
     if lower(current_hash) ~= lower(row.local_sha256 or "") then
-      finish_without_rollback("The local XML changed after the scan. Run 'mcheck scan' again.")
+      finish_without_rollback("The local artifact changed after the scan. Run 'mcheck scan' again.")
       return
     end
     if not package_is_installed(row.report.package_name) then

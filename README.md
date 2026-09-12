@@ -1,8 +1,6 @@
 # Mudlet Scripts for Aardwolf
 
-A collection of Mudlet add-ons and scripts for Aardwolf MUD, distributed as native Mudlet packages (`.mpackage`) and standalone XML files.
-
-Public Repository: [Noobgonewild/Mudlet-scripts](https://github.com/Noobgonewild/Mudlet-scripts)
+A collection of Mudlet add-ons and scripts for Aardwolf MUD, distributed as native Mudlet packages (`.mpackage`).
 
 ---
 
@@ -10,7 +8,7 @@ Public Repository: [Noobgonewild/Mudlet-scripts](https://github.com/Noobgonewild
 
 > [!NOTE]
 > **Download anywhere, install from anywhere!**
-> You can download the package files (`.mpackage` or `.xml`) to **any folder on your computer** (such as your `Downloads` folder or Desktop). There is **no need** to move the files into your Mudlet directory or a special folder before installing, and you do **not** need to extract them. Mudlet handles package installation automatically.
+> You can download the package files (`.mpackage`) to **any folder on your computer** (such as your `Downloads` folder or Desktop). There is **no need** to move the files into your Mudlet directory or a special folder before installing, and you do **not** need to extract them. Mudlet handles package installation automatically.
 
 > [!IMPORTANT]
 > **Your Mudlet profile does not have to be named `Aardwolf`.**
@@ -22,9 +20,9 @@ Public Repository: [Noobgonewild/Mudlet-scripts](https://github.com/Noobgonewild
 
 ### Step 1: Download the Packages
 
-Browse [Noobgonewild/Mudlet-scripts](https://github.com/Noobgonewild/Mudlet-scripts) and download only the packages you want to use directly to anywhere on your system (e.g., your browser's default `Downloads` folder).
+Download the `.mpackage` files for the add-ons you want to use to anywhere on your computer (such as your `Downloads` folder or Desktop).
 
-Each add-on is available as a native `.mpackage` (or `.xml`). Download each package individually; do not install the entire repository ZIP as a single Mudlet package.
+Each add-on is distributed as an individual `.mpackage` file. Download only the packages you need; do not install the entire repository ZIP as a single package.
 
 ---
 
@@ -39,7 +37,7 @@ Open Mudlet and connect to your Aardwolf character/profile (so your main game te
    - Click **Toolbox** > **Package Manager** from the menu.
 2. Click **Install** (or **Install New Package**).
 3. Navigate to wherever you downloaded the package files (e.g., your `Downloads` folder).
-4. Select the `.mpackage` (or `.xml`) file and click **Open** to install. Repeat for each package you wish to use.
+4. Select the `.mpackage` file and click **Open** to install. Repeat for each package you wish to use.
 5. Save your Mudlet profile.
 
 #### Option B: Drag and Drop (Fresh Installations)
@@ -59,7 +57,7 @@ Updating is safe because package updates never touch or overwrite your personal 
 
 ### Via MCheck (Recommended — Fully Automated)
 
-All packages in this repository are tracked in the central index. If you have [MCheck](https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mcheck.xml) installed:
+All packages in this repository are tracked in the central index. If you have [MCheck](https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mcheck.mpackage) installed:
 
 > [!NOTE]
 > MCheck scans and updates add-ons that are **already installed** in your active profile. It cannot perform a first-time installation of an uninstalled add-on. Once you have installed your desired packages once via Option A or B above, MCheck manages future updates seamlessly:
@@ -75,7 +73,7 @@ MCheck automatically retrieves the latest verified `.mpackage` from the reposito
 
 Because Mudlet will not overwrite an already installed package via drag-and-drop or direct re-installation, you must remove the older package first:
 
-1. Download the updated `.mpackage` (or `.xml`) file.
+1. Download the updated `.mpackage` file.
 2. In Mudlet, open the **Package Manager** (`Alt+O`).
 3. Select the package you want to update and click **Uninstall**.
    *(Note: Uninstalling a package only removes its scripts/triggers; your settings, history, and databases in `<profile>/persistence/` remain completely intact).*
@@ -92,7 +90,7 @@ Some packages have dependencies or important safety notes:
 - **DINV optional:** `Hadar_Spellup_Caster.mpackage` works standalone, but its automatic aura integration uses DINV when available.
 - **S&D database required:** `mobsearch.mpackage` reads `SnDdb.db` directly from the active Mudlet profile directory. If [Search & Destroy](https://github.com/Noobgonewild/Mapper-and-S-D) is installed, run `snd db` to verify the resolved database path.
 - **MMapper optional for navigation:** Mob searches work without MMapper, but `mgo <row>` calls `mapper goto <room-id>` if [MMapper](https://github.com/Noobgonewild/Mapper-and-S-D) is installed.
-- **Optional market prices:** Fantasy Cards and Archaeology look for `persistence/mmarket.db` for price information. Install `mbot.xml` to build that database; the packages' other features still work without it.
+- **Optional market prices:** Fantasy Cards and Archaeology look for `persistence/mmarket.db` for price information; their other features work completely without it.
 - **Destructive command warning:** `kdedup` keeps one copy of each key, then unkeeps and destroys duplicate copies. Read `kdedup help` before running it.
 
 ---
@@ -139,8 +137,7 @@ Some packages have dependencies or important safety notes:
 | `g_keydedup.mpackage` | Consolidates duplicate keys onto the keyring and destroys extra copies. | `kdedup help` |
 | `m_aarchaeology.mpackage` | Tracks archaeology collections, bags, reports, sounds, and optional market costs. | `arch help` |
 | `m_dulltracker.mpackage` | Tracks sessions, activity timers, XP, gold, combat, areas, milestones, and analytics in SQLite. | `dull help` |
-| `mbot.xml` | Records auction and market history, answers price queries, and provides clan utility commands. | `mbot help` |
-| `mcheck.xml` / `mcheck.mpackage` | Central update manager for keeping installed add-ons synchronized with the repository. | `mcheck` |
+| `mcheck.mpackage` | Central update manager for keeping installed add-ons synchronized with the repository. | `mcheck` |
 
 ---
 
@@ -169,7 +166,7 @@ Packages with sound support look under the active profile's `sounds` directory (
 
 ### Enchanter
 
-DINV-backed item analysis and enchanting guidance. The full `m_enchanter.xml` also provides guarded batch planning and execution.
+DINV-backed item analysis and enchanting guidance. Enchanter also provides guarded batch planning and execution.
 
 <p align="center">
   <img width="100%" alt="Enchanter analysis and recommendations" src="https://github.com/user-attachments/assets/74170d9e-7fbb-4f66-9584-39034a5bd608" />

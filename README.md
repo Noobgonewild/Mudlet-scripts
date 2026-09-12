@@ -8,7 +8,9 @@ A collection of Mudlet add-ons and scripts for Aardwolf MUD, distributed as nati
 
 > [!NOTE]
 > **Download anywhere, install from anywhere!**
-> You can download the package files (`.mpackage`) to **any folder on your computer** (such as your `Downloads` folder or Desktop). There is **no need** to move the files into your Mudlet directory or a special folder before installing, and you do **not** need to extract them. Mudlet handles package installation automatically.
+> You can download the package files (`.mpackage`) to **any folder on your computer** (such as your `Downloads` folder or Desktop). There is **no need** to move the files into your Mudlet directory or a special folder before installing.
+> - If you download individual `.mpackage` files directly, you do **not** need to extract them; Mudlet handles package installation automatically.
+> - If you downloaded the repository archive via GitHub's **`Code` > `Download ZIP`**, **unzip / extract** that ZIP archive first on your computer to access all individual `.mpackage` files inside. Do **not** import the repository ZIP file itself into Mudlet.
 
 > [!IMPORTANT]
 > **Your Mudlet profile does not have to be named `Aardwolf`.**
@@ -20,9 +22,14 @@ A collection of Mudlet add-ons and scripts for Aardwolf MUD, distributed as nati
 
 ### Step 1: Download the Packages
 
-Download the `.mpackage` files for the add-ons you want to use to anywhere on your computer (such as your `Downloads` folder or Desktop).
+You can obtain the packages in either of two ways:
 
-Each add-on is distributed as an individual `.mpackage` file. Download only the packages you need; do not install the entire repository ZIP as a single package.
+- **GitHub ZIP (`Code` > `Download ZIP`):** Download the repository archive and **unzip / extract** it to a folder on your computer. All individual `.mpackage` files will be inside the extracted folder ready for you to pick and install.
+- **Direct Download:** Download only the specific `.mpackage` files you want from the repository file list or the links below to anywhere on your computer (such as your `Downloads` folder or Desktop).
+
+> [!IMPORTANT]
+> **Do not import the repository ZIP archive into Mudlet.** Mudlet cannot install the repository ZIP as a single package.
+> You must **unzip** the downloaded archive first, then choose only the individual `.mpackage` files you want to install. Do **not** unzip the `.mpackage` files themselves — Mudlet installs `.mpackage` files directly.
 
 ---
 

@@ -34,7 +34,7 @@ if type(MCheck) == "table" and type(MCheck.shutdown) == "function" then
 end
 
 MCheck = {
-  version = "0.2.1",
+  version = "0.2.2",
   protocol = "1",
   package_name = "mcheck",
   repository_id = "noobgonewild-mudlet-scripts",
@@ -48,6 +48,10 @@ MCheck = {
       url_prefix = "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/",
       artifact_type = "mpackage",
       filename = "DINV.mpackage",
+    },
+    ["noobgonewild-mapper-and-s-d"] = {
+      url_prefix = "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/",
+      artifact_type = "mpackage",
     },
   },
   scan = nil,
@@ -668,6 +672,19 @@ function MCheck.scan_now()
   end
 end
 
+function MCheck.abort_scan()
+  if not MCheck.scan then
+    out("orange", "No scan is active.")
+    return
+  end
+  stop_timer()
+  cancel_hash_job()
+  MCheck.scan = nil
+  MCheck.rows = {}
+  MCheck.last_scan = nil
+  out("green", "Scan aborted.")
+end
+
 function MCheck.on_scan_response(scan_id, protocol, addon_id, package_name, version, repository_id, filename, source_path)
   local report = {
     protocol = tostring(protocol or ""),
@@ -1095,6 +1112,7 @@ end
 local function help()
   out("cyan", "Commands:")
   command_hint("Scan installed add-ons", "mcheck scan")
+  command_hint("Abort the active scan", "mcheck abort")
   command_hint("Accept one update", "mcheck update <number>")
   command_hint("Force one exact row", "mcheck update <number> force")
   command_hint("Accept every eligible update", "mcheck update all")
@@ -1106,6 +1124,12 @@ function MCheck.command(raw)
   local words = {}
   for word in raw:gmatch("%S+") do words[#words + 1] = word end
   if #words == 1 and lower(words[1]) == "scan" then MCheck.scan_now(); return end
+  if (#words == 1 and lower(words[1]) == "abort")
+    or (#words == 2 and lower(words[1]) == "scan" and lower(words[2]) == "abort")
+  then
+    MCheck.abort_scan()
+    return
+  end
   if #words >= 2 and lower(words[1]) == "update" then
     if lower(words[2]) == "all" then
       if #words ~= 2 then out("red", "Forced or qualified all-updates are not allowed."); return end

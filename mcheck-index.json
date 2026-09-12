@@ -226,6 +226,20 @@
       }
     },
     {
+      "id": "mmapper",
+      "package_name": "mmapper",
+      "filename": "mmapper.mpackage",
+      "artifact_type": "mpackage",
+      "repository_id": "noobgonewild-mapper-and-s-d",
+      "version": "1.0.1",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
+      "sha256": "7f317bc7d380256a23b597dc4fc02f84a580c091335c1ac46384db6d1b470782",
+      "known_hashes": {
+        "1.0.0": "25b25cd400dfcc67c0853c1f388c5a0aa90de425d62f16780bdd28cd49a53884",
+        "1.0.1": "7f317bc7d380256a23b597dc4fc02f84a580c091335c1ac46384db6d1b470782"
+      }
+    },
+    {
       "id": "mobsearch",
       "package_name": "mobsearch",
       "filename": "mobsearch.xml",
@@ -245,6 +259,20 @@
       "sha256": "5a75b7952c333fda278952836273c5496d008009febd6d7f4e4ce7bfe8029d8c",
       "known_hashes": {
         "1.0.1": "5a75b7952c333fda278952836273c5496d008009febd6d7f4e4ce7bfe8029d8c"
+      }
+    },
+    {
+      "id": "search_and_destroy",
+      "package_name": "SearchAndDestroy",
+      "filename": "SearchAndDestroy.mpackage",
+      "artifact_type": "mpackage",
+      "repository_id": "noobgonewild-mapper-and-s-d",
+      "version": "7.1.8",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
+      "sha256": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
+      "known_hashes": {
+        "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
+        "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c"
       }
     }
   ]

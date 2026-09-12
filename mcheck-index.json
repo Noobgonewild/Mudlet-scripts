@@ -5,13 +5,16 @@
     {
       "id": "bypass_mudlet",
       "package_name": "Bypass_Mudlet",
-      "filename": "Bypass_Mudlet.xml",
-      "version": "1.1.3",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Bypass_Mudlet.xml",
-      "sha256": "6d3283c21f22004e0d18636b1272ae1cd67cbf8eff7afd1b6f7f816ffc9c0829",
+      "filename": "Bypass_Mudlet.mpackage",
+      "version": "1.1.4",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Bypass_Mudlet.mpackage",
+      "sha256": "398a8da9e3a9b8a7430012e7aa6465090e801b395e4924f0b963e89734845daf",
       "known_hashes": {
-        "1.1.3": "6d3283c21f22004e0d18636b1272ae1cd67cbf8eff7afd1b6f7f816ffc9c0829"
-      }
+        "1.1.3": "6d3283c21f22004e0d18636b1272ae1cd67cbf8eff7afd1b6f7f816ffc9c0829",
+        "1.1.4": "398a8da9e3a9b8a7430012e7aa6465090e801b395e4924f0b963e89734845daf"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "Bypass_Mudlet.xml"
     },
     {
       "id": "dinv",
@@ -30,200 +33,254 @@
     {
       "id": "g_areapicker",
       "package_name": "g_areapicker",
-      "filename": "g_areapicker.xml",
-      "version": "4.5.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_areapicker.xml",
-      "sha256": "4cb4590259ac3369f785ff3eddfb4cf4b5ffe1c3e9506e1703e7fd563407fd45",
+      "filename": "g_areapicker.mpackage",
+      "version": "4.5.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_areapicker.mpackage",
+      "sha256": "9056aab2ad6afe3618efdfd57124838880b95f5daafdb125a1b4bf367379cfb7",
       "known_hashes": {
-        "4.5.1": "4cb4590259ac3369f785ff3eddfb4cf4b5ffe1c3e9506e1703e7fd563407fd45"
-      }
+        "4.5.1": "4cb4590259ac3369f785ff3eddfb4cf4b5ffe1c3e9506e1703e7fd563407fd45",
+        "4.5.2": "9056aab2ad6afe3618efdfd57124838880b95f5daafdb125a1b4bf367379cfb7"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_areapicker.xml"
     },
     {
       "id": "g_autotrain",
       "package_name": "g_autotrain",
-      "filename": "g_autotrain.xml",
-      "version": "6.8.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_autotrain.xml",
-      "sha256": "43bf032933f3133cb9cb655b02598ef8f258a587d79cd08c833ca39ddd4d482c",
+      "filename": "g_autotrain.mpackage",
+      "version": "6.8.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_autotrain.mpackage",
+      "sha256": "9295e7f84fd0e5f4c670f9c4db62ee98d72b1ab75d3f07d665008cd61f2b4783",
       "known_hashes": {
-        "6.8.1": "43bf032933f3133cb9cb655b02598ef8f258a587d79cd08c833ca39ddd4d482c"
-      }
+        "6.8.1": "43bf032933f3133cb9cb655b02598ef8f258a587d79cd08c833ca39ddd4d482c",
+        "6.8.2": "9295e7f84fd0e5f4c670f9c4db62ee98d72b1ab75d3f07d665008cd61f2b4783"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_autotrain.xml"
     },
     {
       "id": "g_brandish",
       "package_name": "g_Brandish",
-      "filename": "g_Brandish.xml",
-      "version": "1.0.3",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Brandish.xml",
-      "sha256": "4745e7e63b6ed175e6134ce81927d317df9a4419c0b7025769d1567ffcf76398",
+      "filename": "g_Brandish.mpackage",
+      "version": "1.0.4",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Brandish.mpackage",
+      "sha256": "a86d44f1980f1c30737598a6c6ae022e15eb3b791ce76c28c03d934baf4139c8",
       "known_hashes": {
-        "1.0.3": "4745e7e63b6ed175e6134ce81927d317df9a4419c0b7025769d1567ffcf76398"
-      }
+        "1.0.3": "4745e7e63b6ed175e6134ce81927d317df9a4419c0b7025769d1567ffcf76398",
+        "1.0.4": "a86d44f1980f1c30737598a6c6ae022e15eb3b791ce76c28c03d934baf4139c8"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_Brandish.xml"
     },
     {
       "id": "g_channels",
       "package_name": "g_channels",
-      "filename": "g_channels.xml",
-      "version": "1.0.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.xml",
-      "sha256": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12",
+      "filename": "g_channels.mpackage",
+      "version": "1.0.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.mpackage",
+      "sha256": "9f93856812a45c733e9e646a871e61a0798ea199cbcccf94e097a1b7de3132df",
       "known_hashes": {
-        "1.0.1": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12"
-      }
+        "1.0.1": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12",
+        "1.0.2": "9f93856812a45c733e9e646a871e61a0798ea199cbcccf94e097a1b7de3132df"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_channels.xml"
     },
     {
       "id": "g_character",
       "package_name": "g_character",
-      "filename": "g_character.xml",
-      "version": "1.0.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_character.xml",
-      "sha256": "6db7ff0022adc78dc7e9b62478e4233a7df62bfe5f1c375040af7b6b8c609c61",
+      "filename": "g_character.mpackage",
+      "version": "1.0.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_character.mpackage",
+      "sha256": "ab19e35feb9da7c85544f339dae7fc03a1b9dd9f62e3935c450ff29dca764edf",
       "known_hashes": {
-        "1.0.1": "6db7ff0022adc78dc7e9b62478e4233a7df62bfe5f1c375040af7b6b8c609c61"
-      }
+        "1.0.1": "6db7ff0022adc78dc7e9b62478e4233a7df62bfe5f1c375040af7b6b8c609c61",
+        "1.0.2": "ab19e35feb9da7c85544f339dae7fc03a1b9dd9f62e3935c450ff29dca764edf"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_character.xml"
     },
     {
       "id": "g_envenom",
       "package_name": "g_envenom",
-      "filename": "g_envenom.xml",
-      "version": "1.0.13",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_envenom.xml",
-      "sha256": "23dbe77c1b5d1a4c9b03b14efe07f183a726f87fed80633e11878e500c05eaf1",
+      "filename": "g_envenom.mpackage",
+      "version": "1.0.14",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_envenom.mpackage",
+      "sha256": "dba47b06bf50f5563bd95935961993a8cf65f94c0c8cc6c0ed1036bb057c18c2",
       "known_hashes": {
-        "1.0.13": "23dbe77c1b5d1a4c9b03b14efe07f183a726f87fed80633e11878e500c05eaf1"
-      }
+        "1.0.13": "23dbe77c1b5d1a4c9b03b14efe07f183a726f87fed80633e11878e500c05eaf1",
+        "1.0.14": "dba47b06bf50f5563bd95935961993a8cf65f94c0c8cc6c0ed1036bb057c18c2"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_envenom.xml"
     },
     {
       "id": "g_fantasy_cards_mudlet",
       "package_name": "g_Fantasy_Cards_Mudlet",
-      "filename": "g_Fantasy_Cards_Mudlet.xml",
-      "version": "1.0.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Fantasy_Cards_Mudlet.xml",
-      "sha256": "1a6f995543f98eb003f809254260b5ee109b6e1ddc54a60074f363299f41477a",
+      "filename": "g_Fantasy_Cards_Mudlet.mpackage",
+      "version": "1.0.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Fantasy_Cards_Mudlet.mpackage",
+      "sha256": "0508409e488ce49ed173b8d48ea48ee04cd71cb40ff74d7dd4712ba22d3857d2",
       "known_hashes": {
-        "1.0.1": "1a6f995543f98eb003f809254260b5ee109b6e1ddc54a60074f363299f41477a"
-      }
+        "1.0.1": "1a6f995543f98eb003f809254260b5ee109b6e1ddc54a60074f363299f41477a",
+        "1.0.2": "0508409e488ce49ed173b8d48ea48ee04cd71cb40ff74d7dd4712ba22d3857d2"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_Fantasy_Cards_Mudlet.xml"
     },
     {
       "id": "g_group_monitor",
       "package_name": "g_group_monitor",
-      "filename": "g_group_monitor.xml",
-      "version": "1.3.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_group_monitor.xml",
-      "sha256": "7590d4ae9646cd9baa4dda955d12b8da4565153434e3a695be422fdacb0ebe8d",
+      "filename": "g_group_monitor.mpackage",
+      "version": "1.3.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_group_monitor.mpackage",
+      "sha256": "60d25d3eecd504ef064aabab7e1407adfb56e7439ba14ef90fadda9b8f407f1e",
       "known_hashes": {
-        "1.3.1": "7590d4ae9646cd9baa4dda955d12b8da4565153434e3a695be422fdacb0ebe8d"
-      }
+        "1.3.1": "7590d4ae9646cd9baa4dda955d12b8da4565153434e3a695be422fdacb0ebe8d",
+        "1.3.2": "60d25d3eecd504ef064aabab7e1407adfb56e7439ba14ef90fadda9b8f407f1e"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_group_monitor.xml"
     },
     {
       "id": "g_keydedup",
       "package_name": "g_keydedup",
-      "filename": "g_keydedup.xml",
-      "version": "3.7.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_keydedup.xml",
-      "sha256": "04d938ba7eecdb911c14d15e0d6fc85b65c94b0874805bf13bf04c538435b2aa",
+      "filename": "g_keydedup.mpackage",
+      "version": "3.7.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_keydedup.mpackage",
+      "sha256": "2e361949979e0cf19a15d67ba0ac3dc85d1410a402d22ab37bb43dae33ec9f75",
       "known_hashes": {
-        "3.7.1": "04d938ba7eecdb911c14d15e0d6fc85b65c94b0874805bf13bf04c538435b2aa"
-      }
+        "3.7.1": "04d938ba7eecdb911c14d15e0d6fc85b65c94b0874805bf13bf04c538435b2aa",
+        "3.7.2": "2e361949979e0cf19a15d67ba0ac3dc85d1410a402d22ab37bb43dae33ec9f75"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_keydedup.xml"
     },
     {
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
-      "filename": "g_maze solver.xml",
-      "version": "1.1.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.xml",
-      "sha256": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
+      "filename": "g_maze solver.mpackage",
+      "version": "1.1.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
+      "sha256": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
       "known_hashes": {
-        "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79"
-      }
+        "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
+        "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_maze solver.xml"
     },
     {
       "id": "g_rainbow_chat",
       "package_name": "g_rainbow_chat",
-      "filename": "g_rainbow_chat.xml",
-      "version": "1.0.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_rainbow_chat.xml",
-      "sha256": "85cce0537743a313b02b22f426ac937899454c3f23ece075881b6d5deda1bdc6",
+      "filename": "g_rainbow_chat.mpackage",
+      "version": "1.0.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_rainbow_chat.mpackage",
+      "sha256": "654fede20b7936f3993aa78b0c00c9dab2023e06de73997592d76f11dbe76a5d",
       "known_hashes": {
-        "1.0.1": "85cce0537743a313b02b22f426ac937899454c3f23ece075881b6d5deda1bdc6"
-      }
+        "1.0.1": "85cce0537743a313b02b22f426ac937899454c3f23ece075881b6d5deda1bdc6",
+        "1.0.2": "654fede20b7936f3993aa78b0c00c9dab2023e06de73997592d76f11dbe76a5d"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_rainbow_chat.xml"
     },
     {
       "id": "g_remindme",
       "package_name": "g_RemindMe",
-      "filename": "g_RemindMe.xml",
-      "version": "1.1.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_RemindMe.xml",
-      "sha256": "d389a112a3dd961511e2e4c45eee3181faece456840cb995dad488225ce272ea",
+      "filename": "g_RemindMe.mpackage",
+      "version": "1.1.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_RemindMe.mpackage",
+      "sha256": "20997ae2f1f4a08175cc476f59da2cb62bf6279449961759ecb0cbaa49a14578",
       "known_hashes": {
-        "1.1.1": "d389a112a3dd961511e2e4c45eee3181faece456840cb995dad488225ce272ea"
-      }
+        "1.1.1": "d389a112a3dd961511e2e4c45eee3181faece456840cb995dad488225ce272ea",
+        "1.1.2": "20997ae2f1f4a08175cc476f59da2cb62bf6279449961759ecb0cbaa49a14578"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_RemindMe.xml"
     },
     {
       "id": "g_shinykeep",
       "package_name": "g_shinykeep",
-      "filename": "g_shinykeep.xml",
-      "version": "1.0.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_shinykeep.xml",
-      "sha256": "589629b0a97881ac7475c223a7d4b5daf73e1196362378eb43e67c3b407b8e33",
+      "filename": "g_shinykeep.mpackage",
+      "version": "1.0.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_shinykeep.mpackage",
+      "sha256": "38bdf925d1e8f335b7f58d5c6a83b0a9c3be3aff4e7b4f54841c9737d1def733",
       "known_hashes": {
-        "1.0.1": "589629b0a97881ac7475c223a7d4b5daf73e1196362378eb43e67c3b407b8e33"
-      }
+        "1.0.1": "589629b0a97881ac7475c223a7d4b5daf73e1196362378eb43e67c3b407b8e33",
+        "1.0.2": "38bdf925d1e8f335b7f58d5c6a83b0a9c3be3aff4e7b4f54841c9737d1def733"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_shinykeep.xml"
     },
     {
       "id": "hadar_spellup_caster",
       "package_name": "Hadar_Spellup_Caster",
-      "filename": "Hadar_Spellup_Caster.xml",
-      "version": "1.37.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Hadar_Spellup_Caster.xml",
-      "sha256": "741e8b6fe8a5a8baa1f7524af1da8bc219b5940deb5615362ab09221e32db815",
+      "filename": "Hadar_Spellup_Caster.mpackage",
+      "version": "1.37.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Hadar_Spellup_Caster.mpackage",
+      "sha256": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838",
       "known_hashes": {
-        "1.37.1": "741e8b6fe8a5a8baa1f7524af1da8bc219b5940deb5615362ab09221e32db815"
-      }
+        "1.37.1": "741e8b6fe8a5a8baa1f7524af1da8bc219b5940deb5615362ab09221e32db815",
+        "1.37.2": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "Hadar_Spellup_Caster.xml"
     },
     {
       "id": "m_aarchaeology",
       "package_name": "m_aarchaeology",
-      "filename": "m_aarchaeology.xml",
-      "version": "1.4.3",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.xml",
-      "sha256": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0",
+      "filename": "m_aarchaeology.mpackage",
+      "version": "1.4.4",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.mpackage",
+      "sha256": "a7debe20b85f6e9736f1fdbdb01b63e464d0f955aad14b4fac67a5002fbb88ea",
       "known_hashes": {
-        "1.4.3": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0"
-      }
+        "1.4.3": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0",
+        "1.4.4": "a7debe20b85f6e9736f1fdbdb01b63e464d0f955aad14b4fac67a5002fbb88ea"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "m_aarchaeology.xml"
     },
     {
       "id": "m_dulltracker",
       "package_name": "m_dulltracker",
-      "filename": "m_dulltracker.xml",
-      "version": "1.3.4",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_dulltracker.xml",
-      "sha256": "4f9dd8e9797aaad38947d778ce2bba9ef2a8904ae80f27599ea1f932bee94455",
+      "filename": "m_dulltracker.mpackage",
+      "version": "1.3.5",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_dulltracker.mpackage",
+      "sha256": "36b8e12cb591d0ff0ec174a7bab0b66d40aa8a9992c7fce37d4ba4c8f261499f",
       "known_hashes": {
-        "1.3.4": "4f9dd8e9797aaad38947d778ce2bba9ef2a8904ae80f27599ea1f932bee94455"
-      }
+        "1.3.4": "4f9dd8e9797aaad38947d778ce2bba9ef2a8904ae80f27599ea1f932bee94455",
+        "1.3.5": "36b8e12cb591d0ff0ec174a7bab0b66d40aa8a9992c7fce37d4ba4c8f261499f"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "m_dulltracker.xml"
     },
     {
       "id": "m_enchanter",
       "package_name": "m_enchanter",
-      "filename": "m_enchanter.xml",
-      "version": "1.2.4",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_enchanter.xml",
-      "sha256": "16a2c93ac9a83b1cd841cf24389f94443dee49df6bb17abc3401883525f5d0fb",
+      "filename": "m_enchanter.mpackage",
+      "version": "1.2.5",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_enchanter.mpackage",
+      "sha256": "dcba4f3f4b867f4495420527c857fdd913405596a4302684be74fb90e3c5ace2",
       "known_hashes": {
-        "1.2.4": "16a2c93ac9a83b1cd841cf24389f94443dee49df6bb17abc3401883525f5d0fb"
-      }
+        "1.2.4": "16a2c93ac9a83b1cd841cf24389f94443dee49df6bb17abc3401883525f5d0fb",
+        "1.2.5": "dcba4f3f4b867f4495420527c857fdd913405596a4302684be74fb90e3c5ace2"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "m_enchanter.xml"
     },
     {
       "id": "m_loqui_practice",
       "package_name": "m_Loqui practice",
-      "filename": "m_Loqui practice.xml",
-      "version": "1.1.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_Loqui%20practice.xml",
-      "sha256": "49c5adb538aa7ce42d18546920c0728093380b701e3237d5f5d7d846babea58e",
+      "filename": "m_Loqui practice.mpackage",
+      "version": "1.1.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_Loqui%20practice.mpackage",
+      "sha256": "78cc16da67ed80f7f7f634b0c32669d9c23d272db6e6caefc37bc55644d6f73f",
       "known_hashes": {
-        "1.1.1": "49c5adb538aa7ce42d18546920c0728093380b701e3237d5f5d7d846babea58e"
-      }
+        "1.1.1": "49c5adb538aa7ce42d18546920c0728093380b701e3237d5f5d7d846babea58e",
+        "1.1.2": "78cc16da67ed80f7f7f634b0c32669d9c23d272db6e6caefc37bc55644d6f73f"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "m_Loqui practice.xml"
     },
     {
       "id": "mmapper",
@@ -243,24 +300,30 @@
     {
       "id": "mobsearch",
       "package_name": "mobsearch",
-      "filename": "mobsearch.xml",
-      "version": "1.0.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobsearch.xml",
-      "sha256": "4f2bb6f18d0c725571d5526eb407bdec665b218dfb1e581cad8f893996b58e78",
+      "filename": "mobsearch.mpackage",
+      "version": "1.0.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobsearch.mpackage",
+      "sha256": "6ae1520515f9f109fb40b38c85691f433a2a16752b38c4bccf5ad1dc5b1b94af",
       "known_hashes": {
-        "1.0.1": "4f2bb6f18d0c725571d5526eb407bdec665b218dfb1e581cad8f893996b58e78"
-      }
+        "1.0.1": "4f2bb6f18d0c725571d5526eb407bdec665b218dfb1e581cad8f893996b58e78",
+        "1.0.2": "6ae1520515f9f109fb40b38c85691f433a2a16752b38c4bccf5ad1dc5b1b94af"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "mobsearch.xml"
     },
     {
       "id": "msleep",
       "package_name": "msleep",
-      "filename": "msleep.xml",
-      "version": "1.0.1",
-      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/msleep.xml",
-      "sha256": "5a75b7952c333fda278952836273c5496d008009febd6d7f4e4ce7bfe8029d8c",
+      "filename": "msleep.mpackage",
+      "version": "1.0.2",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/msleep.mpackage",
+      "sha256": "50053c1418afbeb9d08de2259b26dfe061b5f04327c2dfb3bb47d492590882d3",
       "known_hashes": {
-        "1.0.1": "5a75b7952c333fda278952836273c5496d008009febd6d7f4e4ce7bfe8029d8c"
-      }
+        "1.0.1": "5a75b7952c333fda278952836273c5496d008009febd6d7f4e4ce7bfe8029d8c",
+        "1.0.2": "50053c1418afbeb9d08de2259b26dfe061b5f04327c2dfb3bb47d492590882d3"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "msleep.xml"
     },
     {
       "id": "search_and_destroy",

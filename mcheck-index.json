@@ -19,11 +19,12 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.82.0",
+      "version": "2.83.0",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
+      "sha256": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
       "known_hashes": {
-        "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1"
+        "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
+        "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215"
       }
     },
     {

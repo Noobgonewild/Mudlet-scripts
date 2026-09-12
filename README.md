@@ -1,150 +1,169 @@
-# Aardwolf Mudlet Scripts
+# Mudlet Scripts for Aardwolf
 
-A collection of optional Mudlet XML packages for [Aardwolf MUD](https://www.aardwolf.com/). Install only the packages you want.
+A collection of Mudlet add-ons and scripts for Aardwolf MUD, distributed as native Mudlet packages (`.mpackage`) and standalone XML files.
+
+Public Repository: [Noobgonewild/Mudlet-scripts](https://github.com/Noobgonewild/Mudlet-scripts)
+
+---
+
+## Key Highlights
+
+> [!NOTE]
+> **Download anywhere, install from anywhere!**
+> You can download the package files (`.mpackage` or `.xml`) to **any folder on your computer** (such as your `Downloads` folder or Desktop). There is **no need** to move the files into your Mudlet directory or a special folder before installing, and you do **not** need to extract them. Mudlet handles package installation automatically.
 
 > [!IMPORTANT]
-> **Your Mudlet profile does not have to be named `Aardwolf`.** The packages use the profile that is open when you install them, and saved data is resolved from that profile's home directory.
->
-> **`scripts` is only the recommended folder name.** You may call the folder anything you like, and the XML files can technically be installed from anywhere. Moving an XML file into that folder does **not** install it—you must also install it through Mudlet's Package Manager.
+> **Your Mudlet profile does not have to be named `Aardwolf`.**
+> All scripts use `getMudletHomeDir()` to load and save data from whichever Mudlet profile is currently active. Your settings, character configurations, and databases are safely preserved under `<profile>/persistence/` and are not deleted or overwritten when updating packages.
 
-## Quick installation
+---
 
-1. On this repository's GitHub page, choose **Code → Download ZIP**, then extract the ZIP.
-2. Open the Aardwolf profile in Mudlet where you want the packages installed.
-3. In Mudlet's command line, enter this to open the active profile directory directly in your system's file browser:
+## Installation
 
-   ```text
-   lua openMudletHomeDir()
-   ```
+### Step 1: Download the Packages
 
-   To print the exact path in Mudlet as well, enter:
+Browse [Noobgonewild/Mudlet-scripts](https://github.com/Noobgonewild/Mudlet-scripts) and download only the packages you want to use directly to anywhere on your system (e.g., your browser's default `Downloads` folder).
 
-   ```text
-   lua echo(getMudletHomeDir() .. "\n")
-   ```
+Each add-on is available as a native `.mpackage` (or `.xml`). Download each package individually; do not install the entire repository ZIP as a single Mudlet package.
 
-4. Inside the profile directory that opened, create a folder named `scripts` if it does not already exist.
-5. Copy only the `.xml` packages you want from the extracted repository into that folder.
-6. Press **Alt+O** in Mudlet to open **Package Manager**.
-7. Select **Install New Package**, browse to the XML file, and install it. Repeat for each package you chose.
-8. Run the package's help command from the tables below.
+---
 
-Do not install the repository ZIP as one package. Each XML file is a separate Mudlet package.
+### Step 2: Install into Mudlet
 
-### Recommended profile layout
+Open Mudlet and connect to your Aardwolf character/profile (so your main game terminal window is open and active). Then install each package using either method below:
+
+#### Option A: Package Manager (Recommended)
+
+1. In Mudlet, open the **Package Manager**:
+   - Press `Alt+O`, or
+   - Click **Toolbox** > **Package Manager** from the menu.
+2. Click **Install** (or **Install New Package**).
+3. Navigate to wherever you downloaded the package files (e.g., your `Downloads` folder).
+4. Select the `.mpackage` (or `.xml`) file and click **Open** to install. Repeat for each package you wish to use.
+5. Save your Mudlet profile.
+
+#### Option B: Drag and Drop (Fresh Installations)
+
+> [!NOTE]
+> Drag and drop is best suited for fresh, first-time installations. If you already have an older version of a package installed, Mudlet will not overwrite it via drag-and-drop — you must first uninstall the old package in **Package Manager** (`Alt+O`) or use **MCheck** to update automatically.
+
+1. Make sure your active Mudlet game window is visible on screen.
+2. Open your file browser to where you downloaded the `.mpackage` files.
+3. Drag and drop the `.mpackage` file directly onto the open Mudlet window.
+
+---
+
+## Keeping Add-ons Updated
+
+Updating is safe because package updates never touch or overwrite your personal profile settings and history stored in `<profile>/persistence/`:
+
+### Via MCheck (Recommended — Fully Automated)
+
+All packages in this repository are tracked in the central index. If you have [MCheck](https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mcheck.xml) installed:
+
+> [!NOTE]
+> MCheck scans and updates add-ons that are **already installed** in your active profile. It cannot perform a first-time installation of an uninstalled add-on. Once you have installed your desired packages once via Option A or B above, MCheck manages future updates seamlessly:
 
 ```text
-<your Mudlet profile>/
-├── scripts/                 downloaded XML installers; folder name is optional
-│   ├── g_areapicker.xml
-│   ├── g_character.xml
-│   └── ...
-├── persistence/             settings and databases created by the packages
-├── sounds/                  optional sound files used by some packages
-└── SnDdb.db                 required here only by mobsearch.xml
+mcheck scan
+mcheck update <number>
 ```
 
-The package code is stored in the Mudlet profile after installation. Keeping the downloaded XML files under `scripts` simply makes future updates easier to find.
+MCheck automatically retrieves the latest verified `.mpackage` from the repository, validates its SHA-256 checksum, and performs the uninstall/reinstall cycle without manual intervention.
 
-## Before choosing packages
+### Via Package Manager (Manual Update)
+
+Because Mudlet will not overwrite an already installed package via drag-and-drop or direct re-installation, you must remove the older package first:
+
+1. Download the updated `.mpackage` (or `.xml`) file.
+2. In Mudlet, open the **Package Manager** (`Alt+O`).
+3. Select the package you want to update and click **Uninstall**.
+   *(Note: Uninstalling a package only removes its scripts/triggers; your settings, history, and databases in `<profile>/persistence/` remain completely intact).*
+4. Click **Install** (or drag and drop the new file onto the Mudlet window) to install the updated version.
+5. Save your profile or reload if needed.
+
+---
+
+## Before Choosing Packages
 
 Some packages have dependencies or important safety notes:
 
-- **DINV required:** `g_Brandish.xml`, `g_envenom.xml`, `g_shinykeep.xml`, and `m_enchanter.xml` use the [Mudlet-DINV](https://github.com/Noobgonewild/Mudlet-DINV) API. Install and initialize DINV first.
-- **DINV optional:** `Hadar_Spellup_Caster.xml` works without DINV, but its automatic aura integration uses DINV when available.
-- **S&D database required:** `mobsearch.xml` reads `SnDdb.db` directly from the active Mudlet profile directory. It does **not** use the old `Aardwolf.db` filename. If S&D is installed, run `snd db` to see the required and resolved database path.
-- **MMapper optional for navigation:** mob searches work without MMapper, but `mgo <row>` calls `mapper goto <room-id>`.
-- **Optional market prices:** Fantasy Cards and Archaeology look for `persistence/mmarket.db` for price information. That database is normally supplied by mbot, which is not included in this repository; the packages' other features still work without it.
-- **Deprecated:** `g_globalCampaignAnnouncer DEPRECATED (included in SnD).xml` is already included in S&D. Do not install it when you use S&D.
-- **Destructive command:** `kdedup` keeps one copy of each key, then unkeeps and destroys the duplicates. Read `kdedup help` before running it.
+- **DINV required:** `g_Brandish.mpackage`, `g_envenom.mpackage`, `g_shinykeep.mpackage`, and `m_enchanter.mpackage` use the [Mudlet-DINV](https://github.com/Noobgonewild/Mudlet-DINV) API. Install and initialize DINV first.
+- **DINV optional:** `Hadar_Spellup_Caster.mpackage` works standalone, but its automatic aura integration uses DINV when available.
+- **S&D database required:** `mobsearch.mpackage` reads `SnDdb.db` directly from the active Mudlet profile directory. If [Search & Destroy](https://github.com/Noobgonewild/Mapper-and-S-D) is installed, run `snd db` to verify the resolved database path.
+- **MMapper optional for navigation:** Mob searches work without MMapper, but `mgo <row>` calls `mapper goto <room-id>` if [MMapper](https://github.com/Noobgonewild/Mapper-and-S-D) is installed.
+- **Optional market prices:** Fantasy Cards and Archaeology look for `persistence/mmarket.db` for price information. Install `mbot.xml` to build that database; the packages' other features still work without it.
+- **Destructive command warning:** `kdedup` keeps one copy of each key, then unkeeps and destroys duplicate copies. Read `kdedup help` before running it.
 
-## Packages in this repository
+---
 
-### Character, equipment, and combat
+## Available Packages
 
-| File | What it does | Start/help command |
-| --- | --- | --- |
-| `Bypass_Mudlet.xml` | Applies the configured skill bypasses after level changes. | `bypass apply` |
-| `g_autotrain.xml` | Plans and performs weighted stat training using the character's class and subclass. | `autotrain help` |
-| `g_Brandish.xml` | Uses DINV to manage and brandish charge-safe staves automatically. Disabled until configured. | `gbr help` |
-| `g_character.xml` | Geyser character-stats window and configurable status bars, with mastery, instinct, and resistance reporting. | `gstats help` or `gchar config` |
-| `g_envenom.xml` | Uses DINV to maintain venom on owned or borrowed weapons and restore equipment safely. | `genv help` |
-| `g_group_monitor.xml` | Draggable GMCP group monitor with invites, filters, and health alerts. | `gmon help` |
-| `g_shinykeep.xml` | Uses DINV changes to keep newly tracked shiny items for selected tiers. | `shinykeep help` |
-| `Hadar_Spellup_Caster.xml` | Spellup caster with spellup, aura, visibility, and landing helpers. | `had help` (`hsp`/`hsu` to cast) |
-| `m_enchanter.xml` | Current DINV-backed enchanting analyzer and command helper, including guarded batch enchanting. | `eqa help` and `eqb help` |
-| `m_Loqui practice.xml` | Loqui Practice helper for selecting and practicing skills by class, priority, exclusions, and limits. | `lph help` |
-| `msleep.xml` | Sleeps shortly before a tick when vitals are low, then wakes; optional camp, fire, and PK-room behavior. | `ts help` |
+### Character, Equipment, and Combat
 
-### Navigation and hunting
+| Package | What it does | Start / Help command |
+| :--- | :--- | :--- |
+| `Bypass_Mudlet.mpackage` | Applies configured skill bypasses automatically after level changes. | `bypass apply` |
+| `g_autotrain.mpackage` | Plans and performs weighted stat training using character class and subclass. | `autotrain help` |
+| `g_Brandish.mpackage` | Uses DINV to manage and brandish charge-safe staves automatically. Disabled until configured. | `gbr help` |
+| `g_character.mpackage` | Geyser character-stats window and configurable status bars with mastery, instinct, and resistance reporting. | `gstats help` or `gchar config` |
+| `g_envenom.mpackage` | Uses DINV to maintain venom on owned or borrowed weapons and restore equipment safely. | `genv help` |
+| `g_group_monitor.mpackage` | Draggable GMCP group monitor with invites, filters, and health alerts. | `gmon help` |
+| `g_shinykeep.mpackage` | Uses DINV events to keep newly tracked shiny items for selected tiers. | `shinykeep help` |
+| `Hadar_Spellup_Caster.mpackage` | Spellup caster with spellup, aura, visibility, and landing helpers. | `had help` (`hsp`/`hsu` to cast) |
+| `m_enchanter.mpackage` | DINV-backed enchanting analyzer and command helper, including guarded batch enchanting. | `eqa help` and `eqb help` |
+| `m_Loqui practice.mpackage` | Loqui Practice helper for selecting and practicing skills by class, priority, exclusions, and limits. | `lph help` |
+| `msleep.mpackage` | Sleeps shortly before a tick when vitals are low, then wakes; optional camp, fire, and PK-room behavior. | `ts help` |
 
-| File | What it does | Start/help command |
-| --- | --- | --- |
-| `g_areapicker.xml` | Lists areas appropriate for the current level, with offset and alignment controls. | `lvl help` (`lvl` to list) |
-| `g_maze solver.xml` | In-memory maze exploration helper driven by room GMCP. | `#maze_help` |
-| `mobsearch.xml` | Searches mobs and rooms in S&D's `SnDdb.db`, reports results, and can hand a room to MMapper. | `msearch help` |
+### Navigation and Hunting
 
-### Communication and reminders
+| Package | What it does | Start / Help command |
+| :--- | :--- | :--- |
+| `g_areapicker.mpackage` | Lists areas appropriate for your current level, with alignment and offset controls. | `lvl help` (`lvl` to list) |
+| `g_maze solver.mpackage` | In-memory maze exploration helper driven by room GMCP. | `#maze_help` |
+| `mobsearch.mpackage` | Searches mobs and rooms in S&D's `SnDdb.db`, reports results, and can hand a room to MMapper. | `msearch help` |
 
-| File | What it does | Start/help command |
-| --- | --- | --- |
-| `g_channels.xml` | Multi-tab communications window with history, search, timestamps, gags, and a fake `gchan` output channel for other packages. | `gcom help` |
-| `g_globalCampaignAnnouncer DEPRECATED (included in SnD).xml` | Legacy Global Campaign warning/announcement package. Its functionality is included in S&D. | `gqwarn help` |
-| `g_rainbow_chat.xml` | Adds configurable color gradients to outgoing Aardwolf tells and channels. | `rainbow help` |
-| `g_RemindMe.xml` | Threshold reminders for level, remort, tier, quest points, trivia points, trains, practices, and gold. | `remindme help` |
+### Communication and Reminders
 
-### Collections, tracking, and utilities
+| Package | What it does | Start / Help command |
+| :--- | :--- | :--- |
+| `g_channels.mpackage` | Multi-tab communications window with history, search, timestamps, gags, and a `gchan` output channel. | `gcom help` |
+| `g_rainbow_chat.mpackage` | Adds configurable color gradients to outgoing Aardwolf tells and channels. | `rainbow help` |
+| `g_RemindMe.mpackage` | Threshold reminders for level, remort, tier, quest points, trivia points, trains, practices, and gold. | `remindme help` |
 
-| File | What it does | Start/help command |
-| --- | --- | --- |
-| `g_Fantasy_Cards_Mudlet.xml` | Tracks Fantasy Card sets, owned and missing cards, scans, summaries, and optional market costs. | `lft help` |
-| `g_keydedup.xml` | Consolidates duplicate keys onto the keyring and destroys the extra copies. | `kdedup help` |
-| `m_aarchaeology.xml` | Tracks archaeology collections, bags, reports, sounds, and optional market costs. | `arch help` |
-| `m_dulltracker.xml` | Tracks sessions, activity timers, XP, gold, combat, areas, milestones, and historical analytics in SQLite. | `dull help` |
+### Collections, Tracking, and Utilities
 
-## Updating or removing a package
+| Package | What it does | Start / Help command |
+| :--- | :--- | :--- |
+| `g_Fantasy_Cards_Mudlet.mpackage` | Tracks Fantasy Card sets, owned and missing cards, scans, summaries, and optional market costs. | `lft help` |
+| `g_keydedup.mpackage` | Consolidates duplicate keys onto the keyring and destroys extra copies. | `kdedup help` |
+| `m_aarchaeology.mpackage` | Tracks archaeology collections, bags, reports, sounds, and optional market costs. | `arch help` |
+| `m_dulltracker.mpackage` | Tracks sessions, activity timers, XP, gold, combat, areas, milestones, and analytics in SQLite. | `dull help` |
+| `mbot.xml` | Records auction and market history, answers price queries, and provides clan utility commands. | `mbot help` |
+| `mcheck.xml` / `mcheck.mpackage` | Central update manager for keeping installed add-ons synchronized with the repository. | `mcheck` |
 
-To update a package:
-
-1. Download the new XML.
-2. Open **Package Manager** with **Alt+O** in the same Mudlet profile.
-3. Uninstall the old copy of that package.
-4. Install the new XML.
-
-Package settings and history are generally stored under the profile's `persistence` directory and are not removed just because the XML package is uninstalled. Do not delete that directory when you only want to update a package.
-
-To remove a package permanently, uninstall it in Package Manager. Delete its saved data only if you also want to reset or discard that package's settings and history.
+---
 
 ## Troubleshooting
 
 ### Mudlet says the command is unknown
-
-- Press **Alt+O** and confirm the individual XML appears as an installed package.
-- Make sure you installed it while the intended profile was open. Packages installed in one profile do not automatically appear in another.
-- Copying an XML into `scripts` is not enough; install it through Package Manager.
-- If you installed an older copy, uninstall it before installing the current XML.
+- Press **Alt+O** and confirm the individual package appears in the list of installed packages.
+- Ensure you installed it while the intended profile was active. Packages installed in one profile do not automatically transfer to another.
+- If updating an existing package, make sure to uninstall the older version in **Package Manager** before installing the new file.
 
 ### A package cannot find DINV
-
-Install DINV first, reconnect if needed, and confirm DINV is ready before using Brandish, Envenom, ShinyKeep, or Enchanter.
+Install and initialize [DINV](https://github.com/Noobgonewild/Mudlet-DINV) first, reconnect if needed, and confirm DINV is ready before using Brandish, Envenom, ShinyKeep, or Enchanter.
 
 ### MobSearcher cannot open its database
-
-Run:
-
-```text
-snd db
-```
-
-S&D should report a found, healthy `SnDdb.db` whose resolved path is directly inside the same profile directory printed by `getMudletHomeDir()`. Do not put `SnDdb.db` inside `scripts` or `persistence`, and do not use the old `Aardwolf.db` file—the current MobSearcher looks only for `SnDdb.db`.
+Run `snd db` to confirm that Search & Destroy has opened a valid `SnDdb.db` directly inside your Mudlet profile directory (`lua openMudletHomeDir()`). MobSearcher looks specifically for `SnDdb.db`.
 
 ### Settings or history seem to be missing
-
-Verify that you opened the same Mudlet profile as before. Most packages save under that profile's `persistence` directory; DullTracker creates `persistence/dull_tracker.db`, while MobSearcher reads S&D's separate `SnDdb.db` from the profile root.
+Verify that you opened the correct Mudlet profile. Most packages save data under `<profile>/persistence/` (e.g., `dull_tracker.db`), while MobSearcher reads `SnDdb.db` from the profile root.
 
 ### Optional sounds do not play
+Packages with sound support look under the active profile's `sounds` directory (`<profile>/sounds/`).
 
-Packages with sound support look under the active profile's `sounds` directory. Use that exact directory under the profile reported by `getMudletHomeDir()`.
+---
 
 ## Feature gallery
 
@@ -240,11 +259,14 @@ Several compact layouts for tracking group members, health, status, and alerts.
   <img width="24%" alt="Group Monitor layout four" src="https://github.com/user-attachments/assets/353cbd37-fe21-4d32-9821-9ffc32b8fccc" />
 </p>
 
-## Useful links
+---
+
+## Useful Links
 
 - [Mudlet Package Manager manual](https://wiki.mudlet.org/w/Manual:Package_Manager)
 - [Mudlet file locations](https://wiki.mudlet.org/w/Mudlet_File_Locations)
-- [DINV](https://github.com/Noobgonewild/Mudlet-DINV)
-- [MMapper and S&D](https://github.com/Noobgonewild/Mapper-and-S-D)
+- [DINV Repository](https://github.com/Noobgonewild/Mudlet-DINV)
+- [MMapper and S&D Repository](https://github.com/Noobgonewild/Mapper-and-S-D)
+- [MCheck Addon Index](https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mcheck-index.json)
 
 These are community packages and may contain bugs. Review each package's in-game help before enabling automation that sends commands or changes inventory.

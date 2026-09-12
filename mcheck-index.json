@@ -288,13 +288,14 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "7e8d1252308a2f946a25daea400bddab24b4f2f7297d7c4aa5a4fb34bb28d6b8",
+      "sha256": "b8de8eda4d75c3d747ff8f22e1bb1d01201af4b6eb07e38fedbc7c1e0b6127fe",
       "known_hashes": {
         "1.0.0": "25b25cd400dfcc67c0853c1f388c5a0aa90de425d62f16780bdd28cd49a53884",
         "1.0.1": "7f317bc7d380256a23b597dc4fc02f84a580c091335c1ac46384db6d1b470782",
-        "1.0.2": "7e8d1252308a2f946a25daea400bddab24b4f2f7297d7c4aa5a4fb34bb28d6b8"
+        "1.0.2": "7e8d1252308a2f946a25daea400bddab24b4f2f7297d7c4aa5a4fb34bb28d6b8",
+        "1.0.3": "b8de8eda4d75c3d747ff8f22e1bb1d01201af4b6eb07e38fedbc7c1e0b6127fe"
       }
     },
     {
@@ -331,15 +332,16 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.11",
+      "version": "7.1.12",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "d89d4906a9975e70bb03c07b38ab010cfe69f993f41a13a6e90cfce72ed01f74",
+      "sha256": "5183fda5f9d5aefd180f3e55e006c770056e5d9072f273201ef746e17cd4dfa4",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
         "7.1.9": "3b79ef1fa8b18cf625a77d163231fbfecaef1aa81296587a99332602a86cfe59",
         "7.1.10": "41c985a068a04ad10fec6e745700cf4e9df8be6afe13c537e0c70e455ff30304",
-        "7.1.11": "d89d4906a9975e70bb03c07b38ab010cfe69f993f41a13a6e90cfce72ed01f74"
+        "7.1.11": "d89d4906a9975e70bb03c07b38ab010cfe69f993f41a13a6e90cfce72ed01f74",
+        "7.1.12": "5183fda5f9d5aefd180f3e55e006c770056e5d9072f273201ef746e17cd4dfa4"
       }
     }
   ]

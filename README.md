@@ -263,6 +263,15 @@ Several compact layouts for tracking group members, health, status, and alerts.
   <img width="24%" alt="Group Monitor layout four" src="https://github.com/user-attachments/assets/353cbd37-fe21-4d32-9821-9ffc32b8fccc" />
 </p>
 
+### Plugin Updater (Mcheck)
+
+Tool to check for available updates. It searches for DINV/mmapper/SnD and scripts in this repository.
+
+<p align="center">
+  <img width="1149" height="403" alt="Mcheck addon updater" src="https://github.com/user-attachments/assets/5cc7b251-c82e-4d31-a455-29eddb9f9081" />
+  <img width="784" height="665" alt="Mcheck addon updater" src="https://github.com/user-attachments/assets/712c715a-b9f2-42a9-9277-8e24354f41b8" />
+
+</p>
 ---
 
 ## Useful Links

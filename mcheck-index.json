@@ -22,13 +22,14 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.84.0",
+      "version": "2.85.0",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "ae53df7a0bb858dbbbf84feb0b3fde334f736e88adc77ad33e1af638b595396e",
+      "sha256": "0f377a2b61f6c443c0558b4f919cf77025d31b88b3c74569559592670b2d32e8",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
-        "2.84.0": "ae53df7a0bb858dbbbf84feb0b3fde334f736e88adc77ad33e1af638b595396e"
+        "2.84.0": "ae53df7a0bb858dbbbf84feb0b3fde334f736e88adc77ad33e1af638b595396e",
+        "2.85.0": "0f377a2b61f6c443c0558b4f919cf77025d31b88b3c74569559592670b2d32e8"
       }
     },
     {
@@ -341,9 +342,9 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.18",
+      "version": "7.1.20",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "c066cc1df5aa6cbdace18a404de772308722d68c33396f19d2c100c4e32941c9",
+      "sha256": "a9b726e64d63135d235966a3a09ceea912525699d9cf4bc68c0029d69624a753",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -353,7 +354,9 @@
         "7.1.12": "5183fda5f9d5aefd180f3e55e006c770056e5d9072f273201ef746e17cd4dfa4",
         "7.1.13": "4c79d0c132586464b023aa25a162a4fb26a788275f8e1f388bf0cc0470b20548",
         "7.1.17": "362b2eba0688602bbf7f43ee00c6e1e55ffa66b65de0388356a2621d2469d29f",
-        "7.1.18": "c066cc1df5aa6cbdace18a404de772308722d68c33396f19d2c100c4e32941c9"
+        "7.1.18": "c066cc1df5aa6cbdace18a404de772308722d68c33396f19d2c100c4e32941c9",
+        "7.1.19": "ab8dcee9f2ce85bf17b0a0782baa7e98d11c3c7bfa55000e608c3f8a8eecf0ab",
+        "7.1.20": "a9b726e64d63135d235966a3a09ceea912525699d9cf4bc68c0029d69624a753"
       }
     }
   ]

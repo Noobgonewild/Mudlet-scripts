@@ -1,0 +1,1351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+  <AliasPackage>
+    <AliasGroup isActive="yes" isFolder="yes">
+      <name>mcheck</name>
+      <script></script>
+      <command></command>
+      <packageName>mcheck</packageName>
+      <regex></regex>
+
+      <Alias isActive="yes" isFolder="no">
+        <name>MCheckCommand</name>
+        <script><![CDATA[if MCheck and MCheck.command then MCheck.command(matches[2] or "") end]]></script>
+        <command></command>
+        <packageName></packageName>
+        <regex>^mcheck(?:\s+(.*))?$</regex>
+      </Alias>
+    </AliasGroup>
+  </AliasPackage>
+
+  <ScriptPackage>
+    <ScriptGroup isActive="yes" isFolder="yes">
+      <name>mcheck</name>
+      <script></script>
+      <packageName>mcheck</packageName>
+
+      <Script isActive="yes" isFolder="no">
+        <name>MCheckMain</name>
+        <packageName>mcheck</packageName>
+        <script><![CDATA[
+if type(MCheck) == "table" and type(MCheck.shutdown) == "function" then
+  pcall(MCheck.shutdown)
+end
+
+MCheck = {
+  version = "0.2.6",
+  protocol = "1",
+  package_name = "mcheck",
+  repository_id = "noobgonewild-mudlet-scripts",
+  index_url = "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mcheck-index.json",
+  trusted_repositories = {
+    ["noobgonewild-mudlet-scripts"] = {
+      url_prefix = "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/",
+      artifact_type = "mpackage",
+    },
+    ["noobgonewild-mudlet-dinv"] = {
+      url_prefix = "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/",
+      artifact_type = "mpackage",
+      filename = "DINV.mpackage",
+    },
+    ["noobgonewild-mapper-and-s-d"] = {
+      url_prefix = "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/",
+      artifact_type = "mpackage",
+    },
+  },
+  scan = nil,
+  listing = nil,
+  rows = {},
+  transaction = nil,
+  update_queue = nil,
+  timer = nil,
+  hash_job = nil,
+}
+
+local MOD32 = 4294967296
+local floor = math.floor
+
+local function trim(value)
+  return tostring(value or ""):match("^%s*(.-)%s*$")
+end
+
+local function lower(value)
+  return trim(value):lower()
+end
+
+local OUTPUT_COLORS = {
+  white = "ansi_white",
+  cyan = "ansi_light_cyan",
+  orange = "ansi_light_yellow",
+  red = "ansi_light_red",
+  green = "ansi_light_green",
+  yellow = "ansi_light_yellow",
+  light_grey = "ansi_white",
+  dim_grey = "ansi_light_black",
+}
+
+local function out(color, message)
+  message = tostring(message or "")
+  if type(cecho) == "function" then
+    cecho(string.format("<ansi_light_cyan>[MCheck] <%s>%s\n", OUTPUT_COLORS[color] or "ansi_white", message))
+  elseif type(echo) == "function" then
+    echo("[MCheck] " .. message .. "\n")
+  end
+end
+
+local function command_hint(label, command)
+  if type(cecho) == "function" and type(echo) == "function" then
+    cecho("<ansi_light_cyan>[MCheck] <ansi_light_yellow>" .. tostring(label) .. ": <ansi_light_green>")
+    echo(tostring(command) .. "\n")
+  else
+    out("white", tostring(label) .. ": " .. tostring(command))
+  end
+end
+
+local function scan_progress(position, total, addon_id)
+  local progress = string.format("Progress %d/%d: ", position, total)
+  if type(cecho) == "function" then
+    cecho("<ansi_light_cyan>[MCheck] <ansi_light_yellow>" .. progress .. "<ansi_white>checking " .. tostring(addon_id) .. "\n")
+  elseif type(echo) == "function" then
+    echo("[MCheck] " .. progress .. "checking " .. tostring(addon_id) .. "\n")
+  end
+end
+
+local STATUS_COLORS = {
+  ["[CURRENT]"] = "ansi_light_green",
+  ["[UPDATE AVAILABLE]"] = "ansi_light_yellow",
+  ["[LOCAL MODIFIED]"] = "ansi_light_red",
+  ["[LOCAL VERSION AHEAD]"] = "ansi_light_cyan",
+  ["[NOT IN INDEX]"] = "ansi_light_black",
+  ["[IDENTITY MISMATCH]"] = "ansi_light_red",
+  ["[NOT INSTALLED]"] = "ansi_light_red",
+  ["[PATH UNKNOWN]"] = "ansi_light_red",
+  ["[PATH IDENTITY MISMATCH]"] = "ansi_light_red",
+  ["[LOCAL FILE MISSING]"] = "ansi_light_red",
+  ["[INVALID VERSION]"] = "ansi_light_red",
+  ["[NO RESPONSE]"] = "ansi_light_red",
+  ["[NOT CHECKED]"] = "ansi_light_black",
+}
+
+local function status_line(index, row, available)
+  local details = string.format("%d) %s  %s -> %s  ", index, row.addon_id, row.installed_version, available)
+  if type(cecho) == "function" then
+    cecho("<ansi_light_cyan>[MCheck] <ansi_white>" .. details)
+    cecho("<" .. (STATUS_COLORS[row.status] or "ansi_white") .. ">" .. row.status .. "\n")
+  elseif type(echo) == "function" then
+    echo("[MCheck] " .. details .. row.status .. "\n")
+  end
+end
+
+local function read_file(path)
+  local file, err = io.open(path, "rb")
+  if not file then return nil, err end
+  local content = file:read("*a")
+  file:close()
+  return content
+end
+
+local function write_file(path, content)
+  local file, err = io.open(path, "wb")
+  if not file then return false, err end
+  local ok, write_err = file:write(content)
+  file:close()
+  if not ok then return false, write_err end
+  return true
+end
+
+local function file_exists(path)
+  local file = io.open(path, "rb")
+  if not file then return false end
+  file:close()
+  return true
+end
+
+local function path_key(path)
+  path = tostring(path or ""):gsub("\\", "/"):gsub("/+", "/")
+  if package and package.config and package.config:sub(1, 1) == "\\" then path = path:lower() end
+  return path
+end
+
+local function basename(path)
+  return tostring(path or ""):gsub("\\", "/"):match("([^/]+)$") or ""
+end
+
+local function dirname(path)
+  return tostring(path or ""):gsub("\\", "/"):match("^(.*)/[^/]+$") or "."
+end
+
+local function ensure_dir(path)
+  path = tostring(path or ""):gsub("\\", "/"):gsub("/+$", "")
+  if path == "" then return false end
+  if type(mkdir) == "function" then pcall(mkdir, path) end
+  if type(lfs) ~= "table" or type(lfs.mkdir) ~= "function" then return true end
+  local current, rest
+  if path:match("^%a:/") then
+    current, rest = path:sub(1, 3), path:sub(4)
+  elseif path:sub(1, 1) == "/" then
+    current, rest = "/", path:sub(2)
+  else
+    current, rest = "", path
+  end
+  for part in rest:gmatch("[^/]+") do
+    if current == "" or current == "/" or current:match("^%a:/$") then
+      current = current .. part
+    else
+      current = current .. "/" .. part
+    end
+    pcall(lfs.mkdir, current)
+  end
+  return true
+end
+
+local bitlib = rawget(_G, "bit32") or rawget(_G, "bit")
+if not bitlib then
+  local ok, loaded = pcall(require, "bit")
+  if ok then bitlib = loaded end
+end
+
+local SLOW_AND4, SLOW_XOR4
+if not bitlib then
+  SLOW_AND4, SLOW_XOR4 = {}, {}
+  for left = 0, 15 do
+    local and_row, xor_row = {}, {}
+    SLOW_AND4[left + 1], SLOW_XOR4[left + 1] = and_row, xor_row
+    for right = 0, 15 do
+      local a, b, and_value, xor_value, place = left, right, 0, 0, 1
+      for _ = 1, 4 do
+        local abit, bbit = a % 2, b % 2
+        if abit == 1 and bbit == 1 then and_value = and_value + place end
+        if abit ~= bbit then xor_value = xor_value + place end
+        a, b, place = (a - abit) / 2, (b - bbit) / 2, place * 2
+      end
+      and_row[right + 1], xor_row[right + 1] = and_value, xor_value
+    end
+  end
+end
+
+local function unsigned(value)
+  return (tonumber(value) or 0) % MOD32
+end
+
+local function slow_bitop(a, b, mode)
+  a, b = unsigned(a), unsigned(b)
+  local result, place = 0, 1
+  local lookup = mode == "and" and SLOW_AND4 or SLOW_XOR4
+  for _ = 1, 8 do
+    local anibble, bnibble = a % 16, b % 16
+    result = result + lookup[anibble + 1][bnibble + 1] * place
+    a, b, place = floor(a / 16), floor(b / 16), place * 16
+  end
+  return result
+end
+
+local function band2(a, b)
+  if bitlib and type(bitlib.band) == "function" then return unsigned(bitlib.band(a, b)) end
+  return slow_bitop(a, b, "and")
+end
+
+local function bxor2(a, b)
+  if bitlib and type(bitlib.bxor) == "function" then return unsigned(bitlib.bxor(a, b)) end
+  return slow_bitop(a, b, "xor")
+end
+
+local function band(...)
+  local values, result = {...}, MOD32 - 1
+  for i = 1, #values do result = band2(result, values[i]) end
+  return result
+end
+
+local function bxor(...)
+  local values, result = {...}, 0
+  for i = 1, #values do result = bxor2(result, values[i]) end
+  return result
+end
+
+local function bnot(value)
+  if bitlib and type(bitlib.bnot) == "function" then return unsigned(bitlib.bnot(value)) end
+  return MOD32 - 1 - unsigned(value)
+end
+
+local function rshift(value, count)
+  if bitlib and type(bitlib.rshift) == "function" then return unsigned(bitlib.rshift(value, count)) end
+  return floor(unsigned(value) / (2 ^ count))
+end
+
+local function rrotate(value, count)
+  if bitlib then
+    if type(bitlib.rrotate) == "function" then return unsigned(bitlib.rrotate(value, count)) end
+    if type(bitlib.ror) == "function" then return unsigned(bitlib.ror(value, count)) end
+  end
+  value, count = unsigned(value), count % 32
+  if count == 0 then return value end
+  return unsigned(rshift(value, count) + (value % (2 ^ count)) * (2 ^ (32 - count)))
+end
+
+local function add32(...)
+  local values, result = {...}, 0
+  for i = 1, #values do result = (result + unsigned(values[i])) % MOD32 end
+  return result
+end
+
+local SHA256_K = {
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2,
+}
+
+local HEX = "0123456789abcdef"
+
+local function hex_word(value)
+  value = unsigned(value)
+  local chars = {}
+  for place = 7, 0, -1 do
+    local digit = floor(value / (16 ^ place)) % 16
+    chars[#chars + 1] = HEX:sub(digit + 1, digit + 1)
+  end
+  return table.concat(chars)
+end
+
+local function sha256_context(message)
+  message = tostring(message or "")
+  local byte_length = #message
+  local bit_high = floor(byte_length / 536870912)
+  local bit_low = (byte_length * 8) % MOD32
+  local function word_bytes(value)
+    return string.char(
+      floor(value / 16777216) % 256,
+      floor(value / 65536) % 256,
+      floor(value / 256) % 256,
+      value % 256
+    )
+  end
+  message = message .. string.char(128)
+  local padding = (56 - (#message % 64)) % 64
+  message = message .. string.rep(string.char(0), padding) .. word_bytes(bit_high) .. word_bytes(bit_low)
+
+  return {
+    message = message,
+    offset = 1,
+    h = {0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19},
+    w = {},
+    timer = nil,
+  }
+end
+
+local function sha256_process_block(context)
+  local message, offset, h, w = context.message, context.offset, context.h, context.w
+  for i = 0, 15 do
+    local p = offset + i * 4
+    w[i] = message:byte(p) * 16777216 + message:byte(p + 1) * 65536 + message:byte(p + 2) * 256 + message:byte(p + 3)
+  end
+  for i = 16, 63 do
+    local s0 = bxor(rrotate(w[i - 15], 7), rrotate(w[i - 15], 18), rshift(w[i - 15], 3))
+    local s1 = bxor(rrotate(w[i - 2], 17), rrotate(w[i - 2], 19), rshift(w[i - 2], 10))
+    w[i] = add32(w[i - 16], s0, w[i - 7], s1)
+  end
+  local a,b,c,d,e,f,g,hh = h[1],h[2],h[3],h[4],h[5],h[6],h[7],h[8]
+  for i = 0, 63 do
+    local s1 = bxor(rrotate(e, 6), rrotate(e, 11), rrotate(e, 25))
+    local ch = bxor(band(e, f), band(bnot(e), g))
+    local t1 = add32(hh, s1, ch, SHA256_K[i + 1], w[i])
+    local s0 = bxor(rrotate(a, 2), rrotate(a, 13), rrotate(a, 22))
+    local maj = bxor(band(a, b), band(a, c), band(b, c))
+    local t2 = add32(s0, maj)
+    hh,g,f,e,d,c,b,a = g,f,e,add32(d,t1),c,b,a,add32(t1,t2)
+  end
+  h[1],h[2],h[3],h[4] = add32(h[1],a),add32(h[2],b),add32(h[3],c),add32(h[4],d)
+  h[5],h[6],h[7],h[8] = add32(h[5],e),add32(h[6],f),add32(h[7],g),add32(h[8],hh)
+  context.offset = offset + 64
+end
+
+local function sha256_result(context)
+  local result = {}
+  for i = 1, 8 do result[i] = hex_word(context.h[i]) end
+  return table.concat(result)
+end
+
+function MCheck.sha256(message)
+  local context = sha256_context(message)
+  while context.offset <= #context.message do sha256_process_block(context) end
+  return sha256_result(context)
+end
+
+local function cancel_hash_job()
+  local job = MCheck.hash_job
+  if job and job.timer and type(killTimer) == "function" then pcall(killTimer, job.timer) end
+  MCheck.hash_job = nil
+end
+
+function MCheck.sha256_async(message, callback)
+  cancel_hash_job()
+  if type(tempTimer) ~= "function" then
+    callback(MCheck.sha256(message))
+    return
+  end
+
+  local job = sha256_context(message)
+  MCheck.hash_job = job
+  local function step()
+    if MCheck.hash_job ~= job then return end
+    job.timer = nil
+    local started = os.clock()
+    repeat
+      sha256_process_block(job)
+    until job.offset > #job.message or os.clock() - started >= 0.006
+
+    if job.offset <= #job.message then
+      job.timer = tempTimer(0, step)
+      return
+    end
+    MCheck.hash_job = nil
+    callback(sha256_result(job))
+  end
+  job.timer = tempTimer(0, step)
+end
+
+local function semver_parts(version)
+  local major, minor, patch, suffix = tostring(version or ""):match("^(%d+)%.(%d+)%.(%d+)(.*)$")
+  if not major then return nil end
+  return tonumber(major), tonumber(minor), tonumber(patch), suffix or ""
+end
+
+local function compare_versions(left, right)
+  local la,lb,lc,ls = semver_parts(left)
+  local ra,rb,rc,rs = semver_parts(right)
+  if not la or not ra then return nil end
+  if la ~= ra then return la < ra and -1 or 1 end
+  if lb ~= rb then return lb < rb and -1 or 1 end
+  if lc ~= rc then return lc < rc and -1 or 1 end
+  if ls == rs then return 0 end
+  if ls == "" then return 1 end
+  if rs == "" then return -1 end
+  return ls < rs and -1 or 1
+end
+
+local function installed_package_name(name, aliases)
+  if type(getPackages) ~= "function" then return tostring(name) end
+  local ok, packages = pcall(getPackages)
+  if not ok or type(packages) ~= "table" then return tostring(name) end
+  for _, installed in pairs(packages) do
+    if tostring(installed) == tostring(name) then return tostring(installed) end
+  end
+  for _, alias in pairs(aliases or {}) do
+    for _, installed in pairs(packages) do
+      if tostring(installed) == tostring(alias) then return tostring(installed) end
+    end
+  end
+  return nil
+end
+
+local function package_is_installed(name, aliases)
+  return installed_package_name(name, aliases) ~= nil
+end
+
+local function hard_denied(addon_id, package_name, filename)
+  return lower(addon_id) == "mcheck"
+    or lower(package_name) == lower(MCheck.package_name)
+    or lower(filename) == "mcheck.xml"
+end
+
+local function fresh_id(prefix)
+  return string.format("%s-%d-%06d", prefix or "mcheck", os.time(), math.random(0, 999999))
+end
+
+local function start_timer(seconds, callback)
+  if MCheck.timer and type(killTimer) == "function" then pcall(killTimer, MCheck.timer) end
+  MCheck.timer = nil
+  if type(tempTimer) == "function" then MCheck.timer = tempTimer(seconds, callback) end
+end
+
+local function stop_timer()
+  if MCheck.timer and type(killTimer) == "function" then pcall(killTimer, MCheck.timer) end
+  MCheck.timer = nil
+end
+
+local function known_official_hash(entry, hash)
+  hash = lower(hash)
+  if hash == lower(entry.sha256) then return true end
+  if type(entry.known_hashes) == "table" then
+    for _, known in pairs(entry.known_hashes) do
+      if hash == lower(known) then return true end
+    end
+  end
+  return false
+end
+
+local function url_encode_filename(value)
+  return (tostring(value or ""):gsub("([^%w%-%._~])", function(character)
+    return string.format("%%%02X", character:byte())
+  end))
+end
+
+local function validate_trusted_artifact(entry)
+  local repository_id = tostring(entry.repository_id or "")
+  local trusted = MCheck.trusted_repositories[repository_id]
+  if type(trusted) ~= "table" then return nil, "untrusted repository " .. repository_id end
+
+  local artifact_type = lower(entry.artifact_type or "xml")
+  if artifact_type ~= trusted.artifact_type then
+    return nil, "repository/artifact type mismatch for " .. tostring(entry.id or "")
+  end
+
+  local package_name = tostring(entry.package_name or "")
+  local filename = tostring(entry.filename or "")
+  local extension = artifact_type == "mpackage" and ".mpackage" or ".xml"
+  if filename ~= package_name .. extension or basename(filename) ~= filename then
+    return nil, "repository filename/package mismatch for " .. tostring(entry.id or "")
+  end
+  if trusted.filename and filename ~= trusted.filename then
+    return nil, "repository does not permit artifact " .. filename
+  end
+
+  local expected_url = trusted.url_prefix .. url_encode_filename(filename)
+  if tostring(entry.url or "") ~= expected_url then
+    return nil, "untrusted download URL for " .. tostring(entry.id or "")
+  end
+  return artifact_type
+end
+
+local function validate_manifest(manifest)
+  if type(manifest) ~= "table" then return nil, "repository index is not an object" end
+  if tonumber(manifest.schema) ~= 2 then return nil, "unsupported repository index schema" end
+  if tostring(manifest.repository_id or "") ~= MCheck.repository_id then return nil, "repository identity mismatch" end
+  if type(manifest.addons) ~= "table" then return nil, "repository index has no addons list" end
+  local by_id = {}
+  for _, entry in ipairs(manifest.addons) do
+    if type(entry) ~= "table" then return nil, "repository index contains an invalid addon" end
+    local id = tostring(entry.id or "")
+    local package_name = tostring(entry.package_name or "")
+    local filename = tostring(entry.filename or "")
+    if id == "" or package_name == "" or filename == "" then return nil, "repository addon identity is incomplete" end
+    entry.repository_id = tostring(entry.repository_id or manifest.repository_id or "")
+    entry.artifact_type = lower(entry.artifact_type or "xml")
+    local _, artifact_err = validate_trusted_artifact(entry)
+    if artifact_err then return nil, artifact_err end
+    if hard_denied(id, package_name, filename) then return nil, "repository index attempted to target MCheck" end
+    if by_id[id] then return nil, "repository index contains duplicate addon id " .. id end
+    if not semver_parts(entry.version) then return nil, "invalid version for " .. id end
+    if not tostring(entry.sha256 or ""):match("^[0-9a-fA-F]+$") or #tostring(entry.sha256) ~= 64 then
+      return nil, "invalid SHA-256 for " .. id
+    end
+    if entry.known_hashes ~= nil and type(entry.known_hashes) ~= "table" then
+      return nil, "invalid known hashes for " .. id
+    end
+    if entry.legacy_package_names ~= nil and type(entry.legacy_package_names) ~= "table" then
+      return nil, "invalid legacy package names for " .. id
+    end
+    for _, legacy_name in pairs(entry.legacy_package_names or {}) do
+      if trim(legacy_name) == "" or hard_denied("", legacy_name, "") then
+        return nil, "invalid legacy package name for " .. id
+      end
+    end
+    for known_version, known_hash in pairs(entry.known_hashes or {}) do
+      if not semver_parts(known_version)
+        or not tostring(known_hash):match("^[0-9a-fA-F]+$")
+        or #tostring(known_hash) ~= 64
+      then
+        return nil, "invalid known hash for " .. id
+      end
+    end
+    by_id[id] = entry
+  end
+  return by_id
+end
+
+local function apply_version_status(row)
+  local comparison = compare_versions(row.report.version, row.entry.version)
+  if comparison == nil then
+    row.status = "[INVALID VERSION]"
+  elseif comparison < 0 then
+    row.status = "[UPDATE AVAILABLE]"
+    row.eligible = true
+  elseif comparison == 0 then
+    row.status = "[CURRENT]"
+  else
+    row.status = "[LOCAL VERSION AHEAD]"
+  end
+end
+
+local function apply_hash_status(row, hash)
+  row.local_sha256 = hash
+  row.local_clean = known_official_hash(row.entry, hash)
+  if not row.local_clean then
+    row.status = "[LOCAL MODIFIED]"
+  else
+    apply_version_status(row)
+  end
+end
+
+local function build_rows_async(manifest_by_id, done)
+  local rows, ids = {}, {}
+  for id in pairs(MCheck.scan.responses) do ids[#ids + 1] = id end
+  table.sort(ids)
+  local active_scan = MCheck.scan
+  local position = 0
+  local total = #ids
+
+  if total > 0 then
+    out("light_grey", string.format("Found %d compatible installed add-on%s. Comparing one at a time...", total, total == 1 and "" or "s"))
+  end
+
+  local function next_row()
+    if MCheck.scan ~= active_scan then return end
+    position = position + 1
+    local id = ids[position]
+    if not id then
+      if total > 0 then out("green", string.format("Progress %d/%d: comparison complete.", total, total)) end
+      done(rows)
+      return
+    end
+    scan_progress(position, total, id)
+    local report = MCheck.scan.responses[id]
+    local entry = manifest_by_id[id]
+    local row = {
+      addon_id = id,
+      report = report,
+      entry = entry,
+      installed_version = report.version,
+      source_path = report.source_path,
+      status = "[NOT IN INDEX]",
+      eligible = false,
+      local_clean = false,
+    }
+    if entry then
+      row.installed_package_name = installed_package_name(
+        report.package_name,
+        entry.legacy_package_names
+      )
+      if report.repository_id ~= tostring(entry.repository_id)
+        or report.package_name ~= tostring(entry.package_name)
+        or report.filename ~= tostring(entry.filename)
+      then
+        row.status = "[IDENTITY MISMATCH]"
+      elseif not row.installed_package_name then
+        row.status = "[NOT INSTALLED]"
+      elseif entry.artifact_type == "mpackage" then
+        row.remote_only = true
+        apply_version_status(row)
+      elseif report.source_path == "" then
+        row.status = "[PATH UNKNOWN]"
+      elseif basename(report.source_path) ~= report.filename then
+        row.status = "[PATH IDENTITY MISMATCH]"
+      else
+        local bytes = read_file(report.source_path)
+        if not bytes then
+          row.status = "[LOCAL FILE MISSING]"
+        else
+          MCheck.sha256_async(bytes, function(hash)
+            if MCheck.scan ~= active_scan then return end
+            apply_hash_status(row, hash)
+            rows[#rows + 1] = row
+            next_row()
+          end)
+          return
+        end
+      end
+    end
+    rows[#rows + 1] = row
+    next_row()
+  end
+  next_row()
+end
+
+local function print_rows(title)
+  if #MCheck.rows == 0 then
+    out("orange", "No compatible installed add-ons answered the scan.")
+    return
+  end
+  out("cyan", title or "Installed add-ons:")
+  for index, row in ipairs(MCheck.rows) do
+    local available = row.entry and tostring(row.entry.version) or "--"
+    status_line(index, row, available)
+  end
+  command_hint("Accept one update with", "mcheck update <number>")
+  command_hint("Force one exact row with", "mcheck update <number> force")
+end
+
+function MCheck.list_installed()
+  if MCheck.transaction or MCheck.scan or MCheck.listing then
+    out("orange", "MCheck is already busy.")
+    return
+  end
+  if MCheck.last_scan and #MCheck.rows > 0 then
+    print_rows("Installed add-ons from the last scan:")
+    out("light_grey", "Use 'mcheck scan' or 'mcheck scan <number>' to refresh this list.")
+    return
+  end
+  local list_id = fresh_id("list")
+  MCheck.listing = { id = list_id, responses = {} }
+  raiseEvent("mcheck.scan.request", list_id, MCheck.protocol, "")
+  local responses = MCheck.listing.responses
+  MCheck.listing = nil
+  local ids = {}
+  for id in pairs(responses) do ids[#ids + 1] = id end
+  table.sort(ids)
+  MCheck.rows = {}
+  MCheck.last_scan = nil
+  for _, id in ipairs(ids) do
+    local report = responses[id]
+    MCheck.rows[#MCheck.rows + 1] = {
+      addon_id = id,
+      report = report,
+      installed_version = report.version,
+      source_path = report.source_path,
+      status = "[NOT CHECKED]",
+      eligible = false,
+      local_clean = false,
+    }
+  end
+  if #MCheck.rows == 0 then
+    out("orange", "No compatible installed add-ons answered the list request.")
+    return
+  end
+  out("cyan", "Compatible installed add-ons:")
+  for index, row in ipairs(MCheck.rows) do
+    if type(cecho) == "function" then
+      cecho(string.format("<ansi_light_cyan>[MCheck] <ansi_white>%d) %s  %s\n", index, row.addon_id, row.installed_version))
+    elseif type(echo) == "function" then
+      echo(string.format("[MCheck] %d) %s  %s\n", index, row.addon_id, row.installed_version))
+    end
+  end
+  command_hint("Check one add-on against the repository", "mcheck scan <number>")
+  out("light_grey", "These versions were interrogated locally; update status has not been checked yet.")
+end
+
+function MCheck.scan_now(target_index)
+  if MCheck.transaction or MCheck.scan then
+    out("orange", "MCheck is already busy.")
+    return
+  end
+  target_index = tonumber(target_index)
+  local target_row = target_index and MCheck.rows[target_index] or nil
+  if target_index and not target_row then
+    out("orange", "There is no cached row " .. tostring(target_index) .. ". Run 'mcheck scan' first.")
+    return
+  end
+  local scan_id = fresh_id("scan")
+  if not target_index then MCheck.rows = {} end
+  MCheck.scan = {
+    id = scan_id,
+    responses = {},
+    request_url = nil,
+    target_index = target_index,
+    target_addon_id = target_row and target_row.addon_id or nil,
+  }
+  if target_row then
+    out("cyan", "Interrogating " .. target_row.addon_id .. "...")
+  else
+    out("cyan", "Interrogating compatible installed add-ons...")
+  end
+  raiseEvent("mcheck.scan.request", scan_id, MCheck.protocol, target_row and target_row.addon_id or "")
+  local request_url = MCheck.index_url .. "?mcheck=" .. tostring(os.time())
+  MCheck.scan.request_url = request_url
+  local ok, result = pcall(getHTTP, request_url, { ["Cache-Control"] = "no-cache" })
+  if not ok or result == false then
+    MCheck.scan = nil
+    out("red", "Could not request the repository index: " .. tostring(result))
+  else
+    start_timer(30, function()
+      if MCheck.scan and MCheck.scan.request_url == request_url then
+        MCheck.scan = nil
+        out("red", "Repository index request timed out.")
+      end
+    end)
+  end
+end
+
+function MCheck.abort_scan()
+  if not MCheck.scan then
+    out("orange", "No scan is active.")
+    return
+  end
+  local targeted = MCheck.scan.target_index ~= nil
+  stop_timer()
+  cancel_hash_job()
+  MCheck.scan = nil
+  if not targeted then
+    MCheck.rows = {}
+    MCheck.last_scan = nil
+  end
+  out("green", "Scan aborted.")
+end
+
+function MCheck.on_scan_response(scan_id, protocol, addon_id, package_name, version, repository_id, filename, source_path)
+  local report = {
+    protocol = tostring(protocol or ""),
+    addon_id = tostring(addon_id or ""),
+    package_name = tostring(package_name or ""),
+    version = tostring(version or ""),
+    repository_id = tostring(repository_id or ""),
+    filename = tostring(filename or ""),
+    source_path = tostring(source_path or ""),
+  }
+  if report.protocol ~= MCheck.protocol or report.addon_id == "" then return end
+  if hard_denied(report.addon_id, report.package_name, report.filename) then return end
+  local transaction = MCheck.transaction
+  if transaction and tostring(scan_id) == tostring(transaction.verify_scan_id) then
+    if report.addon_id == transaction.row.addon_id then transaction.verify_report = report end
+    return
+  end
+  local listing = MCheck.listing
+  if listing and tostring(scan_id) == tostring(listing.id) then
+    if not listing.responses[report.addon_id] then listing.responses[report.addon_id] = report end
+    return
+  end
+  if not MCheck.scan or tostring(scan_id) ~= tostring(MCheck.scan.id) then return end
+  if not MCheck.scan.responses[report.addon_id] then MCheck.scan.responses[report.addon_id] = report end
+end
+
+function MCheck.on_http_done(url, body)
+  if not MCheck.scan or tostring(url) ~= tostring(MCheck.scan.request_url) then return end
+  stop_timer()
+  local ok, manifest = pcall(yajl.to_value, body)
+  if not ok then
+    MCheck.scan = nil
+    out("red", "Repository index is not valid JSON: " .. tostring(manifest))
+    return
+  end
+  local by_id, err = validate_manifest(manifest)
+  if not by_id then
+    MCheck.scan = nil
+    out("red", "Rejected repository index: " .. tostring(err))
+    return
+  end
+  MCheck.scan.manifest = manifest
+  MCheck.scan.manifest_by_id = by_id
+  MCheck.scan.phase = "hashing"
+  out("light_grey", "Checking local add-on files in small background slices...")
+  build_rows_async(by_id, function(rows)
+    local completed = MCheck.scan
+    if not completed then return end
+    if completed.target_index then
+      local row = rows[1]
+      if not row or row.addon_id ~= completed.target_addon_id then
+        row = MCheck.rows[completed.target_index]
+        row.status = "[NO RESPONSE]"
+        row.eligible = false
+        row.entry = by_id[completed.target_addon_id] or row.entry
+      end
+      MCheck.rows[completed.target_index] = row
+      MCheck.scan = nil
+      MCheck.last_scan = completed
+      out("cyan", "Installed add-on:")
+      status_line(completed.target_index, row, row.entry and tostring(row.entry.version) or "--")
+      command_hint("Accept this update with", "mcheck update " .. tostring(completed.target_index))
+      command_hint("Force this exact row with", "mcheck update " .. tostring(completed.target_index) .. " force")
+      return
+    end
+    MCheck.rows = rows
+    MCheck.scan = nil
+    MCheck.last_scan = completed
+    print_rows()
+  end)
+end
+
+function MCheck.on_http_error(error_message, url)
+  if not MCheck.scan or tostring(url) ~= tostring(MCheck.scan.request_url) then return end
+  stop_timer()
+  MCheck.scan = nil
+  out("red", "Repository index request failed: " .. tostring(error_message))
+end
+
+local function cleanup_transaction_files(transaction, keep_swap)
+  if not transaction then return end
+  if transaction.stage_path then pcall(os.remove, transaction.stage_path) end
+  if transaction.new_path then pcall(os.remove, transaction.new_path) end
+  if transaction.swap_path and not keep_swap then pcall(os.remove, transaction.swap_path) end
+end
+
+local function continue_queue()
+  if not MCheck.update_queue then return end
+  local next_row = table.remove(MCheck.update_queue, 1)
+  if not next_row then
+    MCheck.update_queue = nil
+    out("cyan", "Queued updates finished. Run 'mcheck scan' to refresh the list.")
+    return
+  end
+  MCheck.start_update(next_row, false, true)
+end
+
+local function finish_without_rollback(message, color)
+  local transaction = MCheck.transaction
+  stop_timer()
+  cancel_hash_job()
+  cleanup_transaction_files(transaction, false)
+  MCheck.transaction = nil
+  out(color or "red", message)
+  if MCheck.update_queue then
+    if type(tempTimer) == "function" then tempTimer(0.1, continue_queue) else continue_queue() end
+  end
+end
+
+local function finish_remote_package_failure(message)
+  local transaction = MCheck.transaction
+  stop_timer()
+  cancel_hash_job()
+  local recovery_path = transaction and transaction.stage_path or nil
+  if transaction then transaction.stage_path = nil end
+  cleanup_transaction_files(transaction, false)
+  MCheck.transaction = nil
+  out("red", tostring(message))
+  if recovery_path then
+    out("orange", "The SHA-verified repository package was kept for manual recovery: " .. tostring(recovery_path))
+  end
+  if MCheck.update_queue then
+    if type(tempTimer) == "function" then tempTimer(0.1, continue_queue) else continue_queue() end
+  end
+end
+
+local function verify_identity(report, transaction, expected_version)
+  if type(report) ~= "table" then return false, "the installed add-on did not answer verification" end
+  local row, entry = transaction.row, transaction.row.entry
+  if report.addon_id ~= row.addon_id
+    or report.package_name ~= entry.package_name
+    or report.repository_id ~= entry.repository_id
+    or report.filename ~= entry.filename
+  then
+    return false, "the installed add-on reported a different identity"
+  end
+  if report.version ~= expected_version then return false, "the installed add-on reported version " .. report.version end
+  if entry.artifact_type ~= "mpackage" and path_key(report.source_path) ~= path_key(row.source_path) then
+    return false, "the installed add-on reported a different source path"
+  end
+  return true
+end
+
+function MCheck.finish_success()
+  local transaction = MCheck.transaction
+  if not transaction then return end
+  stop_timer()
+  cleanup_transaction_files(transaction, false)
+  transaction.row.report.version = transaction.row.entry.version
+  transaction.row.installed_version = transaction.row.entry.version
+  transaction.row.status = "[CURRENT]"
+  transaction.row.eligible = false
+  transaction.row.local_clean = true
+  transaction.row.local_sha256 = transaction.row.entry.sha256
+  MCheck.transaction = nil
+  if transaction.row.entry.artifact_type == "mpackage" then
+    out("green", string.format("Reinstalled %s at repository version %s from its trusted remote package.", transaction.row.addon_id, transaction.row.entry.version))
+  else
+    out("green", string.format("Reinstalled %s at repository version %s. Backup: %s", transaction.row.addon_id, transaction.row.entry.version, transaction.backup_path))
+  end
+  out("light_grey", "Run 'mcheck scan' to refresh versions and modification tags.")
+  if MCheck.update_queue then
+    if type(tempTimer) == "function" then tempTimer(0.1, continue_queue) else continue_queue() end
+  end
+end
+
+function MCheck.verify_install()
+  local transaction = MCheck.transaction
+  if not transaction or transaction.phase ~= "waiting_verify" then return end
+  transaction.verify_attempts = (tonumber(transaction.verify_attempts) or 0) + 1
+  transaction.verify_scan_id = fresh_id("verify")
+  transaction.verify_report = nil
+  raiseEvent("mcheck.scan.request", transaction.verify_scan_id, MCheck.protocol, transaction.row.addon_id)
+  local ok, err = verify_identity(transaction.verify_report, transaction, transaction.row.entry.version)
+  if ok then
+    MCheck.finish_success()
+    return
+  end
+  if transaction.row.entry.artifact_type == "mpackage"
+    and transaction.verify_attempts < 24
+    and type(tempTimer) == "function"
+  then
+    if transaction.verify_attempts == 1 then
+      out("light_grey", "Waiting for " .. transaction.row.addon_id .. " to finish loading...")
+    end
+    transaction.verify_error = err
+    start_timer(0.25, MCheck.verify_install)
+    return
+  end
+  MCheck.rollback("Verification failed: " .. tostring(err))
+end
+
+function MCheck.finish_rollback()
+  local transaction = MCheck.transaction
+  if not transaction then return end
+  transaction.verify_scan_id = fresh_id("rollback")
+  transaction.verify_report = nil
+  raiseEvent("mcheck.scan.request", transaction.verify_scan_id, MCheck.protocol, transaction.row.addon_id)
+  local ok, err = verify_identity(transaction.verify_report, transaction, transaction.row.installed_version)
+  stop_timer()
+  cleanup_transaction_files(transaction, not ok)
+  MCheck.transaction = nil
+  if ok then
+    out("orange", transaction.failure_reason .. " Previous version restored from backup: " .. transaction.backup_path)
+  else
+    out("red", transaction.failure_reason .. " Automatic rollback could not be verified: " .. tostring(err))
+    out("red", "Recovery copy: " .. tostring(transaction.backup_path))
+  end
+  if MCheck.update_queue then
+    if type(tempTimer) == "function" then tempTimer(0.1, continue_queue) else continue_queue() end
+  end
+end
+
+function MCheck.rollback(reason)
+  local transaction = MCheck.transaction
+  if not transaction or transaction.rolling_back then return end
+  if transaction.row.entry.artifact_type == "mpackage" then
+    finish_remote_package_failure(tostring(reason or "Package update failed."))
+    return
+  end
+  transaction.rolling_back = true
+  transaction.failure_reason = tostring(reason or "Update failed.")
+  stop_timer()
+  local installed_name = installed_package_name(
+    transaction.row.entry.package_name,
+    transaction.row.entry.legacy_package_names
+  )
+  if installed_name then
+    pcall(uninstallPackage, installed_name)
+  end
+  pcall(os.remove, transaction.row.source_path)
+  local restored = transaction.swap_path and os.rename(transaction.swap_path, transaction.row.source_path)
+  if not restored and transaction.old_bytes then restored = write_file(transaction.row.source_path, transaction.old_bytes) end
+  if not restored then
+    finish_without_rollback(transaction.failure_reason .. " Could not restore the original artifact. Recovery copy: " .. tostring(transaction.backup_path), "red")
+    return
+  end
+  transaction.phase = "waiting_rollback_install"
+  local ok, result = pcall(installPackage, transaction.row.source_path)
+  if not ok or result == false then
+    finish_without_rollback(transaction.failure_reason .. " Restored the artifact but could not reinstall it. Recovery copy: " .. tostring(transaction.backup_path), "red")
+    return
+  end
+  start_timer(12, function()
+    if MCheck.transaction and MCheck.transaction.phase == "waiting_rollback_install" then
+      finish_without_rollback(MCheck.transaction.failure_reason .. " Rollback installation timed out. Recovery copy: " .. tostring(MCheck.transaction.backup_path), "red")
+    end
+  end)
+end
+
+local function atomic_place_new(transaction, new_bytes)
+  local source_path = transaction.row.source_path
+  transaction.new_path = source_path .. ".mcheck-new"
+  transaction.swap_path = source_path .. ".mcheck-old"
+  pcall(os.remove, transaction.new_path)
+  pcall(os.remove, transaction.swap_path)
+  local ok, err = write_file(transaction.new_path, new_bytes)
+  if not ok then return false, "could not write adjacent update file: " .. tostring(err) end
+  local moved_old, move_err = os.rename(source_path, transaction.swap_path)
+  if not moved_old then return false, "could not move the current artifact aside: " .. tostring(move_err) end
+  local moved_new, new_err = os.rename(transaction.new_path, source_path)
+  if not moved_new then
+    pcall(os.rename, transaction.swap_path, source_path)
+    return false, "could not place the new artifact: " .. tostring(new_err)
+  end
+  return true
+end
+
+local function install_downloaded_artifact(transaction, new_bytes, actual_hash)
+  if MCheck.transaction ~= transaction or transaction.phase ~= "hashing_download" then return end
+  if lower(actual_hash) ~= lower(transaction.row.entry.sha256) then
+    finish_without_rollback("Downloaded artifact failed SHA-256 validation; nothing was uninstalled.")
+    return
+  end
+  local is_remote_package = transaction.row.entry.artifact_type == "mpackage"
+  if is_remote_package then
+    transaction.install_path = transaction.stage_path
+  else
+    local old_bytes, old_err = read_file(transaction.row.source_path)
+    if not old_bytes then finish_without_rollback("Could not read current artifact for backup: " .. tostring(old_err)); return end
+    transaction.old_bytes = old_bytes
+    local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+    local backup_dir = home .. "/mcheck/backups/" .. transaction.row.addon_id .. "/" .. os.date("%Y%m%d-%H%M%S")
+    ensure_dir(backup_dir)
+    transaction.backup_path = backup_dir .. "/" .. transaction.row.entry.filename
+    local backup_ok, backup_err = write_file(transaction.backup_path, old_bytes)
+    if not backup_ok then finish_without_rollback("Could not create backup: " .. tostring(backup_err)); return end
+    local placed, place_err = atomic_place_new(transaction, new_bytes)
+    if not placed then finish_without_rollback(place_err); return end
+    transaction.install_path = transaction.row.source_path
+  end
+
+  transaction.phase = "installing"
+  local ok_uninstall, uninstall_result = pcall(uninstallPackage, transaction.installed_package_name)
+  if not ok_uninstall or uninstall_result == false then
+    if is_remote_package then
+      finish_remote_package_failure("Could not uninstall " .. transaction.row.addon_id .. ".")
+    else
+      MCheck.rollback("Could not uninstall " .. transaction.row.addon_id .. ".")
+    end
+    return
+  end
+  transaction.phase = "waiting_install"
+  local ok_install, install_result = pcall(installPackage, transaction.install_path)
+  if not ok_install or install_result == false then
+    MCheck.rollback("Could not install repository artifact for " .. transaction.row.addon_id .. ".")
+    return
+  end
+  if MCheck.transaction == transaction and transaction.phase == "waiting_install" then
+    start_timer(12, function()
+      if MCheck.transaction and MCheck.transaction.phase == "waiting_install" then
+        MCheck.rollback("Installation event timed out for " .. MCheck.transaction.row.addon_id .. ".")
+      end
+    end)
+  end
+end
+
+function MCheck.on_download_done(local_path, used_url)
+  local transaction = MCheck.transaction
+  if not transaction or transaction.phase ~= "downloading" or path_key(local_path) ~= path_key(transaction.stage_path) then return end
+  stop_timer()
+  local new_bytes, read_err = read_file(transaction.stage_path)
+  if not new_bytes then finish_without_rollback("Could not read downloaded artifact: " .. tostring(read_err)); return end
+  local artifact_type = tostring(transaction.row.entry.artifact_type or "xml")
+  if artifact_type == "xml" and not new_bytes:find("<MudletPackage", 1, true) then
+    finish_without_rollback("Downloaded file is not a Mudlet XML package.")
+    return
+  elseif artifact_type == "mpackage" then
+    local signature = new_bytes:sub(1, 4)
+    if signature ~= "PK\003\004" and signature ~= "PK\005\006" and signature ~= "PK\007\008" then
+      finish_without_rollback("Downloaded file is not a Mudlet mpackage archive.")
+      return
+    end
+  end
+  transaction.phase = "hashing_download"
+  out("light_grey", "Validating the downloaded artifact...")
+  MCheck.sha256_async(new_bytes, function(actual_hash)
+    install_downloaded_artifact(transaction, new_bytes, actual_hash)
+  end)
+end
+
+function MCheck.on_download_error(error_message, local_path, used_url)
+  local transaction = MCheck.transaction
+  if not transaction or transaction.phase ~= "downloading" then return end
+  if tostring(local_path or "") ~= "" and path_key(local_path) ~= path_key(transaction.stage_path) then return end
+  stop_timer()
+  finish_without_rollback("Download failed; nothing was uninstalled: " .. tostring(error_message))
+end
+
+function MCheck.on_install_event(package_name, source_path)
+  local transaction = MCheck.transaction
+  if not transaction or tostring(package_name) ~= tostring(transaction.row.entry.package_name) then return end
+  if transaction.row.entry.artifact_type ~= "mpackage"
+    and path_key(source_path) ~= path_key(transaction.install_path)
+  then
+    return
+  end
+  stop_timer()
+  if transaction.phase == "waiting_install" then
+    transaction.phase = "waiting_verify"
+    transaction.verify_attempts = 0
+    transaction.verify_error = nil
+    if type(tempTimer) == "function" then tempTimer(0.1, MCheck.verify_install) else MCheck.verify_install() end
+  elseif transaction.phase == "waiting_rollback_install" then
+    transaction.phase = "waiting_rollback_verify"
+    if type(tempTimer) == "function" then tempTimer(0.1, MCheck.finish_rollback) else MCheck.finish_rollback() end
+  end
+end
+
+function MCheck.on_uninstall_event(package_name)
+  if lower(package_name) == lower(MCheck.package_name) then MCheck.shutdown() end
+end
+
+local function begin_download(transaction)
+  if MCheck.transaction ~= transaction then return end
+  local row = transaction.row
+  local _, trusted_err = validate_trusted_artifact(row.entry)
+  if trusted_err then
+    finish_without_rollback("Download blocked: " .. tostring(trusted_err))
+    return
+  end
+  local home = type(getMudletHomeDir) == "function" and getMudletHomeDir() or "."
+  local stage_dir = home .. "/mcheck/staging/" .. fresh_id(row.addon_id)
+  ensure_dir(stage_dir)
+  transaction.stage_path = stage_dir .. "/" .. row.entry.filename
+  transaction.phase = "downloading"
+  pcall(os.remove, transaction.stage_path)
+  out("cyan", string.format("Downloading %s %s%s...", row.addon_id, row.entry.version, transaction.force and " (forced reinstall)" or ""))
+  local separator = row.entry.url:find("?", 1, true) and "&" or "?"
+  local download_url = row.entry.url .. separator .. "mcheck=" .. tostring(os.time())
+  transaction.download_url = download_url
+  local ok, result = pcall(downloadFile, transaction.stage_path, download_url)
+  if not ok or result == false then
+    finish_without_rollback("Could not start download: " .. tostring(result))
+  else
+    start_timer(60, function()
+      if MCheck.transaction and MCheck.transaction.phase == "downloading" then
+        finish_without_rollback("Download timed out; nothing was uninstalled.")
+      end
+    end)
+  end
+end
+
+function MCheck.start_update(row, force, queued)
+  if MCheck.transaction then out("orange", "An update is already running."); return end
+  if type(row) ~= "table" or type(row.entry) ~= "table" then out("red", "That row is not in the repository index."); return end
+  if hard_denied(row.addon_id, row.report.package_name, row.entry.filename) then out("red", "MCheck is protected and cannot target itself."); return end
+  local _, trusted_err = validate_trusted_artifact(row.entry)
+  if trusted_err then out("red", "The row has an untrusted update source: " .. tostring(trusted_err)); return end
+  if row.addon_id ~= tostring(row.entry.id)
+    or row.report.repository_id ~= tostring(row.entry.repository_id)
+    or row.report.package_name ~= tostring(row.entry.package_name)
+    or row.report.filename ~= tostring(row.entry.filename)
+  then
+    out("red", "The row's repository, package, or filename identity does not match; force cannot bypass identity checks.")
+    return
+  end
+  if not force and not row.eligible then
+    out("orange", "That row does not have an eligible normal update. Use force only if you intend to reinstall this exact row.")
+    return
+  end
+  local installed_name = installed_package_name(row.report.package_name, row.entry.legacy_package_names)
+  if not installed_name then out("red", "The selected package is no longer installed."); return end
+
+  local transaction = {
+    row = row,
+    force = force == true,
+    queued = queued == true,
+    installed_package_name = installed_name,
+    phase = row.entry.artifact_type == "mpackage" and "ready_to_download" or "hashing_preflight",
+  }
+  MCheck.transaction = transaction
+  if row.entry.artifact_type == "mpackage" then
+    begin_download(transaction)
+    return
+  end
+  if row.source_path == "" or basename(row.source_path) ~= row.entry.filename then
+    finish_without_rollback("The row has no safe reinstall path.")
+    return
+  end
+  local current_bytes = read_file(row.source_path)
+  if not current_bytes then
+    finish_without_rollback("The current artifact is missing; update stopped because rollback would be impossible.")
+    return
+  end
+  out("light_grey", "Verifying the selected local artifact...")
+  MCheck.sha256_async(current_bytes, function(current_hash)
+    if MCheck.transaction ~= transaction or transaction.phase ~= "hashing_preflight" then return end
+    if lower(current_hash) ~= lower(row.local_sha256 or "") then
+      finish_without_rollback("The local artifact changed after the scan. Run 'mcheck scan' again.")
+      return
+    end
+    if not package_is_installed(row.report.package_name, row.entry.legacy_package_names) then
+      finish_without_rollback("The selected package is no longer installed.")
+      return
+    end
+    begin_download(transaction)
+  end)
+end
+
+local function update_one(index, force)
+  if not MCheck.last_scan or #MCheck.rows == 0 then out("orange", "Run 'mcheck scan' first."); return end
+  local row = MCheck.rows[index]
+  if not row then out("orange", "There is no row " .. tostring(index) .. "."); return end
+  if type(row.entry) ~= "table" then
+    out("orange", "Run 'mcheck scan " .. tostring(index) .. "' before updating that row.")
+    return
+  end
+  MCheck.start_update(row, force, false)
+end
+
+local function update_all()
+  if not MCheck.last_scan or #MCheck.rows == 0 then out("orange", "Run 'mcheck scan' first."); return end
+  if MCheck.transaction or MCheck.update_queue then out("orange", "MCheck is already busy."); return end
+  local queue = {}
+  for _, row in ipairs(MCheck.rows) do if row.eligible then queue[#queue + 1] = row end end
+  if #queue == 0 then out("orange", "No normal updates are eligible."); return end
+  MCheck.update_queue = queue
+  out("cyan", "Queued " .. tostring(#queue) .. " eligible update(s).")
+  continue_queue()
+end
+
+local function help()
+  out("cyan", "Commands:")
+  command_hint("Scan installed add-ons", "mcheck scan")
+  command_hint("Show the last scan results", "mcheck list")
+  command_hint("Rescan one numbered row", "mcheck scan <number>")
+  command_hint("Abort the active scan", "mcheck abort")
+  command_hint("Accept one update", "mcheck update <number>")
+  command_hint("Force one exact row", "mcheck update <number> force")
+  command_hint("Accept every eligible update", "mcheck update all")
+  out("orange", "Force is intentionally limited to one numbered row; 'all force', lists, and ranges are rejected.")
+end
+
+function MCheck.command(raw)
+  raw = trim(raw)
+  local words = {}
+  for word in raw:gmatch("%S+") do words[#words + 1] = word end
+  if #words == 1 and lower(words[1]) == "scan" then MCheck.scan_now(); return end
+  if #words == 1 and lower(words[1]) == "list" then MCheck.list_installed(); return end
+  if (#words == 1 and lower(words[1]) == "abort")
+    or (#words == 2 and lower(words[1]) == "scan" and lower(words[2]) == "abort")
+  then
+    MCheck.abort_scan()
+    return
+  end
+  if #words == 2 and lower(words[1]) == "scan" then
+    if not words[2]:match("^%d+$") then out("red", "Scan requires one row number."); return end
+    MCheck.scan_now(tonumber(words[2]))
+    return
+  end
+  if #words >= 2 and lower(words[1]) == "update" then
+    if lower(words[2]) == "all" then
+      if #words ~= 2 then out("red", "Forced or qualified all-updates are not allowed."); return end
+      update_all(); return
+    end
+    if not words[2]:match("^%d+$") then out("red", "Update requires one row number."); return end
+    local force = #words == 3 and lower(words[3]) == "force"
+    if #words > 3 or (#words == 3 and not force) then out("red", "Use exactly: mcheck update <number> [force]"); return end
+    update_one(tonumber(words[2]), force)
+    return
+  end
+  help()
+end
+
+function MCheck.route_event(event_name, a, b, c, d, e, f, g, h)
+  if event_name == "mcheck.scan.response" then MCheck.on_scan_response(a,b,c,d,e,f,g,h)
+  elseif event_name == "sysGetHttpDone" then MCheck.on_http_done(a,b)
+  elseif event_name == "sysGetHttpError" then MCheck.on_http_error(a,b)
+  elseif event_name == "sysDownloadDone" then MCheck.on_download_done(a,b)
+  elseif event_name == "sysDownloadError" then MCheck.on_download_error(a,b,c)
+  elseif event_name == "sysInstallPackage" then MCheck.on_install_event(a,b)
+  elseif event_name == "sysUninstallPackage" then MCheck.on_uninstall_event(a) end
+end
+
+function MCheck.shutdown()
+  stop_timer()
+  cancel_hash_job()
+  MCheck.scan = nil
+  MCheck.listing = nil
+  MCheck.transaction = nil
+  MCheck.update_queue = nil
+end
+
+math.randomseed(os.time() + math.floor((os.clock() or 0) * 100000))
+out("green", "Loaded v" .. MCheck.version .. ". Use 'mcheck scan' to check installed add-ons.")
+        ]]></script>
+        <eventHandlerList/>
+      </Script>
+
+      <Script isActive="yes" isFolder="no">
+        <name>MCheckEventRouter</name>
+        <packageName>mcheck</packageName>
+        <script><![CDATA[
+function MCheckEventRouter(event_name, ...)
+  if type(MCheck) == "table" and type(MCheck.route_event) == "function" then
+    MCheck.route_event(event_name, ...)
+  end
+end
+        ]]></script>
+        <eventHandlerList>
+          <string>mcheck.scan.response</string>
+          <string>sysGetHttpDone</string>
+          <string>sysGetHttpError</string>
+          <string>sysDownloadDone</string>
+          <string>sysDownloadError</string>
+          <string>sysInstallPackage</string>
+          <string>sysUninstallPackage</string>
+        </eventHandlerList>
+      </Script>
+    </ScriptGroup>
+  </ScriptPackage>
+</MudletPackage>

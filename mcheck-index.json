@@ -22,9 +22,9 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.88.0",
+      "version": "2.89.0",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "c35a99c3c13bd40f405780a2c56382bfacce7daa7fffeaec1a452c713a24aac5",
+      "sha256": "0106af7954c329588b2344f3e768bbc9376ed3d787133db301c509cc16ed2d0f",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -32,7 +32,8 @@
         "2.85.0": "0f377a2b61f6c443c0558b4f919cf77025d31b88b3c74569559592670b2d32e8",
         "2.86.0": "7d4230523d9e36bbc9981c81b817b24a917379162b0eeba1271de273cf20eb6c",
         "2.87.0": "424f302709e98bd649b64d7878d060877f80da906dbd16a61ff39d08ad03f447",
-        "2.88.0": "c35a99c3c13bd40f405780a2c56382bfacce7daa7fffeaec1a452c713a24aac5"
+        "2.88.0": "c35a99c3c13bd40f405780a2c56382bfacce7daa7fffeaec1a452c713a24aac5",
+        "2.89.0": "0106af7954c329588b2344f3e768bbc9376ed3d787133db301c509cc16ed2d0f"
       }
     },
     {
@@ -299,9 +300,9 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.14",
+      "version": "1.0.15",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "fb1c1fd3b43f991e1625e9397b29476da5554655bed31547a321417dd1fc6c76",
+      "sha256": "0d85ea2863bc1ae8b775d5fde90ffa50c527ecb0e256e3ccab1bb3ae88ad77a3",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -316,7 +317,8 @@
         "1.0.11": "69bb0a1fcc8f9e686695c3f050191649e4d266b92806168fa0a0c43940daabb6",
         "1.0.12": "758d75c9d23aa16dbf43ac150c84640f4979c0251d44695e8b25cd3c1fadac2a",
         "1.0.13": "c481fde342b573f8e7663981e6ebb55901041c03afd0f0303d89b20cf5c295be",
-        "1.0.14": "fb1c1fd3b43f991e1625e9397b29476da5554655bed31547a321417dd1fc6c76"
+        "1.0.14": "fb1c1fd3b43f991e1625e9397b29476da5554655bed31547a321417dd1fc6c76",
+        "1.0.15": "0d85ea2863bc1ae8b775d5fde90ffa50c527ecb0e256e3ccab1bb3ae88ad77a3"
       }
     },
     {
@@ -353,9 +355,9 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.24",
+      "version": "7.1.26",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "79ae62b3eda4ae16591cbe2ddfbf245d7e431fe4646e58a1ad44745a395e1ab5",
+      "sha256": "c9f08cd0361dc0fe8db6d6831618afb088803e80a1a0be7165ae6f4797cd6168",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -371,7 +373,8 @@
         "7.1.21": "5f6e257f9c75709a3c905485026fb3341d5e4db1c395b6c1483570a7feb07c3b",
         "7.1.22": "83721c8687c942db2be3b4356678cc55e8e0e180c4e66579cd8473940bc16af5",
         "7.1.23": "a7ae49c78b75992535118f740215a1f02f8629eecf660dd4828f86f17757ca0f",
-        "7.1.24": "79ae62b3eda4ae16591cbe2ddfbf245d7e431fe4646e58a1ad44745a395e1ab5"
+        "7.1.24": "79ae62b3eda4ae16591cbe2ddfbf245d7e431fe4646e58a1ad44745a395e1ab5",
+        "7.1.26": "c9f08cd0361dc0fe8db6d6831618afb088803e80a1a0be7165ae6f4797cd6168"
       }
     }
   ]

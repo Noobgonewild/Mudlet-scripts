@@ -22,9 +22,9 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.89.0",
+      "version": "2.90.0",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "0106af7954c329588b2344f3e768bbc9376ed3d787133db301c509cc16ed2d0f",
+      "sha256": "a8b725f6ddafdecd20317ce25a0fc21a99b915d1faf1366fdf79e08a31b674b5",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -33,7 +33,8 @@
         "2.86.0": "7d4230523d9e36bbc9981c81b817b24a917379162b0eeba1271de273cf20eb6c",
         "2.87.0": "424f302709e98bd649b64d7878d060877f80da906dbd16a61ff39d08ad03f447",
         "2.88.0": "c35a99c3c13bd40f405780a2c56382bfacce7daa7fffeaec1a452c713a24aac5",
-        "2.89.0": "0106af7954c329588b2344f3e768bbc9376ed3d787133db301c509cc16ed2d0f"
+        "2.89.0": "0106af7954c329588b2344f3e768bbc9376ed3d787133db301c509cc16ed2d0f",
+        "2.90.0": "a8b725f6ddafdecd20317ce25a0fc21a99b915d1faf1366fdf79e08a31b674b5"
       }
     },
     {
@@ -178,7 +179,7 @@
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8"
       },
       "artifact_type": "mpackage",
-      "source_xml": "g_maze solver.xml"
+      "source_xml": "g_maze_solver/g_maze solver.xml"
     },
     {
       "id": "g_rainbow_chat",

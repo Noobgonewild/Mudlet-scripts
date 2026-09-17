@@ -357,9 +357,9 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.26",
+      "version": "7.1.27",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "c9f08cd0361dc0fe8db6d6831618afb088803e80a1a0be7165ae6f4797cd6168",
+      "sha256": "9380f5801d66fe262c585728df6dbc49bf4e3509432a4ec30ff882a7593de36e",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -376,7 +376,8 @@
         "7.1.22": "83721c8687c942db2be3b4356678cc55e8e0e180c4e66579cd8473940bc16af5",
         "7.1.23": "a7ae49c78b75992535118f740215a1f02f8629eecf660dd4828f86f17757ca0f",
         "7.1.24": "79ae62b3eda4ae16591cbe2ddfbf245d7e431fe4646e58a1ad44745a395e1ab5",
-        "7.1.26": "c9f08cd0361dc0fe8db6d6831618afb088803e80a1a0be7165ae6f4797cd6168"
+        "7.1.26": "c9f08cd0361dc0fe8db6d6831618afb088803e80a1a0be7165ae6f4797cd6168",
+        "7.1.27": "9380f5801d66fe262c585728df6dbc49bf4e3509432a4ec30ff882a7593de36e"
       }
     }
   ]

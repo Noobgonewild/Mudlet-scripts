@@ -175,16 +175,17 @@
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
-      "version": "2.0.20",
+      "version": "2.0.21",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
-      "sha256": "b54377010e91399b26bb29c810998c1c37e28d4f89417e1a681ee7577aa55f7f",
+      "sha256": "9dd2c7b9df9c510b484ad14a42e3a29c933e0ebae6f8877b9eaf1e97506a01db",
       "known_hashes": {
         "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
         "2.0.16": "138cb2a8ffdfced97a64e102d4a3ab61be3135c8acfb49d0b43e20a1aa0c4cce",
         "2.0.18": "530100484d7e733d50ba20b85cca817da229c228f7616e966c13b795c39fad2b",
         "2.0.19": "b67a321414a69ffc38f8cf04c1bc6726735f2333d7781b38b1020b4ad8ebb1b3",
-        "2.0.20": "b54377010e91399b26bb29c810998c1c37e28d4f89417e1a681ee7577aa55f7f"
+        "2.0.20": "b54377010e91399b26bb29c810998c1c37e28d4f89417e1a681ee7577aa55f7f",
+        "2.0.21": "9dd2c7b9df9c510b484ad14a42e3a29c933e0ebae6f8877b9eaf1e97506a01db"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_maze_solver/g_maze solver.xml"
@@ -309,9 +310,9 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.26",
+      "version": "1.0.29",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "d757ded7ba7094c387da47b3159b5b72eb52cfeb1f2b28ee9772a28677e529ba",
+      "sha256": "a0b33c219215906c892966861b80ddda2aa43315ad877ddda8e4ee122c9868ae",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -334,7 +335,10 @@
         "1.0.23": "5d2666356789eaecf8f4b2c2e8a01350d0fbda16676d5a701a93a3291f7d6ac9",
         "1.0.24": "08a31f2e80610fa97966d33f0800b8379f8acc2d01a9cd88a9e40c087e54a46d",
         "1.0.25": "6acf6519b277b7f4c31b08597b67a20942cc31afd043d8623111f676f93e1916",
-        "1.0.26": "d757ded7ba7094c387da47b3159b5b72eb52cfeb1f2b28ee9772a28677e529ba"
+        "1.0.26": "d757ded7ba7094c387da47b3159b5b72eb52cfeb1f2b28ee9772a28677e529ba",
+        "1.0.27": "a2b86c345d48340d05e1086a266468bfef98b1257a9936d1db001d97bb785de7",
+        "1.0.28": "397242c05594a278c66539df0caa3375eeed7e36ae80611e703f74968cd1e879",
+        "1.0.29": "a0b33c219215906c892966861b80ddda2aa43315ad877ddda8e4ee122c9868ae"
       }
     },
     {
@@ -371,9 +375,9 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.30",
+      "version": "7.1.33",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "27168423751306d676a9e1bd75da8b7d8e8379eae6f5125bcbd98e2d535e92c4",
+      "sha256": "4fe2b036c167deb86cbcb1607f3d2276bd007cdb9b091163ef2cfc5222bf213a",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -394,7 +398,10 @@
         "7.1.27": "9380f5801d66fe262c585728df6dbc49bf4e3509432a4ec30ff882a7593de36e",
         "7.1.28": "24b7a11958a1024b74db6bb35d21b0f9723a348e1a32a963b314a51771af4315",
         "7.1.29": "11781e1df6c2617c436cbe8a09109e46206834f0a961014c581c7777b69abd19",
-        "7.1.30": "27168423751306d676a9e1bd75da8b7d8e8379eae6f5125bcbd98e2d535e92c4"
+        "7.1.30": "27168423751306d676a9e1bd75da8b7d8e8379eae6f5125bcbd98e2d535e92c4",
+        "7.1.31": "9b6f0ea3e62a3604c2fc02f5aed02e7d9a17907256c171c5e552c5c53812e7d8",
+        "7.1.32": "dc8856623dc623d92d2b1ab0d70661f0b1ff1deb4a5330b9734412a4a9cf9cd6",
+        "7.1.33": "4fe2b036c167deb86cbcb1607f3d2276bd007cdb9b091163ef2cfc5222bf213a"
       }
     }
   ]

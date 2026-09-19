@@ -310,9 +310,9 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.29",
+      "version": "1.0.30",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "a0b33c219215906c892966861b80ddda2aa43315ad877ddda8e4ee122c9868ae",
+      "sha256": "7e66b7f9e25482b6d47c5c50ae146c808ba35220dc95d308838ab267afaa5e7a",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -338,7 +338,8 @@
         "1.0.26": "d757ded7ba7094c387da47b3159b5b72eb52cfeb1f2b28ee9772a28677e529ba",
         "1.0.27": "a2b86c345d48340d05e1086a266468bfef98b1257a9936d1db001d97bb785de7",
         "1.0.28": "397242c05594a278c66539df0caa3375eeed7e36ae80611e703f74968cd1e879",
-        "1.0.29": "a0b33c219215906c892966861b80ddda2aa43315ad877ddda8e4ee122c9868ae"
+        "1.0.29": "a0b33c219215906c892966861b80ddda2aa43315ad877ddda8e4ee122c9868ae",
+        "1.0.30": "7e66b7f9e25482b6d47c5c50ae146c808ba35220dc95d308838ab267afaa5e7a"
       }
     },
     {

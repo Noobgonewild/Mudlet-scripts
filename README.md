@@ -99,7 +99,8 @@ Some packages have dependencies or important safety notes:
 - **MMapper optional for navigation:** Mob searches work without MMapper, but `mgo <row>` calls `mapper goto <room-id>` if [MMapper](https://github.com/Noobgonewild/Mapper-and-S-D) is installed.
 - **Optional market prices:** Fantasy Cards and Archaeology look for `persistence/mmarket.db` for price information; their other features work completely without it.
 - **Destructive command warning:** `kdedup` keeps one copy of each key, then unkeeps and destroys duplicate copies. Read `kdedup help` before running it.
-
+- **Card and inventory integration:** `g_winds.mpackage` card duplicate checking uses `lft` (from `g_Fantasy_Cards_Mudlet`) and DINV when available.
+- 
 ---
 
 ## Available Packages
@@ -122,10 +123,13 @@ Some packages have dependencies or important safety notes:
 
 ### Navigation and Hunting
 
+### Navigation and Hunting
+
 | Package | What it does | Start / Help command |
 | :--- | :--- | :--- |
 | `g_areapicker.mpackage` | Lists areas appropriate for your current level, with alignment and offset controls. | `lvl help` (`lvl` to list) |
 | `g_maze solver.mpackage` | In-memory maze exploration helper driven by room GMCP. | `#maze_help` |
+| `g_winds.mpackage` | Winds of Fate epic helper: obelisk side tracking, pedestal step sequence, group command broadcasting, cooldown reporting, and card dupe lookups. | `winds help` (`winds`, `reportsides`, `cmd`) |
 | `mobsearch.mpackage` | Searches mobs and rooms in S&D's `SnDdb.db`, reports results, and can hand a room to MMapper. | `msearch help` |
 
 ### Communication and Reminders

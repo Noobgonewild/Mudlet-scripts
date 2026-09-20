@@ -23,9 +23,9 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.92.0",
+      "version": "2.93.0",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "e1921a88efcd854c9f3d34a896819aaca0608cece8f8106917e1fa6b1daa608c",
+      "sha256": "f3278ecda964645649902ed9f8e279a904f942b124b3dae2d6eb96ffcccdf6c2",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -36,7 +36,8 @@
         "2.88.0": "c35a99c3c13bd40f405780a2c56382bfacce7daa7fffeaec1a452c713a24aac5",
         "2.89.0": "0106af7954c329588b2344f3e768bbc9376ed3d787133db301c509cc16ed2d0f",
         "2.90.0": "a8b725f6ddafdecd20317ce25a0fc21a99b915d1faf1366fdf79e08a31b674b5",
-        "2.92.0": "e1921a88efcd854c9f3d34a896819aaca0608cece8f8106917e1fa6b1daa608c"
+        "2.92.0": "e1921a88efcd854c9f3d34a896819aaca0608cece8f8106917e1fa6b1daa608c",
+        "2.93.0": "f3278ecda964645649902ed9f8e279a904f942b124b3dae2d6eb96ffcccdf6c2"
       }
     },
     {
@@ -130,12 +131,13 @@
       "id": "g_fantasy_cards_mudlet",
       "package_name": "g_Fantasy_Cards_Mudlet",
       "filename": "g_Fantasy_Cards_Mudlet.mpackage",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Fantasy_Cards_Mudlet.mpackage",
-      "sha256": "0508409e488ce49ed173b8d48ea48ee04cd71cb40ff74d7dd4712ba22d3857d2",
+      "sha256": "5e6a628c2f0ab1c28bec874b02a566fa7d02eafafc2c4660065f31cd4a55b96c",
       "known_hashes": {
         "1.0.1": "1a6f995543f98eb003f809254260b5ee109b6e1ddc54a60074f363299f41477a",
-        "1.0.2": "0508409e488ce49ed173b8d48ea48ee04cd71cb40ff74d7dd4712ba22d3857d2"
+        "1.0.2": "0508409e488ce49ed173b8d48ea48ee04cd71cb40ff74d7dd4712ba22d3857d2",
+        "1.0.3": "5e6a628c2f0ab1c28bec874b02a566fa7d02eafafc2c4660065f31cd4a55b96c"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_Fantasy_Cards_Mudlet.xml"
@@ -234,6 +236,19 @@
       "source_xml": "g_shinykeep.xml"
     },
     {
+      "id": "g_winds",
+      "package_name": "g_winds",
+      "filename": "g_winds.mpackage",
+      "version": "1.0.0",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_winds.mpackage",
+      "sha256": "0dd9a2b605b25f18097b22fe3ca2349ecfffdf8a5350ee92f13a7709f49d4cd4",
+      "known_hashes": {
+        "1.0.0": "0dd9a2b605b25f18097b22fe3ca2349ecfffdf8a5350ee92f13a7709f49d4cd4"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_winds.xml"
+    },
+    {
       "id": "hadar_spellup_caster",
       "package_name": "Hadar_Spellup_Caster",
       "filename": "Hadar_Spellup_Caster.mpackage",
@@ -266,12 +281,13 @@
       "id": "m_dulltracker",
       "package_name": "m_dulltracker",
       "filename": "m_dulltracker.mpackage",
-      "version": "1.3.5",
+      "version": "1.3.6",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_dulltracker.mpackage",
-      "sha256": "36b8e12cb591d0ff0ec174a7bab0b66d40aa8a9992c7fce37d4ba4c8f261499f",
+      "sha256": "6aee4fc3514484f7846f33bed4b7e02c9090d4f6c49cbc737684f5b885c4c995",
       "known_hashes": {
         "1.3.4": "4f9dd8e9797aaad38947d778ce2bba9ef2a8904ae80f27599ea1f932bee94455",
-        "1.3.5": "36b8e12cb591d0ff0ec174a7bab0b66d40aa8a9992c7fce37d4ba4c8f261499f"
+        "1.3.5": "36b8e12cb591d0ff0ec174a7bab0b66d40aa8a9992c7fce37d4ba4c8f261499f",
+        "1.3.6": "6aee4fc3514484f7846f33bed4b7e02c9090d4f6c49cbc737684f5b885c4c995"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_dulltracker.xml"

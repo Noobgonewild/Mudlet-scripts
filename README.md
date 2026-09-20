@@ -100,7 +100,7 @@ Some packages have dependencies or important safety notes:
 - **Optional market prices:** Fantasy Cards and Archaeology look for `persistence/mmarket.db` for price information; their other features work completely without it.
 - **Destructive command warning:** `kdedup` keeps one copy of each key, then unkeeps and destroys duplicate copies. Read `kdedup help` before running it.
 - **Card and inventory integration:** `g_winds.mpackage` card duplicate checking uses `lft` (from `g_Fantasy_Cards_Mudlet`) and DINV when available.
-- 
+
 ---
 
 ## Available Packages

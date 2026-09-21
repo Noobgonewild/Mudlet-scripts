@@ -23,9 +23,9 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.94.0",
+      "version": "2.95.0",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "ef3696fdbc1a52399db1cfdcdd08546ecef155b467d070ca3b3f2c6d6630937a",
+      "sha256": "d80c3f43e1ad543b95b0d7deeb9b9eec50432a8a0062441cc077485794096309",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -38,7 +38,8 @@
         "2.90.0": "a8b725f6ddafdecd20317ce25a0fc21a99b915d1faf1366fdf79e08a31b674b5",
         "2.92.0": "e1921a88efcd854c9f3d34a896819aaca0608cece8f8106917e1fa6b1daa608c",
         "2.93.0": "f3278ecda964645649902ed9f8e279a904f942b124b3dae2d6eb96ffcccdf6c2",
-        "2.94.0": "ef3696fdbc1a52399db1cfdcdd08546ecef155b467d070ca3b3f2c6d6630937a"
+        "2.94.0": "ef3696fdbc1a52399db1cfdcdd08546ecef155b467d070ca3b3f2c6d6630937a",
+        "2.95.0": "d80c3f43e1ad543b95b0d7deeb9b9eec50432a8a0062441cc077485794096309"
       }
     },
     {
@@ -327,9 +328,9 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.30",
+      "version": "1.0.32",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "7e66b7f9e25482b6d47c5c50ae146c808ba35220dc95d308838ab267afaa5e7a",
+      "sha256": "e4e5e1d42fbd92541efd311e683fe5f7119c8375f0d9a8bbdeaf953509c5ae68",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -356,7 +357,9 @@
         "1.0.27": "a2b86c345d48340d05e1086a266468bfef98b1257a9936d1db001d97bb785de7",
         "1.0.28": "397242c05594a278c66539df0caa3375eeed7e36ae80611e703f74968cd1e879",
         "1.0.29": "a0b33c219215906c892966861b80ddda2aa43315ad877ddda8e4ee122c9868ae",
-        "1.0.30": "7e66b7f9e25482b6d47c5c50ae146c808ba35220dc95d308838ab267afaa5e7a"
+        "1.0.30": "7e66b7f9e25482b6d47c5c50ae146c808ba35220dc95d308838ab267afaa5e7a",
+        "1.0.31": "d9d657fb1c153a9c8ab8b56906591cae3dc203ea8549203564cc34becef7c351",
+        "1.0.32": "e4e5e1d42fbd92541efd311e683fe5f7119c8375f0d9a8bbdeaf953509c5ae68"
       }
     },
     {

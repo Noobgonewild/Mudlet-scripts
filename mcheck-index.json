@@ -6,14 +6,15 @@
       "id": "bypass_mudlet",
       "package_name": "Bypass_Mudlet",
       "filename": "Bypass_Mudlet.mpackage",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Bypass_Mudlet.mpackage",
-      "sha256": "2f1705efec71b4d27f11d9a12927fb4d28d9e59108ca2096126a85c1194e216c",
+      "sha256": "61a1fa1acb561e5981041c5f4fb6cd88badeca4f666f7c7f6c2eb42a407a20bf",
       "known_hashes": {
         "1.1.3": "6d3283c21f22004e0d18636b1272ae1cd67cbf8eff7afd1b6f7f816ffc9c0829",
         "1.1.4": "398a8da9e3a9b8a7430012e7aa6465090e801b395e4924f0b963e89734845daf",
         "1.2.0": "30aa4a7a180d19c5ece33c56884ab245b3d7022031a9d1354769edf4173ea169",
-        "1.2.1": "2f1705efec71b4d27f11d9a12927fb4d28d9e59108ca2096126a85c1194e216c"
+        "1.2.1": "2f1705efec71b4d27f11d9a12927fb4d28d9e59108ca2096126a85c1194e216c",
+        "1.2.2": "61a1fa1acb561e5981041c5f4fb6cd88badeca4f666f7c7f6c2eb42a407a20bf"
       },
       "artifact_type": "mpackage",
       "source_xml": "Bypass_Mudlet.xml"
@@ -89,9 +90,9 @@
       "id": "g_channels",
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
-      "version": "1.0.16",
+      "version": "1.0.17",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.mpackage",
-      "sha256": "fa05efb1660a7d28fc922ba09cefb9264971b04975df917c4c3237967030af72",
+      "sha256": "a1d70928d30954df8937361cf36167419e8d733df235984e9bf339b01ca435b4",
       "known_hashes": {
         "1.0.1": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12",
         "1.0.2": "9f93856812a45c733e9e646a871e61a0798ea199cbcccf94e097a1b7de3132df",
@@ -108,7 +109,8 @@
         "1.0.13": "abe379cb02ac0fd087768ddaff9650498d03c13032931de12cd5a29d68bfa6fe",
         "1.0.14": "de19815ab2baedb6afcf4263c9902858a5b0367afe77e65140bda9017b145891",
         "1.0.15": "ca4a4be161a29560e5a60878052602b82a4bb97985c7fdd8f90a501002425790",
-        "1.0.16": "fa05efb1660a7d28fc922ba09cefb9264971b04975df917c4c3237967030af72"
+        "1.0.16": "fa05efb1660a7d28fc922ba09cefb9264971b04975df917c4c3237967030af72",
+        "1.0.17": "a1d70928d30954df8937361cf36167419e8d733df235984e9bf339b01ca435b4"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_channels.xml"
@@ -117,12 +119,29 @@
       "id": "g_character",
       "package_name": "g_character",
       "filename": "g_character.mpackage",
-      "version": "1.0.2",
+      "version": "1.0.19",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_character.mpackage",
-      "sha256": "ab19e35feb9da7c85544f339dae7fc03a1b9dd9f62e3935c450ff29dca764edf",
+      "sha256": "16b209753ee881c819cacacd8bde27ebf2e06fc7133326b0869c9bf4cf380ed3",
       "known_hashes": {
         "1.0.1": "6db7ff0022adc78dc7e9b62478e4233a7df62bfe5f1c375040af7b6b8c609c61",
-        "1.0.2": "ab19e35feb9da7c85544f339dae7fc03a1b9dd9f62e3935c450ff29dca764edf"
+        "1.0.2": "ab19e35feb9da7c85544f339dae7fc03a1b9dd9f62e3935c450ff29dca764edf",
+        "1.0.3": "51617ddfe318dcc52d935acc4769bee18c88543716b85d471933fb1856517558",
+        "1.0.4": "72ffda53ea0762548a1c977a5b36ff2ab6e8bcc037bc02366da287328b44eb45",
+        "1.0.5": "51e5a770509811875bdffa4066f0c4a67d2697b6fbe333ed131ce13599c0461f",
+        "1.0.6": "e59e9271f88eec00280e1d595ba7d332e95d7a572e45541618c5d508827f79bc",
+        "1.0.7": "41490ca88e8c128a74b8a4c9ae052c493d134a4373def4b5ca311e3ad1156e04",
+        "1.0.8": "010429195f75005a38afb0e297e00af12009125414e31d3bd2207148558a6e6f",
+        "1.0.9": "7e7ccb15dae8f58668e7e83dd8148ea303f0a3a988ffada5a89d0f36a6d87cd3",
+        "1.0.10": "17969b24638b82ef814c24bff933be8846c3a1c3d2d8f8828d55af9ee8118d07",
+        "1.0.11": "d6a40f254c60448ad8ad60a2515d661938a3ff01a3e4c819a7a867fbc582af61",
+        "1.0.12": "b3cf20dc753ab60f775401932158c6fe67e3c4e871dfb14db48fc96ddc1e14c3",
+        "1.0.13": "c5d05323697e376d617232defb5d3674e6e366c43877b0e915326e146e6eec5b",
+        "1.0.14": "2b7bcadd82498d061d525f3064af384a581d13f3bd597b0cc088fb3b22ee981f",
+        "1.0.15": "4cf5f7c281ef49822b72728a5aa9865f3f1b5b502dc99cd9ff291fa4c87a9218",
+        "1.0.16": "1edeecb5020b61d7691a13215f24556085045da342def043abc478bb32fcfd9b",
+        "1.0.17": "d2b3d865923c836e12963492e128d789f9d8f52754185be3afa7949a5968b46a",
+        "1.0.18": "181a18856e429f61f11691b2df8408347ec02119b54afde4fdfe1240f6d6d849",
+        "1.0.19": "16b209753ee881c819cacacd8bde27ebf2e06fc7133326b0869c9bf4cf380ed3"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_character.xml"
@@ -415,9 +434,9 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.33",
+      "version": "7.1.40",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "87b7a34727ddb2e078f2aeacbede066ac84b45c5cc0ce82193ee6439ff2324e2",
+      "sha256": "2904a85976ba3da4e2ef7863364a8812c3589c6549dd39d9c37fa509ce971785",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -441,7 +460,13 @@
         "7.1.30": "27168423751306d676a9e1bd75da8b7d8e8379eae6f5125bcbd98e2d535e92c4",
         "7.1.31": "9b6f0ea3e62a3604c2fc02f5aed02e7d9a17907256c171c5e552c5c53812e7d8",
         "7.1.32": "dc8856623dc623d92d2b1ab0d70661f0b1ff1deb4a5330b9734412a4a9cf9cd6",
-        "7.1.33": "87b7a34727ddb2e078f2aeacbede066ac84b45c5cc0ce82193ee6439ff2324e2"
+        "7.1.33": "87b7a34727ddb2e078f2aeacbede066ac84b45c5cc0ce82193ee6439ff2324e2",
+        "7.1.35": "7fbf9b8c915ef2d5fd46d9472404c9a4bc27cda2cd92e6a3d1803535052a7926",
+        "7.1.36": "98f612d4b444318bfd802bdff9b4893af1005ef538ae2185b64ef8bc9d760aa0",
+        "7.1.37": "66e6c012b74cd5120954b4c2506530f5278ba703a5e9a091259d7539555816c8",
+        "7.1.38": "72b39ca77c4176a34b95d87afa407f7fe654508524475303c669f8a5b15f876c",
+        "7.1.39": "f3c46b8c6bfa77dd476db9cb9f97018306d3ebb6c44c3a8cd96093111d55a5d4",
+        "7.1.40": "2904a85976ba3da4e2ef7863364a8812c3589c6549dd39d9c37fa509ce971785"
       }
     }
   ]

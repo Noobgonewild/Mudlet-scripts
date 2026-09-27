@@ -7,6 +7,8 @@
       "package_name": "Bypass_Mudlet",
       "filename": "Bypass_Mudlet.mpackage",
       "version": "1.2.3",
+      "description": "Applies configured skill bypasses automatically after level changes.",
+      "help": "bypass apply",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Bypass_Mudlet.mpackage",
       "sha256": "77bfdaf5abb34bca9471be59c0ccbe0447e88f5f66048f5bf174353f8035854f",
       "known_hashes": {
@@ -27,6 +29,8 @@
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
       "version": "2.117.0",
+      "description": "Inventory manager: tracks, searches and scores your gear; required by several other add-ons.",
+      "help": "dinv help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
       "sha256": "003ff802921b54cb005dd93af11fbe7a6a2519c91c1b733f6c7c7dcc2b74e8d0",
       "known_hashes": {
@@ -65,6 +69,8 @@
       "package_name": "g_areapicker",
       "filename": "g_areapicker.mpackage",
       "version": "4.5.2",
+      "description": "Lists areas appropriate for your current level, with alignment and offset controls.",
+      "help": "lvl help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_areapicker.mpackage",
       "sha256": "9056aab2ad6afe3618efdfd57124838880b95f5daafdb125a1b4bf367379cfb7",
       "known_hashes": {
@@ -79,6 +85,8 @@
       "package_name": "g_autotrain",
       "filename": "g_autotrain.mpackage",
       "version": "6.8.2",
+      "description": "Plans and performs weighted stat training using character class and subclass.",
+      "help": "autotrain help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_autotrain.mpackage",
       "sha256": "9295e7f84fd0e5f4c670f9c4db62ee98d72b1ab75d3f07d665008cd61f2b4783",
       "known_hashes": {
@@ -93,6 +101,8 @@
       "package_name": "g_Brandish",
       "filename": "g_Brandish.mpackage",
       "version": "1.0.4",
+      "description": "Uses DINV to manage and brandish charge-safe staves automatically. Disabled until configured.",
+      "help": "gbr help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Brandish.mpackage",
       "sha256": "a86d44f1980f1c30737598a6c6ae022e15eb3b791ce76c28c03d934baf4139c8",
       "known_hashes": {
@@ -107,6 +117,8 @@
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
       "version": "1.0.17",
+      "description": "Multi-tab communications window with history, search, timestamps, gags, and a gchan output channel.",
+      "help": "gcom help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.mpackage",
       "sha256": "a1d70928d30954df8937361cf36167419e8d733df235984e9bf339b01ca435b4",
       "known_hashes": {
@@ -136,6 +148,8 @@
       "package_name": "g_character",
       "filename": "g_character.mpackage",
       "version": "1.0.19",
+      "description": "Character-stats window and configurable status bars with mastery, instinct, and resistance reporting.",
+      "help": "gstats help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_character.mpackage",
       "sha256": "16b209753ee881c819cacacd8bde27ebf2e06fc7133326b0869c9bf4cf380ed3",
       "known_hashes": {
@@ -167,6 +181,8 @@
       "package_name": "g_envenom",
       "filename": "g_envenom.mpackage",
       "version": "1.0.14",
+      "description": "Uses DINV to maintain venom on owned or borrowed weapons and restore equipment safely.",
+      "help": "genv help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_envenom.mpackage",
       "sha256": "dba47b06bf50f5563bd95935961993a8cf65f94c0c8cc6c0ed1036bb057c18c2",
       "known_hashes": {
@@ -181,6 +197,8 @@
       "package_name": "g_Fantasy_Cards_Mudlet",
       "filename": "g_Fantasy_Cards_Mudlet.mpackage",
       "version": "1.0.3",
+      "description": "Tracks Fantasy Card sets, owned and missing cards, scans, summaries, and optional market costs.",
+      "help": "lft help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Fantasy_Cards_Mudlet.mpackage",
       "sha256": "5e6a628c2f0ab1c28bec874b02a566fa7d02eafafc2c4660065f31cd4a55b96c",
       "known_hashes": {
@@ -196,6 +214,8 @@
       "package_name": "g_group_monitor",
       "filename": "g_group_monitor.mpackage",
       "version": "1.3.3",
+      "description": "Draggable GMCP group monitor with invites, filters, and health alerts.",
+      "help": "gmon help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_group_monitor.mpackage",
       "sha256": "1a6027ff6543cd09bbfebe8a80020bcacff977ca8359925f2fd4476acd820447",
       "known_hashes": {
@@ -211,6 +231,8 @@
       "package_name": "g_keydedup",
       "filename": "g_keydedup.mpackage",
       "version": "3.8.1",
+      "description": "Consolidates duplicate keys onto the keyring and destroys extra copies.",
+      "help": "kdedup help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_keydedup.mpackage",
       "sha256": "546a7ecf3d1685ef0f97e5330af097c23993be1b10dd934642d16a8cd0d1a0bf",
       "known_hashes": {
@@ -228,6 +250,8 @@
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
       "version": "1.0.17",
+      "description": "Save, load and share window layouts for installed windowed add-ons.",
+      "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
       "sha256": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
       "known_hashes": {
@@ -241,6 +265,8 @@
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
       "version": "2.0.22",
+      "description": "In-memory maze exploration helper driven by room GMCP.",
+      "help": "#maze_help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
       "sha256": "672f1d1c7ed72ecc1ab4279b738ee108828b940f7b099af8938c4ddb676e20d4",
       "known_hashes": {
@@ -261,6 +287,8 @@
       "package_name": "g_rainbow_chat",
       "filename": "g_rainbow_chat.mpackage",
       "version": "1.0.3",
+      "description": "Adds configurable color gradients to outgoing Aardwolf tells and channels.",
+      "help": "rainbow help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_rainbow_chat.mpackage",
       "sha256": "27a4ee4495e5bea3433436d9f36e51c6049ba99b24055c3eca333143b30b1fcb",
       "known_hashes": {
@@ -276,6 +304,8 @@
       "package_name": "g_RemindMe",
       "filename": "g_RemindMe.mpackage",
       "version": "1.1.2",
+      "description": "Threshold reminders for level, remort, tier, quest points, trivia points, trains, practices, and gold.",
+      "help": "remindme help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_RemindMe.mpackage",
       "sha256": "20997ae2f1f4a08175cc476f59da2cb62bf6279449961759ecb0cbaa49a14578",
       "known_hashes": {
@@ -290,6 +320,8 @@
       "package_name": "g_shinykeep",
       "filename": "g_shinykeep.mpackage",
       "version": "1.0.2",
+      "description": "Uses DINV events to keep newly tracked shiny items for selected tiers.",
+      "help": "shinykeep help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_shinykeep.mpackage",
       "sha256": "38bdf925d1e8f335b7f58d5c6a83b0a9c3be3aff4e7b4f54841c9737d1def733",
       "known_hashes": {
@@ -304,6 +336,8 @@
       "package_name": "g_winds",
       "filename": "g_winds.mpackage",
       "version": "1.0.0",
+      "description": "Winds of Fate epic helper: obelisk sides, pedestal steps, group commands, cooldowns, and card dupes.",
+      "help": "winds help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_winds.mpackage",
       "sha256": "0dd9a2b605b25f18097b22fe3ca2349ecfffdf8a5350ee92f13a7709f49d4cd4",
       "known_hashes": {
@@ -317,6 +351,8 @@
       "package_name": "Hadar_Spellup_Caster",
       "filename": "Hadar_Spellup_Caster.mpackage",
       "version": "1.37.2",
+      "description": "Spellup caster with spellup, aura, visibility, and landing helpers.",
+      "help": "had help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Hadar_Spellup_Caster.mpackage",
       "sha256": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838",
       "known_hashes": {
@@ -331,6 +367,8 @@
       "package_name": "m_aarchaeology",
       "filename": "m_aarchaeology.mpackage",
       "version": "1.4.5",
+      "description": "Tracks archaeology collections, bags, reports, sounds, and optional market costs.",
+      "help": "arch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.mpackage",
       "sha256": "ce77bc573fc1beedcae0f47062f2565d280a13bc0a531d3a8210ab5884e29bd9",
       "known_hashes": {
@@ -346,6 +384,8 @@
       "package_name": "m_dulltracker",
       "filename": "m_dulltracker.mpackage",
       "version": "1.3.6",
+      "description": "Tracks sessions, activity timers, XP, gold, combat, areas, milestones, and analytics in SQLite.",
+      "help": "dull help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_dulltracker.mpackage",
       "sha256": "6aee4fc3514484f7846f33bed4b7e02c9090d4f6c49cbc737684f5b885c4c995",
       "known_hashes": {
@@ -361,6 +401,8 @@
       "package_name": "m_enchanter",
       "filename": "m_enchanter.mpackage",
       "version": "1.2.5",
+      "description": "DINV-backed enchanting analyzer and command helper, including guarded batch enchanting.",
+      "help": "eqa help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_enchanter.mpackage",
       "sha256": "dcba4f3f4b867f4495420527c857fdd913405596a4302684be74fb90e3c5ace2",
       "known_hashes": {
@@ -375,6 +417,8 @@
       "package_name": "m_Loqui practice",
       "filename": "m_Loqui practice.mpackage",
       "version": "1.1.2",
+      "description": "Loqui Practice helper for selecting and practicing skills by class, priority, exclusions, and limits.",
+      "help": "lph help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_Loqui%20practice.mpackage",
       "sha256": "78cc16da67ed80f7f7f634b0c32669d9c23d272db6e6caefc37bc55644d6f73f",
       "known_hashes": {
@@ -391,6 +435,8 @@
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
       "version": "1.0.45",
+      "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
+      "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
       "sha256": "e50256f1c3540c42c329de38fde310fafb11698b07332d651698675c35d89c0c",
       "legacy_package_names": [
@@ -438,6 +484,8 @@
       "package_name": "mobsearch",
       "filename": "mobsearch.mpackage",
       "version": "1.0.2",
+      "description": "Searches mobs and rooms in S&D's SnDdb.db, reports results, and can hand a room to MMapper.",
+      "help": "msearch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobsearch.mpackage",
       "sha256": "6ae1520515f9f109fb40b38c85691f433a2a16752b38c4bccf5ad1dc5b1b94af",
       "known_hashes": {
@@ -452,6 +500,8 @@
       "package_name": "msleep",
       "filename": "msleep.mpackage",
       "version": "1.0.2",
+      "description": "Sleeps shortly before a tick when vitals are low, then wakes; optional camp, fire, and PK-room behavior.",
+      "help": "ts help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/msleep.mpackage",
       "sha256": "50053c1418afbeb9d08de2259b26dfe061b5f04327c2dfb3bb47d492590882d3",
       "known_hashes": {
@@ -468,6 +518,8 @@
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
       "version": "7.1.49",
+      "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
+      "help": "xhelp",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
       "sha256": "140e4dcf2d18218f9601afd5bf494e574e6dce26043b8e6e6e7a3b77a580fc92",
       "known_hashes": {

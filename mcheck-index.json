@@ -517,11 +517,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.52",
+      "version": "7.1.53",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "xhelp",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "9bf74dccea22813bc6219ea838b85a3b32cf9038c771d10560b63bcdbbe000e4",
+      "sha256": "8891fcc4ddae39f76e446305a78b4d3f2e571ca3166e4c64c55147db3d6568d3",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -556,7 +556,8 @@
         "7.1.49": "140e4dcf2d18218f9601afd5bf494e574e6dce26043b8e6e6e7a3b77a580fc92",
         "7.1.50": "8b50e37d5ac110801aba4f35199b5f5abb4ebed1148105cb34fecdb14c6d9949",
         "7.1.51": "e653bd075f467223177d753167dece56082b0d6baacf2a780674c513fa40e5b5",
-        "7.1.52": "9bf74dccea22813bc6219ea838b85a3b32cf9038c771d10560b63bcdbbe000e4"
+        "7.1.52": "9bf74dccea22813bc6219ea838b85a3b32cf9038c771d10560b63bcdbbe000e4",
+        "7.1.53": "8891fcc4ddae39f76e446305a78b4d3f2e571ca3166e4c64c55147db3d6568d3"
       }
     }
   ]

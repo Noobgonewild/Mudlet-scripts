@@ -404,14 +404,15 @@
       "id": "m_enchanter",
       "package_name": "m_enchanter",
       "filename": "m_enchanter.mpackage",
-      "version": "1.2.5",
+      "version": "1.2.6",
       "description": "DINV-backed enchanting analyzer and command helper, including guarded batch enchanting.",
       "help": "eqa help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_enchanter.mpackage",
-      "sha256": "dcba4f3f4b867f4495420527c857fdd913405596a4302684be74fb90e3c5ace2",
+      "sha256": "d8383c086d67a5f6a786e2e7d4f4ef38751ab1d866a885b1a3dd765b1684e57a",
       "known_hashes": {
         "1.2.4": "16a2c93ac9a83b1cd841cf24389f94443dee49df6bb17abc3401883525f5d0fb",
-        "1.2.5": "dcba4f3f4b867f4495420527c857fdd913405596a4302684be74fb90e3c5ace2"
+        "1.2.5": "dcba4f3f4b867f4495420527c857fdd913405596a4302684be74fb90e3c5ace2",
+        "1.2.6": "d8383c086d67a5f6a786e2e7d4f4ef38751ab1d866a885b1a3dd765b1684e57a"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_enchanter.xml"

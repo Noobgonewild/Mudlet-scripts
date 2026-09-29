@@ -104,14 +104,15 @@
       "id": "g_brandish",
       "package_name": "g_Brandish",
       "filename": "g_Brandish.mpackage",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Uses DINV to manage and brandish charge-safe staves automatically. Disabled until configured.",
       "help": "gbr help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Brandish.mpackage",
-      "sha256": "a86d44f1980f1c30737598a6c6ae022e15eb3b791ce76c28c03d934baf4139c8",
+      "sha256": "ad0738f6d520093ffd02315f6d3fea132918ddd260464f4c32132c13801c03b1",
       "known_hashes": {
         "1.0.3": "4745e7e63b6ed175e6134ce81927d317df9a4419c0b7025769d1567ffcf76398",
-        "1.0.4": "a86d44f1980f1c30737598a6c6ae022e15eb3b791ce76c28c03d934baf4139c8"
+        "1.0.4": "a86d44f1980f1c30737598a6c6ae022e15eb3b791ce76c28c03d934baf4139c8",
+        "1.0.5": "ad0738f6d520093ffd02315f6d3fea132918ddd260464f4c32132c13801c03b1"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_Brandish.xml"

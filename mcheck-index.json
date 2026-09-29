@@ -355,14 +355,15 @@
       "id": "hadar_spellup_caster",
       "package_name": "Hadar_Spellup_Caster",
       "filename": "Hadar_Spellup_Caster.mpackage",
-      "version": "1.37.2",
+      "version": "1.37.3",
       "description": "Spellup caster with spellup, aura, visibility, and landing helpers.",
       "help": "had help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Hadar_Spellup_Caster.mpackage",
-      "sha256": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838",
+      "sha256": "5b400c236d73ddf5bf24908b74c8d27a774c850dcf4e57c7e84bd8930c656793",
       "known_hashes": {
         "1.37.1": "741e8b6fe8a5a8baa1f7524af1da8bc219b5940deb5615362ab09221e32db815",
-        "1.37.2": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838"
+        "1.37.2": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838",
+        "1.37.3": "5b400c236d73ddf5bf24908b74c8d27a774c850dcf4e57c7e84bd8930c656793"
       },
       "artifact_type": "mpackage",
       "source_xml": "Hadar_Spellup_Caster.xml"

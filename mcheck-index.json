@@ -28,11 +28,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.121.0",
+      "version": "2.122.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "2a9bccc53bee09ebe8863ec30fc38c6ca03275a5301307716d32f70d024fa770",
+      "sha256": "4c418e7ac81286bd5701e8093d637d0ed5c9e4a6dab165eac9f41aa07f57cb0d",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -65,7 +65,8 @@
         "2.118.0": "fc87388dc0692e2e02aaa7e9db14a897ac46c07136abe7906b87419c89e0271e",
         "2.119.0": "a62e7f0c5a431943488a9896111864db10aa3b6dcbedd5b31b95a3cd91c95249",
         "2.120.0": "95dc674c7138cc8a944bb366ae67c3451f108e64c9d39f186d3aa86d715f5db4",
-        "2.121.0": "2a9bccc53bee09ebe8863ec30fc38c6ca03275a5301307716d32f70d024fa770"
+        "2.121.0": "2a9bccc53bee09ebe8863ec30fc38c6ca03275a5301307716d32f70d024fa770",
+        "2.122.0": "4c418e7ac81286bd5701e8093d637d0ed5c9e4a6dab165eac9f41aa07f57cb0d"
       }
     },
     {
@@ -104,15 +105,16 @@
       "id": "g_brandish",
       "package_name": "g_Brandish",
       "filename": "g_Brandish.mpackage",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "description": "Uses DINV to manage and brandish charge-safe staves automatically. Disabled until configured.",
       "help": "gbr help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_Brandish.mpackage",
-      "sha256": "ad0738f6d520093ffd02315f6d3fea132918ddd260464f4c32132c13801c03b1",
+      "sha256": "745dc52cd07db03239b60683340ac2f0aab4f0d9f32621779404562e48e94f20",
       "known_hashes": {
         "1.0.3": "4745e7e63b6ed175e6134ce81927d317df9a4419c0b7025769d1567ffcf76398",
         "1.0.4": "a86d44f1980f1c30737598a6c6ae022e15eb3b791ce76c28c03d934baf4139c8",
-        "1.0.5": "ad0738f6d520093ffd02315f6d3fea132918ddd260464f4c32132c13801c03b1"
+        "1.0.5": "ad0738f6d520093ffd02315f6d3fea132918ddd260464f4c32132c13801c03b1",
+        "1.0.6": "745dc52cd07db03239b60683340ac2f0aab4f0d9f32621779404562e48e94f20"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_Brandish.xml"
@@ -121,11 +123,11 @@
       "id": "g_channels",
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
-      "version": "1.0.17",
+      "version": "1.0.18",
       "description": "Multi-tab communications window with history, search, timestamps, gags, and a gchan output channel.",
       "help": "gcom help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.mpackage",
-      "sha256": "a1d70928d30954df8937361cf36167419e8d733df235984e9bf339b01ca435b4",
+      "sha256": "e3b39cedb63f71e9ac9f9715acba1b9e686a4b5d75d251003f0ce504a79af34f",
       "known_hashes": {
         "1.0.1": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12",
         "1.0.2": "9f93856812a45c733e9e646a871e61a0798ea199cbcccf94e097a1b7de3132df",
@@ -143,7 +145,8 @@
         "1.0.14": "de19815ab2baedb6afcf4263c9902858a5b0367afe77e65140bda9017b145891",
         "1.0.15": "ca4a4be161a29560e5a60878052602b82a4bb97985c7fdd8f90a501002425790",
         "1.0.16": "fa05efb1660a7d28fc922ba09cefb9264971b04975df917c4c3237967030af72",
-        "1.0.17": "a1d70928d30954df8937361cf36167419e8d733df235984e9bf339b01ca435b4"
+        "1.0.17": "a1d70928d30954df8937361cf36167419e8d733df235984e9bf339b01ca435b4",
+        "1.0.18": "e3b39cedb63f71e9ac9f9715acba1b9e686a4b5d75d251003f0ce504a79af34f"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_channels.xml"
@@ -185,14 +188,15 @@
       "id": "g_envenom",
       "package_name": "g_envenom",
       "filename": "g_envenom.mpackage",
-      "version": "1.0.14",
+      "version": "1.0.15",
       "description": "Uses DINV to maintain venom on owned or borrowed weapons and restore equipment safely.",
       "help": "genv help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_envenom.mpackage",
-      "sha256": "dba47b06bf50f5563bd95935961993a8cf65f94c0c8cc6c0ed1036bb057c18c2",
+      "sha256": "0b69fde2ed096e11917ccbde55ad3cfab977aa2613d3428027f59bfae9710809",
       "known_hashes": {
         "1.0.13": "23dbe77c1b5d1a4c9b03b14efe07f183a726f87fed80633e11878e500c05eaf1",
-        "1.0.14": "dba47b06bf50f5563bd95935961993a8cf65f94c0c8cc6c0ed1036bb057c18c2"
+        "1.0.14": "dba47b06bf50f5563bd95935961993a8cf65f94c0c8cc6c0ed1036bb057c18c2",
+        "1.0.15": "0b69fde2ed096e11917ccbde55ad3cfab977aa2613d3428027f59bfae9710809"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_envenom.xml"
@@ -218,15 +222,16 @@
       "id": "g_group_monitor",
       "package_name": "g_group_monitor",
       "filename": "g_group_monitor.mpackage",
-      "version": "1.3.3",
+      "version": "1.3.4",
       "description": "Draggable GMCP group monitor with invites, filters, and health alerts.",
       "help": "gmon help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_group_monitor.mpackage",
-      "sha256": "1a6027ff6543cd09bbfebe8a80020bcacff977ca8359925f2fd4476acd820447",
+      "sha256": "3f5c944a10eaaf11124a5bb89e7b85ed35b36c0b8f3630d8e8808440989d2afc",
       "known_hashes": {
         "1.3.1": "7590d4ae9646cd9baa4dda955d12b8da4565153434e3a695be422fdacb0ebe8d",
         "1.3.2": "60d25d3eecd504ef064aabab7e1407adfb56e7439ba14ef90fadda9b8f407f1e",
-        "1.3.3": "1a6027ff6543cd09bbfebe8a80020bcacff977ca8359925f2fd4476acd820447"
+        "1.3.3": "1a6027ff6543cd09bbfebe8a80020bcacff977ca8359925f2fd4476acd820447",
+        "1.3.4": "3f5c944a10eaaf11124a5bb89e7b85ed35b36c0b8f3630d8e8808440989d2afc"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_group_monitor.xml"
@@ -269,11 +274,11 @@
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
-      "version": "2.0.22",
+      "version": "2.0.25",
       "description": "In-memory maze exploration helper driven by room GMCP.",
       "help": "#maze_help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
-      "sha256": "672f1d1c7ed72ecc1ab4279b738ee108828b940f7b099af8938c4ddb676e20d4",
+      "sha256": "82f2b8d26f9d60493a2ae2f9629a632c85d786ebb544e4342f2645b119960652",
       "known_hashes": {
         "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
@@ -282,7 +287,8 @@
         "2.0.19": "b67a321414a69ffc38f8cf04c1bc6726735f2333d7781b38b1020b4ad8ebb1b3",
         "2.0.20": "b54377010e91399b26bb29c810998c1c37e28d4f89417e1a681ee7577aa55f7f",
         "2.0.21": "9dd2c7b9df9c510b484ad14a42e3a29c933e0ebae6f8877b9eaf1e97506a01db",
-        "2.0.22": "672f1d1c7ed72ecc1ab4279b738ee108828b940f7b099af8938c4ddb676e20d4"
+        "2.0.22": "672f1d1c7ed72ecc1ab4279b738ee108828b940f7b099af8938c4ddb676e20d4",
+        "2.0.25": "82f2b8d26f9d60493a2ae2f9629a632c85d786ebb544e4342f2645b119960652"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_maze_solver/g_maze solver.xml"
@@ -340,13 +346,14 @@
       "id": "g_winds",
       "package_name": "g_winds",
       "filename": "g_winds.mpackage",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "description": "Winds of Fate epic helper: obelisk sides, pedestal steps, group commands, cooldowns, and card dupes.",
       "help": "winds help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_winds.mpackage",
-      "sha256": "0dd9a2b605b25f18097b22fe3ca2349ecfffdf8a5350ee92f13a7709f49d4cd4",
+      "sha256": "23fe9f3f8daa1f4e47e074e23bd5eda3dfa34ef2f311f4b2d1a413d7ac3c33e2",
       "known_hashes": {
-        "1.0.0": "0dd9a2b605b25f18097b22fe3ca2349ecfffdf8a5350ee92f13a7709f49d4cd4"
+        "1.0.0": "0dd9a2b605b25f18097b22fe3ca2349ecfffdf8a5350ee92f13a7709f49d4cd4",
+        "1.0.2": "23fe9f3f8daa1f4e47e074e23bd5eda3dfa34ef2f311f4b2d1a413d7ac3c33e2"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_winds.xml"
@@ -355,15 +362,16 @@
       "id": "hadar_spellup_caster",
       "package_name": "Hadar_Spellup_Caster",
       "filename": "Hadar_Spellup_Caster.mpackage",
-      "version": "1.37.3",
+      "version": "1.37.4",
       "description": "Spellup caster with spellup, aura, visibility, and landing helpers.",
       "help": "had help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Hadar_Spellup_Caster.mpackage",
-      "sha256": "5b400c236d73ddf5bf24908b74c8d27a774c850dcf4e57c7e84bd8930c656793",
+      "sha256": "f0388729d647ccb8876b6a7c9956570d6b981a343f4971c50778710a754e76bc",
       "known_hashes": {
         "1.37.1": "741e8b6fe8a5a8baa1f7524af1da8bc219b5940deb5615362ab09221e32db815",
         "1.37.2": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838",
-        "1.37.3": "5b400c236d73ddf5bf24908b74c8d27a774c850dcf4e57c7e84bd8930c656793"
+        "1.37.3": "5b400c236d73ddf5bf24908b74c8d27a774c850dcf4e57c7e84bd8930c656793",
+        "1.37.4": "f0388729d647ccb8876b6a7c9956570d6b981a343f4971c50778710a754e76bc"
       },
       "artifact_type": "mpackage",
       "source_xml": "Hadar_Spellup_Caster.xml"
@@ -441,11 +449,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.48",
+      "version": "1.0.50",
       "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "454b1b9492cd081430f27c1f7ddec128c61dafac8adf03a54220f91f1ce67e26",
+      "sha256": "785a194adfddfbdef61bab46455f78e256d637777d0fd13a97e43beec810154d",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -486,7 +494,9 @@
         "1.0.45": "e50256f1c3540c42c329de38fde310fafb11698b07332d651698675c35d89c0c",
         "1.0.46": "d39b44d8111e592ce0330ded5fafba6fbb0de096b71b377a69cbb91324ac1fe1",
         "1.0.47": "2955ad43f3fb00698065c13afd224aa7e5129d7ed0d3966221a65557ff159501",
-        "1.0.48": "454b1b9492cd081430f27c1f7ddec128c61dafac8adf03a54220f91f1ce67e26"
+        "1.0.48": "454b1b9492cd081430f27c1f7ddec128c61dafac8adf03a54220f91f1ce67e26",
+        "1.0.49": "8235d18b714db47a6af08f3bf70b8170a67b3f33f87a15a8bff52651d1ff9424",
+        "1.0.50": "785a194adfddfbdef61bab46455f78e256d637777d0fd13a97e43beec810154d"
       }
     },
     {
@@ -509,14 +519,15 @@
       "id": "msleep",
       "package_name": "msleep",
       "filename": "msleep.mpackage",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "Sleeps shortly before a tick when vitals are low, then wakes; optional camp, fire, and PK-room behavior.",
       "help": "ts help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/msleep.mpackage",
-      "sha256": "50053c1418afbeb9d08de2259b26dfe061b5f04327c2dfb3bb47d492590882d3",
+      "sha256": "9897f2181af8037cb192d26c9f01805b7926e7e3b3b1b46531577b634893081f",
       "known_hashes": {
         "1.0.1": "5a75b7952c333fda278952836273c5496d008009febd6d7f4e4ce7bfe8029d8c",
-        "1.0.2": "50053c1418afbeb9d08de2259b26dfe061b5f04327c2dfb3bb47d492590882d3"
+        "1.0.2": "50053c1418afbeb9d08de2259b26dfe061b5f04327c2dfb3bb47d492590882d3",
+        "1.0.3": "9897f2181af8037cb192d26c9f01805b7926e7e3b3b1b46531577b634893081f"
       },
       "artifact_type": "mpackage",
       "source_xml": "msleep.xml"
@@ -527,11 +538,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.53",
+      "version": "7.1.54",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "xhelp",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "8891fcc4ddae39f76e446305a78b4d3f2e571ca3166e4c64c55147db3d6568d3",
+      "sha256": "c8554f00fd19f1cfd61ad3c4f729fc4a34da4efb8c60dff7305b1981acc7175e",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -567,7 +578,8 @@
         "7.1.50": "8b50e37d5ac110801aba4f35199b5f5abb4ebed1148105cb34fecdb14c6d9949",
         "7.1.51": "e653bd075f467223177d753167dece56082b0d6baacf2a780674c513fa40e5b5",
         "7.1.52": "9bf74dccea22813bc6219ea838b85a3b32cf9038c771d10560b63bcdbbe000e4",
-        "7.1.53": "8891fcc4ddae39f76e446305a78b4d3f2e571ca3166e4c64c55147db3d6568d3"
+        "7.1.53": "8891fcc4ddae39f76e446305a78b4d3f2e571ca3166e4c64c55147db3d6568d3",
+        "7.1.54": "c8554f00fd19f1cfd61ad3c4f729fc4a34da4efb8c60dff7305b1981acc7175e"
       }
     }
   ]

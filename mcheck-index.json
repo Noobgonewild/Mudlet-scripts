@@ -444,6 +444,21 @@
       "source_xml": "m_Loqui practice.xml"
     },
     {
+      "id": "m_potionsearch",
+      "package_name": "m_potionsearch",
+      "filename": "m_potionsearch.mpackage",
+      "version": "1.1.3",
+      "description": "Records appraised shop potions, pills, scrolls, wands and staffs; searches them by spell name and level.",
+      "help": "potionsearch help",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_potionsearch.mpackage",
+      "sha256": "92d57aa6ef15acbeeee837dea01c0b4820c090707b9e66a5e10eedc005145a49",
+      "known_hashes": {
+        "1.1.3": "92d57aa6ef15acbeeee837dea01c0b4820c090707b9e66a5e10eedc005145a49"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "m_potionsearch.xml"
+    },
+    {
       "id": "mmapper",
       "package_name": "mmapper",
       "filename": "mmapper.mpackage",

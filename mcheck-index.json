@@ -266,14 +266,15 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.0.19",
+      "version": "1.0.20",
       "description": "Save, load and share window layouts for installed windowed add-ons.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
+      "sha256": "14caa08695c36b52a7adbda8a2bc42a489d93257cc72f60a57b9918d2ee3ad6f",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
-        "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00"
+        "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
+        "1.0.20": "14caa08695c36b52a7adbda8a2bc42a489d93257cc72f60a57b9918d2ee3ad6f"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"
@@ -570,11 +571,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.67",
+      "version": "7.1.69",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "e5720e7c84d2bcca11ac122c5cd718fa94f7dd757ec828466f33f2691dd4e8c9",
+      "sha256": "d350bfac3e2d24b70b1a104b42209ef4506cd943efa74da5917839411ab3256b",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -616,7 +617,9 @@
         "7.1.64": "1239f533e7879563ef2a99aee5bbfffbe5677b75c960dd2968129c0efc587fe9",
         "7.1.65": "f5ceb3153da76caacce0d24db98c45c05a903b67d08c667b2164544d4e313151",
         "7.1.66": "98d9147a3f8c85c3d5a99a41318980822c2b5f970688b7922b4304bdb49e53a0",
-        "7.1.67": "e5720e7c84d2bcca11ac122c5cd718fa94f7dd757ec828466f33f2691dd4e8c9"
+        "7.1.67": "e5720e7c84d2bcca11ac122c5cd718fa94f7dd757ec828466f33f2691dd4e8c9",
+        "7.1.68": "8445b22a2276c33be76b76d3a836df078e4fff6c8fb0c8f8f6ceb21af92ebeec",
+        "7.1.69": "d350bfac3e2d24b70b1a104b42209ef4506cd943efa74da5917839411ab3256b"
       }
     }
   ]

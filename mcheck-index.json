@@ -479,11 +479,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.50",
+      "version": "1.0.51",
       "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "785a194adfddfbdef61bab46455f78e256d637777d0fd13a97e43beec810154d",
+      "sha256": "4e48afdb4eaadfd368c091d7a7f28607b26f47a16356f5521df0b2b99bd48002",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -526,7 +526,8 @@
         "1.0.47": "2955ad43f3fb00698065c13afd224aa7e5129d7ed0d3966221a65557ff159501",
         "1.0.48": "454b1b9492cd081430f27c1f7ddec128c61dafac8adf03a54220f91f1ce67e26",
         "1.0.49": "8235d18b714db47a6af08f3bf70b8170a67b3f33f87a15a8bff52651d1ff9424",
-        "1.0.50": "785a194adfddfbdef61bab46455f78e256d637777d0fd13a97e43beec810154d"
+        "1.0.50": "785a194adfddfbdef61bab46455f78e256d637777d0fd13a97e43beec810154d",
+        "1.0.51": "4e48afdb4eaadfd368c091d7a7f28607b26f47a16356f5521df0b2b99bd48002"
       }
     },
     {

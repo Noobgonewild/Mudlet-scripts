@@ -1,6 +1,9 @@
 {
   "schema": 2,
   "repository_id": "noobgonewild-mudlet-scripts",
+  "mcheck": {
+    "version": "0.5.5"
+  },
   "addons": [
     {
       "id": "bypass_mudlet",
@@ -391,16 +394,17 @@
       "id": "m_aarchaeology",
       "package_name": "m_aarchaeology",
       "filename": "m_aarchaeology.mpackage",
-      "version": "1.4.6",
+      "version": "1.6.1",
       "description": "Tracks archaeology collections, bags, reports, sounds, and optional market costs.",
       "help": "arch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.mpackage",
-      "sha256": "833bb6097ef54b47a1f1d3072a00f3ee79f6cff6e0094fc8b5a38e673a95c21d",
+      "sha256": "a6ade148cc01a38d842d8555036b549e4aaa97d4831d8b4f4f96d4dbed2a8240",
       "known_hashes": {
         "1.4.3": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0",
         "1.4.4": "a7debe20b85f6e9736f1fdbdb01b63e464d0f955aad14b4fac67a5002fbb88ea",
         "1.4.5": "ce77bc573fc1beedcae0f47062f2565d280a13bc0a531d3a8210ab5884e29bd9",
-        "1.4.6": "833bb6097ef54b47a1f1d3072a00f3ee79f6cff6e0094fc8b5a38e673a95c21d"
+        "1.4.6": "833bb6097ef54b47a1f1d3072a00f3ee79f6cff6e0094fc8b5a38e673a95c21d",
+        "1.6.1": "a6ade148cc01a38d842d8555036b549e4aaa97d4831d8b4f4f96d4dbed2a8240"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_aarchaeology.xml"

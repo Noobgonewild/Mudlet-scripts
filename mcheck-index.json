@@ -465,6 +465,21 @@
       "source_xml": "m_Loqui practice.xml"
     },
     {
+      "id": "m_marketwatch",
+      "package_name": "m_marketwatch",
+      "filename": "m_marketwatch.mpackage",
+      "version": "1.1.0",
+      "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices if installed.",
+      "help": "mwatch help",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
+      "sha256": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
+      "known_hashes": {
+        "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "m_marketwatch.xml"
+    },
+    {
       "id": "m_potionsearch",
       "package_name": "m_potionsearch",
       "filename": "m_potionsearch.mpackage",

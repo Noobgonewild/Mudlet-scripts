@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.124.0",
+      "version": "2.125.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "09b4c191b4f224d68e3a5736f382c0ace3c16686b06159972c5775df9b6a97c7",
+      "sha256": "e820575bffc9a1f7debf52f6917fbee792077c1c6a63ba1c4785ed11c5c4f71d",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -72,7 +72,8 @@
         "2.121.0": "2a9bccc53bee09ebe8863ec30fc38c6ca03275a5301307716d32f70d024fa770",
         "2.122.0": "4c418e7ac81286bd5701e8093d637d0ed5c9e4a6dab165eac9f41aa07f57cb0d",
         "2.123.0": "b846a4091dfbc94899283cae751a127efd057db0bc82bb6410f89ced96589cb4",
-        "2.124.0": "09b4c191b4f224d68e3a5736f382c0ace3c16686b06159972c5775df9b6a97c7"
+        "2.124.0": "09b4c191b4f224d68e3a5736f382c0ace3c16686b06159972c5775df9b6a97c7",
+        "2.125.0": "e820575bffc9a1f7debf52f6917fbee792077c1c6a63ba1c4785ed11c5c4f71d"
       }
     },
     {
@@ -469,13 +470,14 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.1.0",
+      "version": "1.4.0",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
+      "sha256": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
       "known_hashes": {
-        "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa"
+        "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
+        "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"

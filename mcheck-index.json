@@ -604,13 +604,14 @@
       "id": "mudbin",
       "package_name": "mudbin",
       "filename": "mudbin.mpackage",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "description": "Uploads selected game text or the clipboard to mudbin with colors, keeps a history, and lets other add-ons upload.",
       "help": "mudbin help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mudbin.mpackage",
-      "sha256": "a5d75ad9a68e479796e5fa5dbdedba4cae7590e34daae14f2a5256d73d367ec4",
+      "sha256": "ed04f9de16ddb3aea9d2a2ec4ff68fcfad1b557d87fb86ef4514d03df6e13ad2",
       "known_hashes": {
-        "1.2.2": "a5d75ad9a68e479796e5fa5dbdedba4cae7590e34daae14f2a5256d73d367ec4"
+        "1.2.2": "a5d75ad9a68e479796e5fa5dbdedba4cae7590e34daae14f2a5256d73d367ec4",
+        "1.2.3": "ed04f9de16ddb3aea9d2a2ec4ff68fcfad1b557d87fb86ef4514d03df6e13ad2"
       },
       "artifact_type": "mpackage",
       "source_xml": "mudbin.xml"

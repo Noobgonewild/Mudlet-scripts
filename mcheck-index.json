@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.126.0",
+      "version": "2.127.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "6f231d5b1161e9fc3e5f12b0b900736fd72b4ffc24ae73abbfec0574dd59e896",
+      "sha256": "d5932ad0e4ee5e3accfb598a7fbffa72d42c2378d07b59b29a94e7556149ea94",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -74,7 +74,8 @@
         "2.123.0": "b846a4091dfbc94899283cae751a127efd057db0bc82bb6410f89ced96589cb4",
         "2.124.0": "09b4c191b4f224d68e3a5736f382c0ace3c16686b06159972c5775df9b6a97c7",
         "2.125.0": "e820575bffc9a1f7debf52f6917fbee792077c1c6a63ba1c4785ed11c5c4f71d",
-        "2.126.0": "6f231d5b1161e9fc3e5f12b0b900736fd72b4ffc24ae73abbfec0574dd59e896"
+        "2.126.0": "6f231d5b1161e9fc3e5f12b0b900736fd72b4ffc24ae73abbfec0574dd59e896",
+        "2.127.0": "d5932ad0e4ee5e3accfb598a7fbffa72d42c2378d07b59b29a94e7556149ea94"
       }
     },
     {
@@ -471,14 +472,15 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.4.0",
-      "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices if installed.",
+      "version": "1.7.0",
+      "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
+      "sha256": "6a32bf095bbc57d3b3bdf77d329c8573951f52b5b4def175dc9e79649e28f4d7",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
-        "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0"
+        "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
+        "1.7.0": "6a32bf095bbc57d3b3bdf77d329c8573951f52b5b4def175dc9e79649e28f4d7"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"

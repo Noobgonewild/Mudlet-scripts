@@ -402,17 +402,18 @@
       "id": "m_aarchaeology",
       "package_name": "m_aarchaeology",
       "filename": "m_aarchaeology.mpackage",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "description": "Tracks archaeology collections, bags, reports, sounds, and optional market costs.",
       "help": "arch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.mpackage",
-      "sha256": "a6ade148cc01a38d842d8555036b549e4aaa97d4831d8b4f4f96d4dbed2a8240",
+      "sha256": "c6414545e092f0d9e187f2351f7884641037b3d30b81e01a65b7cb04535f6b0a",
       "known_hashes": {
         "1.4.3": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0",
         "1.4.4": "a7debe20b85f6e9736f1fdbdb01b63e464d0f955aad14b4fac67a5002fbb88ea",
         "1.4.5": "ce77bc573fc1beedcae0f47062f2565d280a13bc0a531d3a8210ab5884e29bd9",
         "1.4.6": "833bb6097ef54b47a1f1d3072a00f3ee79f6cff6e0094fc8b5a38e673a95c21d",
-        "1.6.1": "a6ade148cc01a38d842d8555036b549e4aaa97d4831d8b4f4f96d4dbed2a8240"
+        "1.6.1": "a6ade148cc01a38d842d8555036b549e4aaa97d4831d8b4f4f96d4dbed2a8240",
+        "1.6.2": "c6414545e092f0d9e187f2351f7884641037b3d30b81e01a65b7cb04535f6b0a"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_aarchaeology.xml"
@@ -473,18 +474,20 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.7.3",
+      "version": "1.7.5",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "0caf53931079a8fcc6c513166605b1b6e3598ab434538e431d89b89a5f9a56c8",
+      "sha256": "49d565c103fbb5c5704593f34b5b179c8e5d00bfe4eb3207508cb2d2188931ce",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
         "1.7.0": "6a32bf095bbc57d3b3bdf77d329c8573951f52b5b4def175dc9e79649e28f4d7",
         "1.7.1": "581e76a699118a1e31174969c4a33d46a103c823f6ba134df8463d61707a1ff7",
         "1.7.2": "96088a0620e642817eb28fb0101e4628ad6fd1eb3f508fa3fa66b363144cafa1",
-        "1.7.3": "0caf53931079a8fcc6c513166605b1b6e3598ab434538e431d89b89a5f9a56c8"
+        "1.7.3": "0caf53931079a8fcc6c513166605b1b6e3598ab434538e431d89b89a5f9a56c8",
+        "1.7.4": "c609f756f22a68285d4d283fb660ddf1f9f7443a3feb963e4be238b1f154055c",
+        "1.7.5": "49d565c103fbb5c5704593f34b5b179c8e5d00bfe4eb3207508cb2d2188931ce"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"

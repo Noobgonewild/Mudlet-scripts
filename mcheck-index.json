@@ -476,11 +476,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.7.6",
+      "version": "1.7.9",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "cbd53e7b8f78930f5ef3b21aaf630d2c3ba7b11dcde77fb3909b5923196899a9",
+      "sha256": "30b2a21a27a6e314fdbf7149a87dfa2df76f886990d2dc2425fd111b1d8cffff",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -490,7 +490,10 @@
         "1.7.3": "0caf53931079a8fcc6c513166605b1b6e3598ab434538e431d89b89a5f9a56c8",
         "1.7.4": "c609f756f22a68285d4d283fb660ddf1f9f7443a3feb963e4be238b1f154055c",
         "1.7.5": "49d565c103fbb5c5704593f34b5b179c8e5d00bfe4eb3207508cb2d2188931ce",
-        "1.7.6": "cbd53e7b8f78930f5ef3b21aaf630d2c3ba7b11dcde77fb3909b5923196899a9"
+        "1.7.6": "cbd53e7b8f78930f5ef3b21aaf630d2c3ba7b11dcde77fb3909b5923196899a9",
+        "1.7.7": "a76186b37631fcbc7f9918cbfdf2b9c7a8724e42f6c2173d2186cd9baa04c3ed",
+        "1.7.8": "cd565217a37d59d484c7fd40be61f88fabf0b0c4fad88f8c90cf9f71d9cf11ac",
+        "1.7.9": "30b2a21a27a6e314fdbf7149a87dfa2df76f886990d2dc2425fd111b1d8cffff"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"
@@ -611,14 +614,15 @@
       "id": "mudbin",
       "package_name": "mudbin",
       "filename": "mudbin.mpackage",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "description": "Uploads selected game text or the clipboard to mudbin with colors, keeps a history, and lets other add-ons upload.",
       "help": "mudbin help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mudbin.mpackage",
-      "sha256": "ed04f9de16ddb3aea9d2a2ec4ff68fcfad1b557d87fb86ef4514d03df6e13ad2",
+      "sha256": "a909ccb22e8f5e4397336b1be6cd453c73fa1b8ed931443b446d48a25bf91168",
       "known_hashes": {
         "1.2.2": "a5d75ad9a68e479796e5fa5dbdedba4cae7590e34daae14f2a5256d73d367ec4",
-        "1.2.3": "ed04f9de16ddb3aea9d2a2ec4ff68fcfad1b557d87fb86ef4514d03df6e13ad2"
+        "1.2.3": "ed04f9de16ddb3aea9d2a2ec4ff68fcfad1b557d87fb86ef4514d03df6e13ad2",
+        "1.2.4": "a909ccb22e8f5e4397336b1be6cd453c73fa1b8ed931443b446d48a25bf91168"
       },
       "artifact_type": "mpackage",
       "source_xml": "mudbin.xml"

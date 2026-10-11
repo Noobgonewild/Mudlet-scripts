@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.130.0",
+      "version": "2.132.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "b3a89ec0cf2a94eda628520649f119a8522f5c0268bff778a16a68c8a6a8ba66",
+      "sha256": "eeac688db15b4009c6ed2066c3550ed6aa2ce4492d77afe6b37517add5277c61",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -78,7 +78,9 @@
         "2.127.0": "d5932ad0e4ee5e3accfb598a7fbffa72d42c2378d07b59b29a94e7556149ea94",
         "2.128.0": "5d4da69bf9fa2648d700eb0fc164e75320d66b221bb180eb0cda864f70bf534d",
         "2.129.0": "528aa3a03bf950dfe7643b1c1c3587b5013dfb1668f85935b0b1a1f749e5a6fc",
-        "2.130.0": "b3a89ec0cf2a94eda628520649f119a8522f5c0268bff778a16a68c8a6a8ba66"
+        "2.130.0": "b3a89ec0cf2a94eda628520649f119a8522f5c0268bff778a16a68c8a6a8ba66",
+        "2.131.0": "738caf23dfe483914fec1ff093ca8f5ae75a272144216888c0201b0d651c7d1d",
+        "2.132.0": "eeac688db15b4009c6ed2066c3550ed6aa2ce4492d77afe6b37517add5277c61"
       }
     },
     {
@@ -646,11 +648,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.71",
+      "version": "7.1.75",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "ad1949967652fbaa4c829f971be86da9cac15e3bb7a7181acc297ab9cf59d635",
+      "sha256": "e075e36c0828b15744d083038210d0767e990f83168b4d46554da502c35ca0d1",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -696,7 +698,10 @@
         "7.1.68": "8445b22a2276c33be76b76d3a836df078e4fff6c8fb0c8f8f6ceb21af92ebeec",
         "7.1.69": "d350bfac3e2d24b70b1a104b42209ef4506cd943efa74da5917839411ab3256b",
         "7.1.70": "d3a035e1ce4e426d20645b1f147cf2e6183cf9e2240723a7525bb75de7a104fd",
-        "7.1.71": "ad1949967652fbaa4c829f971be86da9cac15e3bb7a7181acc297ab9cf59d635"
+        "7.1.71": "ad1949967652fbaa4c829f971be86da9cac15e3bb7a7181acc297ab9cf59d635",
+        "7.1.73": "75702214ac1cf3595fc6e4ccfffc283f952e53a2e8472fc271897eb217524f6b",
+        "7.1.74": "fe95c85f8d28359ccec000c7f4aa3697e8ffe5a00a41044dad8fa1ba861d6a18",
+        "7.1.75": "e075e36c0828b15744d083038210d0767e990f83168b4d46554da502c35ca0d1"
       }
     }
   ]

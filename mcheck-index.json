@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.129.0",
+      "version": "2.130.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "528aa3a03bf950dfe7643b1c1c3587b5013dfb1668f85935b0b1a1f749e5a6fc",
+      "sha256": "b3a89ec0cf2a94eda628520649f119a8522f5c0268bff778a16a68c8a6a8ba66",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -77,7 +77,8 @@
         "2.126.0": "6f231d5b1161e9fc3e5f12b0b900736fd72b4ffc24ae73abbfec0574dd59e896",
         "2.127.0": "d5932ad0e4ee5e3accfb598a7fbffa72d42c2378d07b59b29a94e7556149ea94",
         "2.128.0": "5d4da69bf9fa2648d700eb0fc164e75320d66b221bb180eb0cda864f70bf534d",
-        "2.129.0": "528aa3a03bf950dfe7643b1c1c3587b5013dfb1668f85935b0b1a1f749e5a6fc"
+        "2.129.0": "528aa3a03bf950dfe7643b1c1c3587b5013dfb1668f85935b0b1a1f749e5a6fc",
+        "2.130.0": "b3a89ec0cf2a94eda628520649f119a8522f5c0268bff778a16a68c8a6a8ba66"
       }
     },
     {
@@ -136,11 +137,11 @@
       "id": "g_channels",
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
-      "version": "1.0.18",
+      "version": "1.0.19",
       "description": "Multi-tab communications window with history, search, timestamps, gags, and a gchan output channel.",
       "help": "gcom help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.mpackage",
-      "sha256": "e3b39cedb63f71e9ac9f9715acba1b9e686a4b5d75d251003f0ce504a79af34f",
+      "sha256": "f6b1ed21f553d9a7bea906e8c28dae0e72ebc0fb5f66db499b21e9647a2925e9",
       "known_hashes": {
         "1.0.1": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12",
         "1.0.2": "9f93856812a45c733e9e646a871e61a0798ea199cbcccf94e097a1b7de3132df",
@@ -159,7 +160,8 @@
         "1.0.15": "ca4a4be161a29560e5a60878052602b82a4bb97985c7fdd8f90a501002425790",
         "1.0.16": "fa05efb1660a7d28fc922ba09cefb9264971b04975df917c4c3237967030af72",
         "1.0.17": "a1d70928d30954df8937361cf36167419e8d733df235984e9bf339b01ca435b4",
-        "1.0.18": "e3b39cedb63f71e9ac9f9715acba1b9e686a4b5d75d251003f0ce504a79af34f"
+        "1.0.18": "e3b39cedb63f71e9ac9f9715acba1b9e686a4b5d75d251003f0ce504a79af34f",
+        "1.0.19": "f6b1ed21f553d9a7bea906e8c28dae0e72ebc0fb5f66db499b21e9647a2925e9"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_channels.xml"
@@ -168,11 +170,11 @@
       "id": "g_character",
       "package_name": "g_character",
       "filename": "g_character.mpackage",
-      "version": "1.0.20",
+      "version": "1.0.21",
       "description": "Character-stats window and configurable status bars with mastery, instinct, and resistance reporting.",
       "help": "gstats help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_character.mpackage",
-      "sha256": "23ba46baa3f87074be5f454d0dee763684021a98b553666ee1133c9c0f8115d0",
+      "sha256": "33a54e5703a67ff7b3415ffe42e3420957ea17173ea7d68838e1c4631dcbe741",
       "known_hashes": {
         "1.0.1": "6db7ff0022adc78dc7e9b62478e4233a7df62bfe5f1c375040af7b6b8c609c61",
         "1.0.2": "ab19e35feb9da7c85544f339dae7fc03a1b9dd9f62e3935c450ff29dca764edf",
@@ -193,7 +195,8 @@
         "1.0.17": "d2b3d865923c836e12963492e128d789f9d8f52754185be3afa7949a5968b46a",
         "1.0.18": "181a18856e429f61f11691b2df8408347ec02119b54afde4fdfe1240f6d6d849",
         "1.0.19": "16b209753ee881c819cacacd8bde27ebf2e06fc7133326b0869c9bf4cf380ed3",
-        "1.0.20": "23ba46baa3f87074be5f454d0dee763684021a98b553666ee1133c9c0f8115d0"
+        "1.0.20": "23ba46baa3f87074be5f454d0dee763684021a98b553666ee1133c9c0f8115d0",
+        "1.0.21": "33a54e5703a67ff7b3415ffe42e3420957ea17173ea7d68838e1c4631dcbe741"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_character.xml"
@@ -237,17 +240,18 @@
       "id": "g_group_monitor",
       "package_name": "g_group_monitor",
       "filename": "g_group_monitor.mpackage",
-      "version": "1.3.5",
+      "version": "1.3.6",
       "description": "Draggable GMCP group monitor with invites, filters, and health alerts.",
       "help": "gmon help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_group_monitor.mpackage",
-      "sha256": "b73d34f0d6e261cfc41311a1fa64f430d617880c67208982b283af889d41b93d",
+      "sha256": "ce7e64f54b7bffd2d8b70d64e13ff8d2eae91e38feb1579210b5310f363721e9",
       "known_hashes": {
         "1.3.1": "7590d4ae9646cd9baa4dda955d12b8da4565153434e3a695be422fdacb0ebe8d",
         "1.3.2": "60d25d3eecd504ef064aabab7e1407adfb56e7439ba14ef90fadda9b8f407f1e",
         "1.3.3": "1a6027ff6543cd09bbfebe8a80020bcacff977ca8359925f2fd4476acd820447",
         "1.3.4": "3f5c944a10eaaf11124a5bb89e7b85ed35b36c0b8f3630d8e8808440989d2afc",
-        "1.3.5": "b73d34f0d6e261cfc41311a1fa64f430d617880c67208982b283af889d41b93d"
+        "1.3.5": "b73d34f0d6e261cfc41311a1fa64f430d617880c67208982b283af889d41b93d",
+        "1.3.6": "ce7e64f54b7bffd2d8b70d64e13ff8d2eae91e38feb1579210b5310f363721e9"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_group_monitor.xml"
@@ -276,15 +280,16 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.0.20",
+      "version": "1.0.21",
       "description": "Save, load and share window layouts for installed windowed add-ons.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "14caa08695c36b52a7adbda8a2bc42a489d93257cc72f60a57b9918d2ee3ad6f",
+      "sha256": "4cfbc9382586753c8a870952ad35042331292a5e6aa7a87958bccc3dfe0cb2a8",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
         "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
-        "1.0.20": "14caa08695c36b52a7adbda8a2bc42a489d93257cc72f60a57b9918d2ee3ad6f"
+        "1.0.20": "14caa08695c36b52a7adbda8a2bc42a489d93257cc72f60a57b9918d2ee3ad6f",
+        "1.0.21": "4cfbc9382586753c8a870952ad35042331292a5e6aa7a87958bccc3dfe0cb2a8"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"
@@ -293,11 +298,11 @@
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
-      "version": "2.0.28",
+      "version": "2.0.29",
       "description": "In-memory maze exploration helper driven by room GMCP.",
       "help": "#maze_help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
-      "sha256": "410fb52f506cc7d75bbf40544373dcca2760a231cd41601c0cc2a5338407e07c",
+      "sha256": "c264037e77d497c6762eb9879229b4a0dfd34849c424688ad060d90d960fc3b4",
       "known_hashes": {
         "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
@@ -309,7 +314,8 @@
         "2.0.22": "672f1d1c7ed72ecc1ab4279b738ee108828b940f7b099af8938c4ddb676e20d4",
         "2.0.25": "82f2b8d26f9d60493a2ae2f9629a632c85d786ebb544e4342f2645b119960652",
         "2.0.27": "6e55aae2911ebaff35350075f86ef748f8809ad64c4d828cd082a313c266dd59",
-        "2.0.28": "410fb52f506cc7d75bbf40544373dcca2760a231cd41601c0cc2a5338407e07c"
+        "2.0.28": "410fb52f506cc7d75bbf40544373dcca2760a231cd41601c0cc2a5338407e07c",
+        "2.0.29": "c264037e77d497c6762eb9879229b4a0dfd34849c424688ad060d90d960fc3b4"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_maze_solver/g_maze solver.xml"
@@ -476,11 +482,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.7.9",
+      "version": "1.10.4",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "30b2a21a27a6e314fdbf7149a87dfa2df76f886990d2dc2425fd111b1d8cffff",
+      "sha256": "a83919d13615565255d2e737d85be42e54521bc0290c2181031a9f7ccad9f505",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -493,7 +499,13 @@
         "1.7.6": "cbd53e7b8f78930f5ef3b21aaf630d2c3ba7b11dcde77fb3909b5923196899a9",
         "1.7.7": "a76186b37631fcbc7f9918cbfdf2b9c7a8724e42f6c2173d2186cd9baa04c3ed",
         "1.7.8": "cd565217a37d59d484c7fd40be61f88fabf0b0c4fad88f8c90cf9f71d9cf11ac",
-        "1.7.9": "30b2a21a27a6e314fdbf7149a87dfa2df76f886990d2dc2425fd111b1d8cffff"
+        "1.7.9": "30b2a21a27a6e314fdbf7149a87dfa2df76f886990d2dc2425fd111b1d8cffff",
+        "1.9.0": "d0ce784262febf372d085148cd7bc2b0ef553561ee5c4ebc4760a02f9ae00442",
+        "1.10.0": "7c2ab07db6d35934e26407cb258900830bf8d90f3248f46a8495ec0918a3dd85",
+        "1.10.1": "c1ef8efaf0bb9b28ad6bc0844d537fb03317a0fef193497e9011f07019a06ed0",
+        "1.10.2": "751855330cb3e6ad129d46d0b767de25d6ea3ade20586c0e2606fa5f9fa5acc0",
+        "1.10.3": "bbb6d85288c2a7d11aafebaeaaac969360685e821fba9e0d4846e0ff0be7ed66",
+        "1.10.4": "a83919d13615565255d2e737d85be42e54521bc0290c2181031a9f7ccad9f505"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"
@@ -521,11 +533,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.55",
+      "version": "1.0.56",
       "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "840755ef8e50139da3536f6c64a1ca3b01f4482fa6a98dcdc7ccc0f90f1a981b",
+      "sha256": "a9c840c8244cbf791570f8a9001bb2d4d4338bab94105b80b61854e3bc2861fb",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -573,7 +585,8 @@
         "1.0.52": "9cdff84b31f9a326fcf8181728fe6ea786856b4965554cb3c55ee3a14949c054",
         "1.0.53": "ebca37e748aec1f88ae6b4abf141fc64e05be5b8aba2f34074570686c7286870",
         "1.0.54": "fefcd4b500f78d7aafa4d7c28e12cc2cff3292d19b22d6d5b73009155cb86a45",
-        "1.0.55": "840755ef8e50139da3536f6c64a1ca3b01f4482fa6a98dcdc7ccc0f90f1a981b"
+        "1.0.55": "840755ef8e50139da3536f6c64a1ca3b01f4482fa6a98dcdc7ccc0f90f1a981b",
+        "1.0.56": "a9c840c8244cbf791570f8a9001bb2d4d4338bab94105b80b61854e3bc2861fb"
       }
     },
     {
@@ -633,11 +646,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.70",
+      "version": "7.1.71",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "d3a035e1ce4e426d20645b1f147cf2e6183cf9e2240723a7525bb75de7a104fd",
+      "sha256": "ad1949967652fbaa4c829f971be86da9cac15e3bb7a7181acc297ab9cf59d635",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -682,7 +695,8 @@
         "7.1.67": "e5720e7c84d2bcca11ac122c5cd718fa94f7dd757ec828466f33f2691dd4e8c9",
         "7.1.68": "8445b22a2276c33be76b76d3a836df078e4fff6c8fb0c8f8f6ceb21af92ebeec",
         "7.1.69": "d350bfac3e2d24b70b1a104b42209ef4506cd943efa74da5917839411ab3256b",
-        "7.1.70": "d3a035e1ce4e426d20645b1f147cf2e6183cf9e2240723a7525bb75de7a104fd"
+        "7.1.70": "d3a035e1ce4e426d20645b1f147cf2e6183cf9e2240723a7525bb75de7a104fd",
+        "7.1.71": "ad1949967652fbaa4c829f971be86da9cac15e3bb7a7181acc297ab9cf59d635"
       }
     }
   ]

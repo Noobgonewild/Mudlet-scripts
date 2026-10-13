@@ -89,15 +89,17 @@
       "id": "g_areapicker",
       "package_name": "g_areapicker",
       "filename": "g_areapicker.mpackage",
-      "version": "4.5.3",
+      "version": "4.6.1",
       "description": "Lists areas appropriate for your current level, with alignment and offset controls.",
       "help": "lvl help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_areapicker.mpackage",
-      "sha256": "9d712b1f82cf1366a9d40d087850dd51370c271a2523a9745039c1c66091aa7b",
+      "sha256": "e08de1653fcae8e6b05d98021eea9600f54ab3bce84ba696ab6d6f609d6155dd",
       "known_hashes": {
         "4.5.1": "4cb4590259ac3369f785ff3eddfb4cf4b5ffe1c3e9506e1703e7fd563407fd45",
         "4.5.2": "9056aab2ad6afe3618efdfd57124838880b95f5daafdb125a1b4bf367379cfb7",
-        "4.5.3": "9d712b1f82cf1366a9d40d087850dd51370c271a2523a9745039c1c66091aa7b"
+        "4.5.3": "9d712b1f82cf1366a9d40d087850dd51370c271a2523a9745039c1c66091aa7b",
+        "4.6.0": "9f800947d3d030c72be94f684a90754e09e6c7c69ec7367af18a988901f8b04d",
+        "4.6.1": "e08de1653fcae8e6b05d98021eea9600f54ab3bce84ba696ab6d6f609d6155dd"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_areapicker.xml"
@@ -486,11 +488,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.10.5",
+      "version": "1.10.6",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "cada53aa0a1db63e8d47f2f4602632eb1f57e23d7d291f3d267a4a5fddbcd275",
+      "sha256": "cde003ca641fd6cdc581b7cdba60ba0500df107e933ceb9be4d4b0d523fc4526",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -510,7 +512,8 @@
         "1.10.2": "751855330cb3e6ad129d46d0b767de25d6ea3ade20586c0e2606fa5f9fa5acc0",
         "1.10.3": "bbb6d85288c2a7d11aafebaeaaac969360685e821fba9e0d4846e0ff0be7ed66",
         "1.10.4": "a83919d13615565255d2e737d85be42e54521bc0290c2181031a9f7ccad9f505",
-        "1.10.5": "cada53aa0a1db63e8d47f2f4602632eb1f57e23d7d291f3d267a4a5fddbcd275"
+        "1.10.5": "cada53aa0a1db63e8d47f2f4602632eb1f57e23d7d291f3d267a4a5fddbcd275",
+        "1.10.6": "cde003ca641fd6cdc581b7cdba60ba0500df107e933ceb9be4d4b0d523fc4526"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"
@@ -651,11 +654,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.77",
+      "version": "7.1.78",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "b02b91a941a21d62f971cd912874fc73a8481a4fff001f633cace6b1b43451f0",
+      "sha256": "b975b0b28fc8ec17a524f1d17f519035ec04f17a591a53dffee92183cd61c59b",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -706,7 +709,8 @@
         "7.1.74": "fe95c85f8d28359ccec000c7f4aa3697e8ffe5a00a41044dad8fa1ba861d6a18",
         "7.1.75": "e075e36c0828b15744d083038210d0767e990f83168b4d46554da502c35ca0d1",
         "7.1.76": "8da1ada4b0f691f01ebc50ae9ce5ea8b603b0b6b27d886aad596a4a3543eb966",
-        "7.1.77": "b02b91a941a21d62f971cd912874fc73a8481a4fff001f633cace6b1b43451f0"
+        "7.1.77": "b02b91a941a21d62f971cd912874fc73a8481a4fff001f633cace6b1b43451f0",
+        "7.1.78": "b975b0b28fc8ec17a524f1d17f519035ec04f17a591a53dffee92183cd61c59b"
       }
     }
   ]

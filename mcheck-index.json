@@ -562,11 +562,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.58",
+      "version": "1.0.59",
       "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "fb9aed70d362202a52ce9d50786a06c4ea4d0eabdd6289fc8c6c4b94191be71d",
+      "sha256": "86d659a24525e11e38dea62e8446e1db7e4d8f362a2f5f258d04a7c71b4bc3e4",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -617,7 +617,8 @@
         "1.0.55": "840755ef8e50139da3536f6c64a1ca3b01f4482fa6a98dcdc7ccc0f90f1a981b",
         "1.0.56": "a9c840c8244cbf791570f8a9001bb2d4d4338bab94105b80b61854e3bc2861fb",
         "1.0.57": "e8753002e144c918a9a3be5023ab08efdca82f5076c974f08dc6f6d8b265ec4c",
-        "1.0.58": "fb9aed70d362202a52ce9d50786a06c4ea4d0eabdd6289fc8c6c4b94191be71d"
+        "1.0.58": "fb9aed70d362202a52ce9d50786a06c4ea4d0eabdd6289fc8c6c4b94191be71d",
+        "1.0.59": "86d659a24525e11e38dea62e8446e1db7e4d8f362a2f5f258d04a7c71b4bc3e4"
       }
     },
     {
@@ -677,11 +678,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.78",
+      "version": "7.1.80",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "b975b0b28fc8ec17a524f1d17f519035ec04f17a591a53dffee92183cd61c59b",
+      "sha256": "5e61b9c0f0db054968ce4038db977e03f527155e1f3ab42c6f80ba13e255da79",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -733,7 +734,9 @@
         "7.1.75": "e075e36c0828b15744d083038210d0767e990f83168b4d46554da502c35ca0d1",
         "7.1.76": "8da1ada4b0f691f01ebc50ae9ce5ea8b603b0b6b27d886aad596a4a3543eb966",
         "7.1.77": "b02b91a941a21d62f971cd912874fc73a8481a4fff001f633cace6b1b43451f0",
-        "7.1.78": "b975b0b28fc8ec17a524f1d17f519035ec04f17a591a53dffee92183cd61c59b"
+        "7.1.78": "b975b0b28fc8ec17a524f1d17f519035ec04f17a591a53dffee92183cd61c59b",
+        "7.1.79": "5163b90bd6a23433651ad362bc247d78ef785bd7b5c2040b4f48652f21b21e86",
+        "7.1.80": "5e61b9c0f0db054968ce4038db977e03f527155e1f3ab42c6f80ba13e255da79"
       }
     }
   ]

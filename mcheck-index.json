@@ -126,16 +126,18 @@
       "id": "g_bis",
       "package_name": "g_bis",
       "filename": "g_bis.mpackage",
-      "version": "1.1.0",
+      "version": "1.1.2",
       "description": "Finds farmable gear upgrades per slot and level from the Farmable EQ list, compared with DINV's set for that level.",
       "help": "bis help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_bis.mpackage",
-      "sha256": "499e2dffd20c9edf92eb6795f6349b9f45ab44c29d41bda83daf0cd1de0b2e78",
+      "sha256": "f35733a24a47c268ef7313f5c3e50b1bce156940eea5d0f125ad7d2b085246ab",
       "known_hashes": {
         "1.0.0": "1885e83c197d611c30056b6a6e47d64a19f986b2655d707b39d1995f1e09d824",
         "1.0.1": "5e19d7dde978422af77834fe52e006f8562764acdb8354133c9afd3284884234",
         "1.0.2": "96a18149bd495c33a0e66b2ed4f01a2ef3382eee7d813be75ca4474208ae8613",
-        "1.1.0": "499e2dffd20c9edf92eb6795f6349b9f45ab44c29d41bda83daf0cd1de0b2e78"
+        "1.1.0": "499e2dffd20c9edf92eb6795f6349b9f45ab44c29d41bda83daf0cd1de0b2e78",
+        "1.1.1": "cc9a79392e48ac2d3e645069c6e14d3d99031f0224304a9b5b1a706690a6ccb3",
+        "1.1.2": "f35733a24a47c268ef7313f5c3e50b1bce156940eea5d0f125ad7d2b085246ab"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_bis.xml"

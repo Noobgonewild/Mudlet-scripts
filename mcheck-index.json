@@ -285,18 +285,19 @@
       "id": "g_keydedup",
       "package_name": "g_keydedup",
       "filename": "g_keydedup.mpackage",
-      "version": "3.9.0",
+      "version": "3.10.0",
       "description": "Consolidates duplicate keys onto the keyring and destroys extra copies.",
       "help": "kdedup help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_keydedup.mpackage",
-      "sha256": "b3ccc48ac2c1b144315f35194f5f6752dfed9c378fe6f7810fbe3f1050f58455",
+      "sha256": "2f0a541a78b51d55d51a86bf4748305ec56f3310ab43a2c6219589dfea074b9d",
       "known_hashes": {
         "3.7.1": "04d938ba7eecdb911c14d15e0d6fc85b65c94b0874805bf13bf04c538435b2aa",
         "3.7.2": "2e361949979e0cf19a15d67ba0ac3dc85d1410a402d22ab37bb43dae33ec9f75",
         "3.7.3": "d487067bdd48879a5dc94b3e6e796c8dd59d7bc378c42f317fee09b7fccc910f",
         "3.8.0": "a86e92683e572968709bc6b1d5fbcf0afc0d4f511a26eb2bd06279b2dff43b03",
         "3.8.1": "546a7ecf3d1685ef0f97e5330af097c23993be1b10dd934642d16a8cd0d1a0bf",
-        "3.9.0": "b3ccc48ac2c1b144315f35194f5f6752dfed9c378fe6f7810fbe3f1050f58455"
+        "3.9.0": "b3ccc48ac2c1b144315f35194f5f6752dfed9c378fe6f7810fbe3f1050f58455",
+        "3.10.0": "2f0a541a78b51d55d51a86bf4748305ec56f3310ab43a2c6219589dfea074b9d"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_keydedup.xml"
@@ -561,11 +562,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.57",
+      "version": "1.0.58",
       "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "e8753002e144c918a9a3be5023ab08efdca82f5076c974f08dc6f6d8b265ec4c",
+      "sha256": "fb9aed70d362202a52ce9d50786a06c4ea4d0eabdd6289fc8c6c4b94191be71d",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -615,7 +616,8 @@
         "1.0.54": "fefcd4b500f78d7aafa4d7c28e12cc2cff3292d19b22d6d5b73009155cb86a45",
         "1.0.55": "840755ef8e50139da3536f6c64a1ca3b01f4482fa6a98dcdc7ccc0f90f1a981b",
         "1.0.56": "a9c840c8244cbf791570f8a9001bb2d4d4338bab94105b80b61854e3bc2861fb",
-        "1.0.57": "e8753002e144c918a9a3be5023ab08efdca82f5076c974f08dc6f6d8b265ec4c"
+        "1.0.57": "e8753002e144c918a9a3be5023ab08efdca82f5076c974f08dc6f6d8b265ec4c",
+        "1.0.58": "fb9aed70d362202a52ce9d50786a06c4ea4d0eabdd6289fc8c6c4b94191be71d"
       }
     },
     {

@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.135.0",
+      "version": "2.136.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "182fa0f411128ca783edf5ec914ed61f31c709e21dcaf87dd3570a4e33c838ca",
+      "sha256": "eede2c3a84210ae9271c05e3ea18b08a30466603704ce1b81db99315cc89337b",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -83,7 +83,8 @@
         "2.132.0": "eeac688db15b4009c6ed2066c3550ed6aa2ce4492d77afe6b37517add5277c61",
         "2.133.0": "a6829fa0d1d2084155a44f29e6f400ef67850335ead40c46cead104567c31522",
         "2.134.0": "db9077359b2f4eb8644937155ab61775e18d0b042217f5c9cda587810f340940",
-        "2.135.0": "182fa0f411128ca783edf5ec914ed61f31c709e21dcaf87dd3570a4e33c838ca"
+        "2.135.0": "182fa0f411128ca783edf5ec914ed61f31c709e21dcaf87dd3570a4e33c838ca",
+        "2.136.0": "eede2c3a84210ae9271c05e3ea18b08a30466603704ce1b81db99315cc89337b"
       }
     },
     {
@@ -510,11 +511,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.10.7",
+      "version": "1.10.8",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "8bb6859370e2af192377dcd622f20a31c313987d2344559f2393f8aa57d81a25",
+      "sha256": "78dd0977cdced857a738d8f14ee6951c56600a135f289d336dcc94aaca3440b3",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -536,7 +537,8 @@
         "1.10.4": "a83919d13615565255d2e737d85be42e54521bc0290c2181031a9f7ccad9f505",
         "1.10.5": "cada53aa0a1db63e8d47f2f4602632eb1f57e23d7d291f3d267a4a5fddbcd275",
         "1.10.6": "cde003ca641fd6cdc581b7cdba60ba0500df107e933ceb9be4d4b0d523fc4526",
-        "1.10.7": "8bb6859370e2af192377dcd622f20a31c313987d2344559f2393f8aa57d81a25"
+        "1.10.7": "8bb6859370e2af192377dcd622f20a31c313987d2344559f2393f8aa57d81a25",
+        "1.10.8": "78dd0977cdced857a738d8f14ee6951c56600a135f289d336dcc94aaca3440b3"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"
@@ -564,11 +566,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.59",
+      "version": "1.0.61",
       "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "86d659a24525e11e38dea62e8446e1db7e4d8f362a2f5f258d04a7c71b4bc3e4",
+      "sha256": "32a0cefa1b1ea97e2b22165b20d19867347d7b9f668597bad1f54f4ed1a7be54",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -620,7 +622,9 @@
         "1.0.56": "a9c840c8244cbf791570f8a9001bb2d4d4338bab94105b80b61854e3bc2861fb",
         "1.0.57": "e8753002e144c918a9a3be5023ab08efdca82f5076c974f08dc6f6d8b265ec4c",
         "1.0.58": "fb9aed70d362202a52ce9d50786a06c4ea4d0eabdd6289fc8c6c4b94191be71d",
-        "1.0.59": "86d659a24525e11e38dea62e8446e1db7e4d8f362a2f5f258d04a7c71b4bc3e4"
+        "1.0.59": "86d659a24525e11e38dea62e8446e1db7e4d8f362a2f5f258d04a7c71b4bc3e4",
+        "1.0.60": "04f4e27716def5bf3cd7f44a3fa96d743012e5ef08e4471bfbaa6a58060a5a0f",
+        "1.0.61": "32a0cefa1b1ea97e2b22165b20d19867347d7b9f668597bad1f54f4ed1a7be54"
       }
     },
     {
@@ -680,11 +684,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.81",
+      "version": "7.1.82",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "204eb8ff8c36564b3a81b008d1af142b10d04ec17504e89e3ead626c5b68de60",
+      "sha256": "fbf8904fab7804628edd3455abd159471aced566e08ff23a05ad35618be3a8ac",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -739,7 +743,8 @@
         "7.1.78": "b975b0b28fc8ec17a524f1d17f519035ec04f17a591a53dffee92183cd61c59b",
         "7.1.79": "5163b90bd6a23433651ad362bc247d78ef785bd7b5c2040b4f48652f21b21e86",
         "7.1.80": "5e61b9c0f0db054968ce4038db977e03f527155e1f3ab42c6f80ba13e255da79",
-        "7.1.81": "204eb8ff8c36564b3a81b008d1af142b10d04ec17504e89e3ead626c5b68de60"
+        "7.1.81": "204eb8ff8c36564b3a81b008d1af142b10d04ec17504e89e3ead626c5b68de60",
+        "7.1.82": "fbf8904fab7804628edd3455abd159471aced566e08ff23a05ad35618be3a8ac"
       }
     }
   ]

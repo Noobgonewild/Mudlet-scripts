@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.137.0",
+      "version": "2.139.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "128ce4235e4cecd290dd658b1222510c91e8b6eeea459e9de7b5605c7ac90f14",
+      "sha256": "22623f2ebd26d72a6537b9086ef1647752d054892f0f2e2b8289e779e0f246d7",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -85,7 +85,9 @@
         "2.134.0": "db9077359b2f4eb8644937155ab61775e18d0b042217f5c9cda587810f340940",
         "2.135.0": "182fa0f411128ca783edf5ec914ed61f31c709e21dcaf87dd3570a4e33c838ca",
         "2.136.0": "eede2c3a84210ae9271c05e3ea18b08a30466603704ce1b81db99315cc89337b",
-        "2.137.0": "128ce4235e4cecd290dd658b1222510c91e8b6eeea459e9de7b5605c7ac90f14"
+        "2.137.0": "128ce4235e4cecd290dd658b1222510c91e8b6eeea459e9de7b5605c7ac90f14",
+        "2.138.0": "33486d551c72753dfc10a0be92a42418c47dceea839c651d570ef21bf66c801b",
+        "2.139.0": "22623f2ebd26d72a6537b9086ef1647752d054892f0f2e2b8289e779e0f246d7"
       }
     },
     {

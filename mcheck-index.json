@@ -464,14 +464,15 @@
       "id": "m_bcc",
       "package_name": "m_BCC",
       "filename": "m_BCC.mpackage",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "description": "Black Claw Crag solo-epic helper: breath grid with your position, mist finder, run timer, cooldown, loot stats.",
       "help": "bcc help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_BCC.mpackage",
-      "sha256": "4a7685198eebcae7edcbaddb941bf46b6a4f6aeaf84cfd25030ac8b92c2ca44e",
+      "sha256": "f318363baa9b5922716143e984d81299f1280db3691da74030864233ac19b0f0",
       "known_hashes": {
         "1.1.0": "d3b4fed246639a91d2f77e8a99331028972c0285c601970c4b16d51478e41fb0",
-        "1.2.0": "4a7685198eebcae7edcbaddb941bf46b6a4f6aeaf84cfd25030ac8b92c2ca44e"
+        "1.2.0": "4a7685198eebcae7edcbaddb941bf46b6a4f6aeaf84cfd25030ac8b92c2ca44e",
+        "1.2.1": "f318363baa9b5922716143e984d81299f1280db3691da74030864233ac19b0f0"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_BCC.xml"
@@ -593,11 +594,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.63",
+      "version": "1.0.68",
       "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "753a55b55ba3e0e8487b8bdc81883e9027bd73799f9b448e147d7692c526a4dd",
+      "sha256": "d8509f652c07403da5d6398d4a0e3ae38c892264b5dca354cd8d5305d3b7b4cf",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -653,7 +654,12 @@
         "1.0.60": "04f4e27716def5bf3cd7f44a3fa96d743012e5ef08e4471bfbaa6a58060a5a0f",
         "1.0.61": "32a0cefa1b1ea97e2b22165b20d19867347d7b9f668597bad1f54f4ed1a7be54",
         "1.0.62": "8802ac6124aedaab64162afdd9775f59f7b7c03d2d10e828ee511ecb03f413a5",
-        "1.0.63": "753a55b55ba3e0e8487b8bdc81883e9027bd73799f9b448e147d7692c526a4dd"
+        "1.0.63": "753a55b55ba3e0e8487b8bdc81883e9027bd73799f9b448e147d7692c526a4dd",
+        "1.0.64": "3e87575f75da4b20845db70c28afa5233aecd65677fef249be5c2045899ddf0e",
+        "1.0.65": "95a49266e2055bb20d3890bca4a761de46684cca540d07c62928cb2f242b9924",
+        "1.0.66": "4792528ebbd65d8834c0ccb68fb43a422855b4226f9060eecf5ea76d412c6b75",
+        "1.0.67": "d974993ddd0538f657584f67639b3244058809260595dea185b9f6b218ce8e7f",
+        "1.0.68": "d8509f652c07403da5d6398d4a0e3ae38c892264b5dca354cd8d5305d3b7b4cf"
       }
     },
     {

@@ -113,16 +113,17 @@
       "id": "g_autotrain",
       "package_name": "g_autotrain",
       "filename": "g_autotrain.mpackage",
-      "version": "6.8.4",
-      "description": "Plans and performs weighted stat training using character class and subclass.",
+      "version": "6.9.0",
+      "description": "Weighted stat training by class and subclass (max 395 per stat), plus saved stat templates from level 200.",
       "help": "autotrain help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_autotrain.mpackage",
-      "sha256": "83baf01b6a31cae3bb3fea7ddc0cce8b0cb4ae6df478ad7bb57700d98ba34749",
+      "sha256": "ca4510a14f7939fb589dddd1d54be949226abf129327b4b0b321985e450263db",
       "known_hashes": {
         "6.8.1": "43bf032933f3133cb9cb655b02598ef8f258a587d79cd08c833ca39ddd4d482c",
         "6.8.2": "9295e7f84fd0e5f4c670f9c4db62ee98d72b1ab75d3f07d665008cd61f2b4783",
         "6.8.3": "cea9f9a530c0000b233caf553c94e6eb22d8b061d3e1959443bf4425ec27dc84",
-        "6.8.4": "83baf01b6a31cae3bb3fea7ddc0cce8b0cb4ae6df478ad7bb57700d98ba34749"
+        "6.8.4": "83baf01b6a31cae3bb3fea7ddc0cce8b0cb4ae6df478ad7bb57700d98ba34749",
+        "6.9.0": "ca4510a14f7939fb589dddd1d54be949226abf129327b4b0b321985e450263db"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_autotrain.xml"
@@ -721,11 +722,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.83",
+      "version": "7.1.84",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "362155d525da1debcc9ad05872b466be416507b23a9946cbd7228588f3843c17",
+      "sha256": "664b079ed0ec6e7578e30b244af6fe78fc721fcc91b13eb4a683e9ebb5bae022",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -782,7 +783,8 @@
         "7.1.80": "5e61b9c0f0db054968ce4038db977e03f527155e1f3ab42c6f80ba13e255da79",
         "7.1.81": "204eb8ff8c36564b3a81b008d1af142b10d04ec17504e89e3ead626c5b68de60",
         "7.1.82": "fbf8904fab7804628edd3455abd159471aced566e08ff23a05ad35618be3a8ac",
-        "7.1.83": "362155d525da1debcc9ad05872b466be416507b23a9946cbd7228588f3843c17"
+        "7.1.83": "362155d525da1debcc9ad05872b466be416507b23a9946cbd7228588f3843c17",
+        "7.1.84": "664b079ed0ec6e7578e30b244af6fe78fc721fcc91b13eb4a683e9ebb5bae022"
       }
     }
   ]

@@ -335,11 +335,11 @@
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
-      "version": "2.0.29",
+      "version": "2.0.30",
       "description": "In-memory maze exploration helper driven by room GMCP.",
       "help": "#maze_help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
-      "sha256": "c264037e77d497c6762eb9879229b4a0dfd34849c424688ad060d90d960fc3b4",
+      "sha256": "de5f88567e616ffea492181d3f90167f70a7d6befb9388447b985ba55c1fc9ec",
       "known_hashes": {
         "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
@@ -352,7 +352,8 @@
         "2.0.25": "82f2b8d26f9d60493a2ae2f9629a632c85d786ebb544e4342f2645b119960652",
         "2.0.27": "6e55aae2911ebaff35350075f86ef748f8809ad64c4d828cd082a313c266dd59",
         "2.0.28": "410fb52f506cc7d75bbf40544373dcca2760a231cd41601c0cc2a5338407e07c",
-        "2.0.29": "c264037e77d497c6762eb9879229b4a0dfd34849c424688ad060d90d960fc3b4"
+        "2.0.29": "c264037e77d497c6762eb9879229b4a0dfd34849c424688ad060d90d960fc3b4",
+        "2.0.30": "de5f88567e616ffea492181d3f90167f70a7d6befb9388447b985ba55c1fc9ec"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_maze_solver/g_maze solver.xml"
@@ -536,11 +537,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.10.14",
+      "version": "1.10.15",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "469cd5bef44597ba0d6c8b759406e81b5950b618ce52a7e782794bbde96ac2c8",
+      "sha256": "961d062309e3becfa2dde4673368ed5f904cf440756a49cad05dd8a5ba7f14ba",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -569,7 +570,8 @@
         "1.10.11": "ed4def788cbd7d20ab6aedc8cd131fb5c90c1ee375abd38b1b8fcc1dd11550d9",
         "1.10.12": "8a8850bbedbff4f981ae88b645db7832cdd721a75433d67618645bcdaa1d7f32",
         "1.10.13": "5f68d2b8c2bd191d8f2ece2a370c5b083a0efc56bbc5b945d55fc259f293df77",
-        "1.10.14": "469cd5bef44597ba0d6c8b759406e81b5950b618ce52a7e782794bbde96ac2c8"
+        "1.10.14": "469cd5bef44597ba0d6c8b759406e81b5950b618ce52a7e782794bbde96ac2c8",
+        "1.10.15": "961d062309e3becfa2dde4673368ed5f904cf440756a49cad05dd8a5ba7f14ba"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"

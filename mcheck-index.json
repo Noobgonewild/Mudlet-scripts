@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.139.0",
+      "version": "2.140.0",
       "description": "Inventory manager: tracks, searches and scores your gear; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "22623f2ebd26d72a6537b9086ef1647752d054892f0f2e2b8289e779e0f246d7",
+      "sha256": "4673426a2f896728e092b728d0c30765959eeaf29de8de9738e86e813c6dcdd7",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -87,7 +87,8 @@
         "2.136.0": "eede2c3a84210ae9271c05e3ea18b08a30466603704ce1b81db99315cc89337b",
         "2.137.0": "128ce4235e4cecd290dd658b1222510c91e8b6eeea459e9de7b5605c7ac90f14",
         "2.138.0": "33486d551c72753dfc10a0be92a42418c47dceea839c651d570ef21bf66c801b",
-        "2.139.0": "22623f2ebd26d72a6537b9086ef1647752d054892f0f2e2b8289e779e0f246d7"
+        "2.139.0": "22623f2ebd26d72a6537b9086ef1647752d054892f0f2e2b8289e779e0f246d7",
+        "2.140.0": "4673426a2f896728e092b728d0c30765959eeaf29de8de9738e86e813c6dcdd7"
       }
     },
     {
@@ -362,16 +363,17 @@
       "id": "g_rainbow_chat",
       "package_name": "g_rainbow_chat",
       "filename": "g_rainbow_chat.mpackage",
-      "version": "1.0.4",
+      "version": "1.1.0",
       "description": "Adds configurable color gradients to outgoing Aardwolf tells and channels.",
       "help": "rainbow help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_rainbow_chat.mpackage",
-      "sha256": "d9e98138619eb458f45749072ba180fe7ed4850b0d68e4f881f1d4583fe4403c",
+      "sha256": "9f12d481a5bfe3207796ae82d041e2179fc3d8da9712194ad2a919a2e41b35f8",
       "known_hashes": {
         "1.0.1": "85cce0537743a313b02b22f426ac937899454c3f23ece075881b6d5deda1bdc6",
         "1.0.2": "654fede20b7936f3993aa78b0c00c9dab2023e06de73997592d76f11dbe76a5d",
         "1.0.3": "27a4ee4495e5bea3433436d9f36e51c6049ba99b24055c3eca333143b30b1fcb",
-        "1.0.4": "d9e98138619eb458f45749072ba180fe7ed4850b0d68e4f881f1d4583fe4403c"
+        "1.0.4": "d9e98138619eb458f45749072ba180fe7ed4850b0d68e4f881f1d4583fe4403c",
+        "1.1.0": "9f12d481a5bfe3207796ae82d041e2179fc3d8da9712194ad2a919a2e41b35f8"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_rainbow_chat.xml"
@@ -392,6 +394,34 @@
       },
       "artifact_type": "mpackage",
       "source_xml": "g_RemindMe.xml"
+    },
+    {
+      "id": "g_restring",
+      "package_name": "g_restring",
+      "filename": "g_restring.mpackage",
+      "version": "1.2.9",
+      "description": "Restring editor window: live counters that skip color codes, color preview and help restring checks.",
+      "help": "restring help",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_restring.mpackage",
+      "sha256": "c86bc22ef07c2b14004650ec84910c4ec80cbc72d74dd84215ef143da3052b8c",
+      "known_hashes": {
+        "1.0.0": "ef69a8cc51ed1c9492bf63ca548f1738f00e7bdbb77429bc683ccb8fe025261a",
+        "1.0.1": "59826b38a5671e23c92a441702d84c4ab9c4bc727583d02714d535ac799fa279",
+        "1.1.0": "e537979380ea0bc3b6ed39c8b416e5702b6a509e6b9fa0e7665ce555c7806e55",
+        "1.1.1": "2fc1df5b39ba15b9372e7b39cb540bce20f18d4ae53c501076fe43813dbba3f7",
+        "1.2.0": "4351122b84422abecba1fe1097646dfd91853762b931c97f9f88ae7525213b91",
+        "1.2.1": "ba8096f5522e3d20c93e4f679aa56f3b76e5582cf0dc669ddf541b4c2889848f",
+        "1.2.2": "f0dfbdb335798b4d3f37798036bbee1b4dfae273c419f7aec158cc8179d9bb36",
+        "1.2.3": "9d90ef0997f669242112a5cd13634ead66366b484d366778b78d80a97ef76990",
+        "1.2.4": "275ec147cfc7e135ec2c13d781020d42b2ed073e577a57ab06b41d7598ae2d3b",
+        "1.2.5": "4c7f4c1aca2b622ba4ca9cf67b9ed79a5b2cb8efe39df55078e58b6466d6f25f",
+        "1.2.6": "3efadb1542a1df82db0f3e6db937151fdeae87a223bb808827928975d3dba58b",
+        "1.2.7": "854896e77627e8b21e79944343f3d7528a9accede32e4d2f61edf41bf6513528",
+        "1.2.8": "bb8209f199fa3d266bf11f897a40cf2304540f0f30914d955d50a20d32082933",
+        "1.2.9": "c86bc22ef07c2b14004650ec84910c4ec80cbc72d74dd84215ef143da3052b8c"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_restring.xml"
     },
     {
       "id": "g_shinykeep",

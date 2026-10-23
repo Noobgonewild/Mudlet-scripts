@@ -430,18 +430,19 @@
       "id": "hadar_spellup_caster",
       "package_name": "Hadar_Spellup_Caster",
       "filename": "Hadar_Spellup_Caster.mpackage",
-      "version": "1.37.6",
+      "version": "1.37.7",
       "description": "Spellup caster with spellup, aura, visibility, and landing helpers.",
       "help": "had help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Hadar_Spellup_Caster.mpackage",
-      "sha256": "78f1b4ed379987613fe53689b4937eb5f0a82eebe2a64f2541783e5de36bbb77",
+      "sha256": "3056de0e37c9dc79e385d24f254ab1ea9edb9fd64abf760f81ccdfc002581448",
       "known_hashes": {
         "1.37.1": "741e8b6fe8a5a8baa1f7524af1da8bc219b5940deb5615362ab09221e32db815",
         "1.37.2": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838",
         "1.37.3": "5b400c236d73ddf5bf24908b74c8d27a774c850dcf4e57c7e84bd8930c656793",
         "1.37.4": "f0388729d647ccb8876b6a7c9956570d6b981a343f4971c50778710a754e76bc",
         "1.37.5": "b9234d23a423fbb79f7c420563957e4c9ea8b337b8e31d9246f4a1232f304531",
-        "1.37.6": "78f1b4ed379987613fe53689b4937eb5f0a82eebe2a64f2541783e5de36bbb77"
+        "1.37.6": "78f1b4ed379987613fe53689b4937eb5f0a82eebe2a64f2541783e5de36bbb77",
+        "1.37.7": "3056de0e37c9dc79e385d24f254ab1ea9edb9fd64abf760f81ccdfc002581448"
       },
       "artifact_type": "mpackage",
       "source_xml": "Hadar_Spellup_Caster.xml"
@@ -727,11 +728,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.88",
+      "version": "7.1.93",
       "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "9eacb73d587f14785080daebb49edfb7f5d8e9c7014190892d96ab47937ba7ae",
+      "sha256": "37096898f8c718338e7fa05a0d6d95b9c1cadac9ac923761c4f81d1563cbe64f",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -793,7 +794,12 @@
         "7.1.85": "54d441cf075a2d119c4722f84b18aa04764801c035321baafda843d5ad1b5795",
         "7.1.86": "2a3e02c2e62bcbfc05f8415fc32d824c5fbb05f0f5b1623944f9486a4888b676",
         "7.1.87": "6bc0940874746205491fc13b44ef5e2ef5f1c4237615171c24d13eccab1240b9",
-        "7.1.88": "9eacb73d587f14785080daebb49edfb7f5d8e9c7014190892d96ab47937ba7ae"
+        "7.1.88": "9eacb73d587f14785080daebb49edfb7f5d8e9c7014190892d96ab47937ba7ae",
+        "7.1.89": "678276a23a165568969c5ad03293e308ad342cb05f5dc7443457261e12ba6d9a",
+        "7.1.90": "6ad5f6998977e7aa394ab55d987b798d614a7ca22a3427b897c5b09b59161f5d",
+        "7.1.91": "f37ca483f78bbaf41e198a14365bf0796901765958078f254c7ef4679559d9ca",
+        "7.1.92": "069c210dfae6064c45ace4fd7a4bdacb5760623be19f4cbeb78cdc3f6ab49cb2",
+        "7.1.93": "37096898f8c718338e7fa05a0d6d95b9c1cadac9ac923761c4f81d1563cbe64f"
       }
     }
   ]

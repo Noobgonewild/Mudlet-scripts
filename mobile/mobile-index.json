@@ -3,7 +3,7 @@
   "repository_id": "aardwolf-apk-mobile",
   "engine_api": 1,
   "public_key": "1ee213308a4efc697ab4e8d8aca7fc55af356635520e30dc19c9a2ec7d3f016c",
-  "signature": "66efe3b1e4818d980319fa363a99c84bb74dfe905ef96824b4bec955fcb1a43cd5c05eb1ef329896324a21d191cf94ba3c4c5379250429eafc9035ff9a699b06",
+  "signature": "013885e7de59cad7030325a0734b956580bab33ff47e4b84168c0fa1910c2f5aac314e96b4d284235d82bc2765480abf8d44951081b021aede940d6a51d87609",
   "addons": [
     {
       "id": "bypass_mudlet",
@@ -249,12 +249,12 @@
       "id": "search_and_destroy",
       "package_name": "SearchAndDestroy",
       "filename": "SearchAndDestroy.mpackage",
-      "version": "7.1.97.2",
+      "version": "7.1.99.2",
       "min_engine": 1,
-      "sha256": "883e0f324e6f0d851989b02dcf6e3ef2381386fa32cf5e4218aeb0107143accd",
-      "size": 615300,
+      "sha256": "9c9086ebea153c9378e93bb30e971b615d78a49ea94de07f21e6e72c132155ef",
+      "size": 617330,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/SearchAndDestroy.mpackage",
-      "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
+      "description": "Search & Destroy: target tracking, CP hybrid hunt-trick recovery and Smart NX HT room protection (uses mmapper).",
       "help": "snd help (topics), snd help search <term>"
     }
   ]

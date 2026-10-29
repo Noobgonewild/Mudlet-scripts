@@ -114,17 +114,21 @@
       "id": "g_autotrain",
       "package_name": "g_autotrain",
       "filename": "g_autotrain.mpackage",
-      "version": "6.9.0",
-      "description": "Weighted stat training by class and subclass (max 395 per stat), plus saved stat templates from level 200.",
+      "version": "6.9.4",
+      "description": "Weighted stat training (max 395), template caps from level 1, tier/wish checks, and a desktop template creator.",
       "help": "autotrain help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_autotrain.mpackage",
-      "sha256": "ca4510a14f7939fb589dddd1d54be949226abf129327b4b0b321985e450263db",
+      "sha256": "4a6fbd728eb5db3153f21b8b32a64f807df0dfad6e365d454c485ad7238576d6",
       "known_hashes": {
         "6.8.1": "43bf032933f3133cb9cb655b02598ef8f258a587d79cd08c833ca39ddd4d482c",
         "6.8.2": "9295e7f84fd0e5f4c670f9c4db62ee98d72b1ab75d3f07d665008cd61f2b4783",
         "6.8.3": "cea9f9a530c0000b233caf553c94e6eb22d8b061d3e1959443bf4425ec27dc84",
         "6.8.4": "83baf01b6a31cae3bb3fea7ddc0cce8b0cb4ae6df478ad7bb57700d98ba34749",
-        "6.9.0": "ca4510a14f7939fb589dddd1d54be949226abf129327b4b0b321985e450263db"
+        "6.9.0": "ca4510a14f7939fb589dddd1d54be949226abf129327b4b0b321985e450263db",
+        "6.9.1": "95f8535ceba2585012e8eee533416381d85324eb9e1fb246426c5f4c3ecf5e19",
+        "6.9.2": "8c30ebb891bbf7ecb37ee48fbc2bf4afafdc2f728153607dd4194f361227da62",
+        "6.9.3": "4bc4a5a1b0ab7257f2d063be747175d190a8e0c29f7818c423b23754c536dac2",
+        "6.9.4": "4a6fbd728eb5db3153f21b8b32a64f807df0dfad6e365d454c485ad7238576d6"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_autotrain.xml"
@@ -633,11 +637,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.72",
-      "description": "Aardwolf mapper: room database, pathing and navigation commands for Mudlet.",
+      "version": "1.0.73",
+      "description": "Aardwolf mapper: pathing, navigation and portal-sheet analysis with flexible room columns and TP prices.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "5f3634a1be859bb159563a6f350d04c27f1b20f0a9263e79c9b2ccd3f70ebd33",
+      "sha256": "01ced6d074dc83d6e581cbf818903aec801bede7310bff0cf90d8270c0de97ec",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -702,7 +706,8 @@
         "1.0.69": "af596d8eb0db2ea57e2c89c8f93cf70929fcfc8851f358857a9348c9bc95bad2",
         "1.0.70": "ea9503927145807b7c3ccd8c8644bdc051f8610fed8f8c8aef54cd6927c3f457",
         "1.0.71": "88820bbf36e2ae025a5450f9d0162a0f3161c2f22a3ae8b7442849abdd4c6a6b",
-        "1.0.72": "5f3634a1be859bb159563a6f350d04c27f1b20f0a9263e79c9b2ccd3f70ebd33"
+        "1.0.72": "5f3634a1be859bb159563a6f350d04c27f1b20f0a9263e79c9b2ccd3f70ebd33",
+        "1.0.73": "01ced6d074dc83d6e581cbf818903aec801bede7310bff0cf90d8270c0de97ec"
       }
     },
     {
@@ -762,11 +767,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.97",
-      "description": "Search & Destroy: campaign/quest target tracking and hunting helper (uses mmapper).",
+      "version": "7.1.100",
+      "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX room locks and nohunt overrides (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "9513674a460a75191aa60116062f16059c003c1a942b62a2aceede31286c1edf",
+      "sha256": "90b2ebb632e9a81f1df2915296740cf6b66abeba331bd812194d048a87fcdcbb",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -837,7 +842,10 @@
         "7.1.94": "9af9aad446c7924ed3cffc84cbd31de5779bdafe21e6d1ea9c9e47e6ba259259",
         "7.1.95": "a774685a65683e0fd9ae9fa377be81e1598ae143e2e82e08098477cb4d276cf4",
         "7.1.96": "8921b05674cdc071e2b282aaa4a1e4346fc37df4f32051a5ce98b8d1ca8329fc",
-        "7.1.97": "9513674a460a75191aa60116062f16059c003c1a942b62a2aceede31286c1edf"
+        "7.1.97": "9513674a460a75191aa60116062f16059c003c1a942b62a2aceede31286c1edf",
+        "7.1.98": "411e36940e0dee49153dcff869d083b6bc2940cb31b0b88bcb6824643bbf9768",
+        "7.1.99": "6d25ab08667292aa43ee1fcf392624dcb706b092b14e7baa4d964fc9b5b32969",
+        "7.1.100": "90b2ebb632e9a81f1df2915296740cf6b66abeba331bd812194d048a87fcdcbb"
       }
     }
   ]

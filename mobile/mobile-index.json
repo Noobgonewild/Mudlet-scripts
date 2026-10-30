@@ -3,7 +3,7 @@
   "repository_id": "aardwolf-apk-mobile",
   "engine_api": 1,
   "public_key": "1ee213308a4efc697ab4e8d8aca7fc55af356635520e30dc19c9a2ec7d3f016c",
-  "signature": "a34023fc1f95dd3c163103b6e85fe994666ee2dea27f39a56fe22f32e143dc4749f79ea37ebcc2f253e265213b8876e8e5fbc170b104e2f9ce574c544ebc0701",
+  "signature": "031fb9c39d9bcba43687d8ae485add3e9b90424d044596518cff0f050b0d4f305ea735bb2799b5f32d2fa1ae13f4e3ec68b29de1abc7c71a3ac75d4b8874e203",
   "addons": [
     {
       "id": "bypass_mudlet",
@@ -69,10 +69,10 @@
       "id": "g_channels",
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
-      "version": "1.0.19",
+      "version": "1.0.19.1",
       "min_engine": 1,
-      "sha256": "2769f9d9aafe9a147315abc17304dc6cc25135969821d84c5ea99d4aa30c2360",
-      "size": 51375,
+      "sha256": "4cce49955845d797d10fb8c22c81e2770396f07038ea688a3cdc0df04e8659f6",
+      "size": 52120,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/g_channels.mpackage",
       "description": "Multi-tab communications window with history, search, timestamps, gags, and a gchan output channel.",
       "help": "gcom help"
@@ -249,10 +249,10 @@
       "id": "search_and_destroy",
       "package_name": "SearchAndDestroy",
       "filename": "SearchAndDestroy.mpackage",
-      "version": "7.1.100.2",
+      "version": "7.1.100.4",
       "min_engine": 1,
-      "sha256": "4dddef811cc4e33c88061805ad9e23596ef1715164f6a31b3b7c50c3775ef55d",
-      "size": 618108,
+      "sha256": "f071c157e9ed915f9c25003d18c93a3121a534589458a912a60f71c6f6e01a46",
+      "size": 618820,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/SearchAndDestroy.mpackage",
       "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX room locks and nohunt overrides (uses mmapper).",
       "help": "snd help (topics), snd help search <term>"

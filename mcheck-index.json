@@ -2,7 +2,7 @@
   "schema": 2,
   "repository_id": "noobgonewild-mudlet-scripts",
   "mcheck": {
-    "version": "0.5.6"
+    "version": "0.5.7"
   },
   "addons": [
     {
@@ -464,11 +464,11 @@
       "id": "hadar_spellup_caster",
       "package_name": "Hadar_Spellup_Caster",
       "filename": "Hadar_Spellup_Caster.mpackage",
-      "version": "1.37.8",
+      "version": "1.37.9",
       "description": "Spellup caster with spellup, aura, visibility, and landing helpers.",
       "help": "had help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Hadar_Spellup_Caster.mpackage",
-      "sha256": "fa7c849e66c054ae479c4c156c5ea5111f68f8175aa9c0288320bc5cb4c0a326",
+      "sha256": "5091d59e6a78eff1721f30df5edc095735fc504ad86cb1d2ccd9f0e37128b4c8",
       "known_hashes": {
         "1.37.1": "741e8b6fe8a5a8baa1f7524af1da8bc219b5940deb5615362ab09221e32db815",
         "1.37.2": "fdd81046dd51e70dd700a40365be3301ccf28dbc0c429465fc0ce8e65c31e838",
@@ -477,7 +477,8 @@
         "1.37.5": "b9234d23a423fbb79f7c420563957e4c9ea8b337b8e31d9246f4a1232f304531",
         "1.37.6": "78f1b4ed379987613fe53689b4937eb5f0a82eebe2a64f2541783e5de36bbb77",
         "1.37.7": "3056de0e37c9dc79e385d24f254ab1ea9edb9fd64abf760f81ccdfc002581448",
-        "1.37.8": "fa7c849e66c054ae479c4c156c5ea5111f68f8175aa9c0288320bc5cb4c0a326"
+        "1.37.8": "fa7c849e66c054ae479c4c156c5ea5111f68f8175aa9c0288320bc5cb4c0a326",
+        "1.37.9": "5091d59e6a78eff1721f30df5edc095735fc504ad86cb1d2ccd9f0e37128b4c8"
       },
       "artifact_type": "mpackage",
       "source_xml": "Hadar_Spellup_Caster.xml"
@@ -637,11 +638,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.73",
+      "version": "1.0.76",
       "description": "Aardwolf mapper: pathing, navigation and portal-sheet analysis with flexible room columns and TP prices.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "01ced6d074dc83d6e581cbf818903aec801bede7310bff0cf90d8270c0de97ec",
+      "sha256": "72b9f5231fd47cbb04ff1fa06d82376a9cd434f5edc6e022b3ee326f33d79344",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -707,7 +708,10 @@
         "1.0.70": "ea9503927145807b7c3ccd8c8644bdc051f8610fed8f8c8aef54cd6927c3f457",
         "1.0.71": "88820bbf36e2ae025a5450f9d0162a0f3161c2f22a3ae8b7442849abdd4c6a6b",
         "1.0.72": "5f3634a1be859bb159563a6f350d04c27f1b20f0a9263e79c9b2ccd3f70ebd33",
-        "1.0.73": "01ced6d074dc83d6e581cbf818903aec801bede7310bff0cf90d8270c0de97ec"
+        "1.0.73": "01ced6d074dc83d6e581cbf818903aec801bede7310bff0cf90d8270c0de97ec",
+        "1.0.74": "0fd542fe17a4e4cad3458884e1eb82dfa77e3bfa7676d76bd8a0d81141da95d9",
+        "1.0.75": "71c2d5625f3aa3bd1659db6bbb105282dfa23c6c158ce1e5ff1e170d11e8ec46",
+        "1.0.76": "72b9f5231fd47cbb04ff1fa06d82376a9cd434f5edc6e022b3ee326f33d79344"
       }
     },
     {
@@ -767,11 +771,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.100",
+      "version": "7.1.101",
       "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX room locks and nohunt overrides (uses mmapper).",
       "help": "snd help (topics), snd help search <term>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "90b2ebb632e9a81f1df2915296740cf6b66abeba331bd812194d048a87fcdcbb",
+      "sha256": "7818be777603d220f6e72fdaf9727c6dbfaa88dc562dbc8413e4fbae7997730d",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -845,7 +849,8 @@
         "7.1.97": "9513674a460a75191aa60116062f16059c003c1a942b62a2aceede31286c1edf",
         "7.1.98": "411e36940e0dee49153dcff869d083b6bc2940cb31b0b88bcb6824643bbf9768",
         "7.1.99": "6d25ab08667292aa43ee1fcf392624dcb706b092b14e7baa4d964fc9b5b32969",
-        "7.1.100": "90b2ebb632e9a81f1df2915296740cf6b66abeba331bd812194d048a87fcdcbb"
+        "7.1.100": "90b2ebb632e9a81f1df2915296740cf6b66abeba331bd812194d048a87fcdcbb",
+        "7.1.101": "7818be777603d220f6e72fdaf9727c6dbfaa88dc562dbc8413e4fbae7997730d"
       }
     }
   ]

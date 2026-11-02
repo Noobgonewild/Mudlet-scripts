@@ -245,15 +245,16 @@
       "id": "g_envenom",
       "package_name": "g_envenom",
       "filename": "g_envenom.mpackage",
-      "version": "1.0.15",
+      "version": "1.0.16",
       "description": "Uses DINV to maintain venom on owned or borrowed weapons and restore equipment safely.",
       "help": "genv help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_envenom.mpackage",
-      "sha256": "0b69fde2ed096e11917ccbde55ad3cfab977aa2613d3428027f59bfae9710809",
+      "sha256": "7941917ff9947fce86100753e6595bbd71a06a358b3ce63a7a064e329f1f70f9",
       "known_hashes": {
         "1.0.13": "23dbe77c1b5d1a4c9b03b14efe07f183a726f87fed80633e11878e500c05eaf1",
         "1.0.14": "dba47b06bf50f5563bd95935961993a8cf65f94c0c8cc6c0ed1036bb057c18c2",
-        "1.0.15": "0b69fde2ed096e11917ccbde55ad3cfab977aa2613d3428027f59bfae9710809"
+        "1.0.15": "0b69fde2ed096e11917ccbde55ad3cfab977aa2613d3428027f59bfae9710809",
+        "1.0.16": "7941917ff9947fce86100753e6595bbd71a06a358b3ce63a7a064e329f1f70f9"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_envenom.xml"
@@ -445,6 +446,23 @@
       "source_xml": "g_shinykeep.xml"
     },
     {
+      "id": "g_spellup",
+      "package_name": "g_spellup",
+      "filename": "g_spellup.mpackage",
+      "version": "1.0.17",
+      "description": "Level-aware spellup caster with tiered slots, silencing, and a hand-over that pauses Hadar while active.",
+      "help": "gsp help",
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_spellup.mpackage",
+      "sha256": "4c39dc9d4b0bb1721501c67851ccbe99e256c574f0258b655d9a42f8bcd8eb8b",
+      "known_hashes": {
+        "1.0.15": "0b615f0f8457a94e7c02543b624bb219f50ccd56b25f487b637b0168591057bd",
+        "1.0.16": "c4c6a40dbec82e5152358045be4dd1787b60c41d79aeb3a408e14f7f3b0701f3",
+        "1.0.17": "4c39dc9d4b0bb1721501c67851ccbe99e256c574f0258b655d9a42f8bcd8eb8b"
+      },
+      "artifact_type": "mpackage",
+      "source_xml": "g_spellup.xml"
+    },
+    {
       "id": "g_winds",
       "package_name": "g_winds",
       "filename": "g_winds.mpackage",
@@ -487,18 +505,19 @@
       "id": "m_aarchaeology",
       "package_name": "m_aarchaeology",
       "filename": "m_aarchaeology.mpackage",
-      "version": "1.6.2",
+      "version": "1.6.3",
       "description": "Tracks archaeology collections, bags, reports, sounds, and optional market costs.",
       "help": "arch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.mpackage",
-      "sha256": "c6414545e092f0d9e187f2351f7884641037b3d30b81e01a65b7cb04535f6b0a",
+      "sha256": "67a8ed6f90ae8ef56aa0c4bd68a1be3ef30d81d606d6a42a13796f5e3d0f492c",
       "known_hashes": {
         "1.4.3": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0",
         "1.4.4": "a7debe20b85f6e9736f1fdbdb01b63e464d0f955aad14b4fac67a5002fbb88ea",
         "1.4.5": "ce77bc573fc1beedcae0f47062f2565d280a13bc0a531d3a8210ab5884e29bd9",
         "1.4.6": "833bb6097ef54b47a1f1d3072a00f3ee79f6cff6e0094fc8b5a38e673a95c21d",
         "1.6.1": "a6ade148cc01a38d842d8555036b549e4aaa97d4831d8b4f4f96d4dbed2a8240",
-        "1.6.2": "c6414545e092f0d9e187f2351f7884641037b3d30b81e01a65b7cb04535f6b0a"
+        "1.6.2": "c6414545e092f0d9e187f2351f7884641037b3d30b81e01a65b7cb04535f6b0a",
+        "1.6.3": "67a8ed6f90ae8ef56aa0c4bd68a1be3ef30d81d606d6a42a13796f5e3d0f492c"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_aarchaeology.xml"
@@ -638,11 +657,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.76",
-      "description": "Aardwolf mapper: pathing, navigation and portal-sheet analysis with flexible room columns and TP prices.",
+      "version": "1.0.77",
+      "description": "Aardwolf mapper: quiet path execution, navigation and portal-sheet analysis with flexible room columns and TP prices.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "72b9f5231fd47cbb04ff1fa06d82376a9cd434f5edc6e022b3ee326f33d79344",
+      "sha256": "e8749414243b46c24465cc414c91315b14641dc5926ee3349dbbbf58dad6049b",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -711,7 +730,8 @@
         "1.0.73": "01ced6d074dc83d6e581cbf818903aec801bede7310bff0cf90d8270c0de97ec",
         "1.0.74": "0fd542fe17a4e4cad3458884e1eb82dfa77e3bfa7676d76bd8a0d81141da95d9",
         "1.0.75": "71c2d5625f3aa3bd1659db6bbb105282dfa23c6c158ce1e5ff1e170d11e8ec46",
-        "1.0.76": "72b9f5231fd47cbb04ff1fa06d82376a9cd434f5edc6e022b3ee326f33d79344"
+        "1.0.76": "72b9f5231fd47cbb04ff1fa06d82376a9cd434f5edc6e022b3ee326f33d79344",
+        "1.0.77": "e8749414243b46c24465cc414c91315b14641dc5926ee3349dbbbf58dad6049b"
       }
     },
     {

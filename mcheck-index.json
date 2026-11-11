@@ -341,11 +341,11 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.4.13",
+      "version": "1.4.14",
       "description": "Window layouts, tab groups, HALO/Lumina/Vanguard/Meridian themes, backgrounds, and a toggleable layout dock.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "721654ad05bffc05888fb016226df7de961f31aa6e7718a1c948e91a8a6ab2d0",
+      "sha256": "7ab72498a2ae3db7de0c941a37eaa5d8f802ae2f264570b1e45a8399543d5927",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
         "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
@@ -377,7 +377,8 @@
         "1.4.9": "7faaa95f6a77917834ba38fe929c52de13fe19dd0a0f9bb6abf4079d8351728f",
         "1.4.11": "b9a7cfec3ba38a52aa5e7f5e42eba80e2b46cc1d0e0494ec25fe20a4d615d5ba",
         "1.4.12": "170574e37baec705876f39b267798495f3414be146088c53a3157e42a23f0f4b",
-        "1.4.13": "721654ad05bffc05888fb016226df7de961f31aa6e7718a1c948e91a8a6ab2d0"
+        "1.4.13": "721654ad05bffc05888fb016226df7de961f31aa6e7718a1c948e91a8a6ab2d0",
+        "1.4.14": "7ab72498a2ae3db7de0c941a37eaa5d8f802ae2f264570b1e45a8399543d5927"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"
@@ -723,11 +724,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.84",
+      "version": "1.0.85",
       "description": "Aardwolf mapper: quiet path execution, navigation and portal-sheet analysis with flexible room columns and TP prices.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "ad2d7213e6f1b78effe3403f0e9371b452da594a0f037b709b6b333ef0422331",
+      "sha256": "06e83929da06b431da4f2d739f112bc5b437b8d1e12f0ceeff85088cc4a8ffce",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -801,7 +802,8 @@
         "1.0.78": "6d07dd9df5b331c675883ca0c2157444bb3fd3aaa5342099a424e737bdb373e8",
         "1.0.82": "4773b3a5c4bc3ea25c4f397a73039ccb197096b6db149aa0465a86663d30069d",
         "1.0.83": "a360216275ff8424a8af13a520814a2f4311c12691ff565a0ef2cd104347008a",
-        "1.0.84": "ad2d7213e6f1b78effe3403f0e9371b452da594a0f037b709b6b333ef0422331"
+        "1.0.84": "ad2d7213e6f1b78effe3403f0e9371b452da594a0f037b709b6b333ef0422331",
+        "1.0.85": "06e83929da06b431da4f2d739f112bc5b437b8d1e12f0ceeff85088cc4a8ffce"
       }
     },
     {

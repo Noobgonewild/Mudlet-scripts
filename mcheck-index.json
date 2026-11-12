@@ -343,11 +343,11 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.4.14",
+      "version": "1.4.15",
       "description": "Window layouts, tab groups, HALO/Lumina/Vanguard/Meridian themes, backgrounds, and a toggleable layout dock.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "7ab72498a2ae3db7de0c941a37eaa5d8f802ae2f264570b1e45a8399543d5927",
+      "sha256": "209b6fa26b54d09194f3b04693858f22552d5e04c913fc922b0e6624355d57f4",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
         "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
@@ -380,7 +380,8 @@
         "1.4.11": "b9a7cfec3ba38a52aa5e7f5e42eba80e2b46cc1d0e0494ec25fe20a4d615d5ba",
         "1.4.12": "170574e37baec705876f39b267798495f3414be146088c53a3157e42a23f0f4b",
         "1.4.13": "721654ad05bffc05888fb016226df7de961f31aa6e7718a1c948e91a8a6ab2d0",
-        "1.4.14": "7ab72498a2ae3db7de0c941a37eaa5d8f802ae2f264570b1e45a8399543d5927"
+        "1.4.14": "7ab72498a2ae3db7de0c941a37eaa5d8f802ae2f264570b1e45a8399543d5927",
+        "1.4.15": "209b6fa26b54d09194f3b04693858f22552d5e04c913fc922b0e6624355d57f4"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"

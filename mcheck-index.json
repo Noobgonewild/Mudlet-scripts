@@ -181,11 +181,11 @@
       "id": "g_channels",
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
-      "version": "1.1.7",
+      "version": "1.1.8",
       "description": "Tabbed channel history with bubbles, Stream cards, and Lanes with pinned tells.",
       "help": "gcom help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.mpackage",
-      "sha256": "3490a9d145f7640aec80330972a674a7cd55969829512bb200ef58e37e4e8492",
+      "sha256": "00d9984e6d2bd1cc13120487915dcf6c1b6af81e754c37663ed952621a8fb956",
       "known_hashes": {
         "1.0.1": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12",
         "1.0.2": "9f93856812a45c733e9e646a871e61a0798ea199cbcccf94e097a1b7de3132df",
@@ -215,7 +215,8 @@
         "1.1.4": "3f2d2088d4f23dd211362e7c5818bcb42ac7fde084f1f3a67977f7b6f66b0e16",
         "1.1.5": "3bb6cfc19e045f7823599515db9b88ef22f34dcdd2789f12891e853a80f88e82",
         "1.1.6": "3767ba70564bec09b6db97b621ddd1acca97f3d2b9e01d82b486c0579c1ddc89",
-        "1.1.7": "3490a9d145f7640aec80330972a674a7cd55969829512bb200ef58e37e4e8492"
+        "1.1.7": "3490a9d145f7640aec80330972a674a7cd55969829512bb200ef58e37e4e8492",
+        "1.1.8": "00d9984e6d2bd1cc13120487915dcf6c1b6af81e754c37663ed952621a8fb956"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_channels.xml"
@@ -344,11 +345,11 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.4.16",
+      "version": "1.4.18",
       "description": "Window layouts, tab groups, HALO/Lumina/Vanguard/Meridian themes, backgrounds, and a toggleable layout dock.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "f99ccc95091d65910f72d7777465ff889a790bfbede7a0394af8a12779f7d5bb",
+      "sha256": "bc21ce316820ded2b138fc008d977add07abafb7bbd56553fa3f2004395e69be",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
         "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
@@ -383,7 +384,9 @@
         "1.4.13": "721654ad05bffc05888fb016226df7de961f31aa6e7718a1c948e91a8a6ab2d0",
         "1.4.14": "7ab72498a2ae3db7de0c941a37eaa5d8f802ae2f264570b1e45a8399543d5927",
         "1.4.15": "209b6fa26b54d09194f3b04693858f22552d5e04c913fc922b0e6624355d57f4",
-        "1.4.16": "f99ccc95091d65910f72d7777465ff889a790bfbede7a0394af8a12779f7d5bb"
+        "1.4.16": "f99ccc95091d65910f72d7777465ff889a790bfbede7a0394af8a12779f7d5bb",
+        "1.4.17": "a7fe69769b70b653526d1049b57338855da8d8730665f7a2281fe9a326d781c3",
+        "1.4.18": "bc21ce316820ded2b138fc008d977add07abafb7bbd56553fa3f2004395e69be"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"

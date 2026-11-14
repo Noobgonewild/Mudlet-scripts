@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.146.0",
+      "version": "2.147.0",
       "description": "Inventory manager: tracks, searches and scores your gear; refreshes and identifies new items when you stay idle in a room; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
       "help": "dinv (short command list), dinv long (full list), dinv help <command>",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "b31822d7db7ea471e22a1b268d043e3a0c095b5f4dd0d4b6dc431f735c5298cb",
+      "sha256": "38d229a47d040793c483f03555a0438d3a6cd0b69308cd93ca0f860714ef9a88",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -94,7 +94,8 @@
         "2.143.0": "89b693a184c370602e3baf5be31320601b7eec001d0167aedfc75b32e1a4f960",
         "2.144.0": "70e9b96f72abbdbefa95fd507cff7515f1d8d0beec85009188d5d7aab9ba1ba5",
         "2.145.0": "1f163e1048ffb5db6b5ed004526ff34f57b5479d3140d5e395b216a21738e066",
-        "2.146.0": "b31822d7db7ea471e22a1b268d043e3a0c095b5f4dd0d4b6dc431f735c5298cb"
+        "2.146.0": "b31822d7db7ea471e22a1b268d043e3a0c095b5f4dd0d4b6dc431f735c5298cb",
+        "2.147.0": "38d229a47d040793c483f03555a0438d3a6cd0b69308cd93ca0f860714ef9a88"
       }
     },
     {
@@ -395,11 +396,11 @@
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
-      "version": "2.0.44",
+      "version": "2.0.45",
       "description": "Maze helper driven by room GMCP: finds mobs and rooms, plus Deathtrap master chains (mm dt).",
       "help": "#maze_help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
-      "sha256": "3743e957f2b7c519c4ac86c6807ebab46c77acf43295bdde4668b85f82049915",
+      "sha256": "59624fcac71f1651782e251235f5c1e08dac3d8fc22908a78ecaf96e411a87d5",
       "known_hashes": {
         "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
@@ -416,7 +417,8 @@
         "2.0.30": "de5f88567e616ffea492181d3f90167f70a7d6befb9388447b985ba55c1fc9ec",
         "2.0.31": "2589a42a0b2bb612388f45afe7f0885bdad883784f72b543becee411f5522065",
         "2.0.43": "6cf9abdbc20a106f380f4bcbc6deae5fedecf6e6583df2ba6485ac7aedee3309",
-        "2.0.44": "3743e957f2b7c519c4ac86c6807ebab46c77acf43295bdde4668b85f82049915"
+        "2.0.44": "3743e957f2b7c519c4ac86c6807ebab46c77acf43295bdde4668b85f82049915",
+        "2.0.45": "59624fcac71f1651782e251235f5c1e08dac3d8fc22908a78ecaf96e411a87d5"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_maze_solver/g_maze solver.xml"
@@ -852,15 +854,16 @@
       "id": "mudbin",
       "package_name": "mudbin",
       "filename": "mudbin.mpackage",
-      "version": "1.2.4",
+      "version": "1.2.5",
       "description": "Uploads selected game text or the clipboard to mudbin with colors, keeps a history, and lets other add-ons upload.",
       "help": "mudbin help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mudbin.mpackage",
-      "sha256": "a909ccb22e8f5e4397336b1be6cd453c73fa1b8ed931443b446d48a25bf91168",
+      "sha256": "b7209f00aa5319d61f38a1b7d884f8eed2e06f3d1e640a1cf4bce44a43a9f3e9",
       "known_hashes": {
         "1.2.2": "a5d75ad9a68e479796e5fa5dbdedba4cae7590e34daae14f2a5256d73d367ec4",
         "1.2.3": "ed04f9de16ddb3aea9d2a2ec4ff68fcfad1b557d87fb86ef4514d03df6e13ad2",
-        "1.2.4": "a909ccb22e8f5e4397336b1be6cd453c73fa1b8ed931443b446d48a25bf91168"
+        "1.2.4": "a909ccb22e8f5e4397336b1be6cd453c73fa1b8ed931443b446d48a25bf91168",
+        "1.2.5": "b7209f00aa5319d61f38a1b7d884f8eed2e06f3d1e640a1cf4bce44a43a9f3e9"
       },
       "artifact_type": "mpackage",
       "source_xml": "mudbin.xml"

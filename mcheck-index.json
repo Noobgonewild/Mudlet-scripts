@@ -743,11 +743,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.85",
-      "description": "Aardwolf mapper: quiet path execution, navigation and portal-sheet analysis with flexible room columns and TP prices.",
+      "version": "1.0.86",
+      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, quiet path execution, navigation and portal-sheet analysis.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "06e83929da06b431da4f2d739f112bc5b437b8d1e12f0ceeff85088cc4a8ffce",
+      "sha256": "8d13b20809b0e61fcc9010b2af9ae0168d2dd145a067db11cb7ece643168fefe",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -822,7 +822,8 @@
         "1.0.82": "4773b3a5c4bc3ea25c4f397a73039ccb197096b6db149aa0465a86663d30069d",
         "1.0.83": "a360216275ff8424a8af13a520814a2f4311c12691ff565a0ef2cd104347008a",
         "1.0.84": "ad2d7213e6f1b78effe3403f0e9371b452da594a0f037b709b6b333ef0422331",
-        "1.0.85": "06e83929da06b431da4f2d739f112bc5b437b8d1e12f0ceeff85088cc4a8ffce"
+        "1.0.85": "06e83929da06b431da4f2d739f112bc5b437b8d1e12f0ceeff85088cc4a8ffce",
+        "1.0.86": "8d13b20809b0e61fcc9010b2af9ae0168d2dd145a067db11cb7ece643168fefe"
       }
     },
     {
@@ -883,11 +884,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.116",
-      "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX and configurable ConWin number keys (uses mmapper).",
+      "version": "7.1.120",
+      "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX, configurable ConWin number keys, and aggro mob tagging from scan for the bigmap (uses mmapper).",
       "help": "snd help (topics), snd help search <term>; snd conwin help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "d08dee17903273ebea5aaa71c1a7e03e1bfa2dfd72f2640d6a82416310462fff",
+      "sha256": "2f0430c48cb7d5d6bcafa4c2ac8cce05f14fc126e7a473a95d521cc8f0b07cc9",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -970,7 +971,9 @@
         "7.1.113": "464864fbabf6b19720ae8686729307c431a40f0aec5a10dd5400b334b4714dc3",
         "7.1.114": "243555483f009396ccb954b403c07997f04716e1b05eda3c4191b22d72575695",
         "7.1.115": "15ebcd5651ea8a2a5fae6e91974313dd3d398a97df465486e5873493c7aba923",
-        "7.1.116": "d08dee17903273ebea5aaa71c1a7e03e1bfa2dfd72f2640d6a82416310462fff"
+        "7.1.116": "d08dee17903273ebea5aaa71c1a7e03e1bfa2dfd72f2640d6a82416310462fff",
+        "7.1.117": "388353f01fcd1aa20080f3ff1436f34e9ac33de7bf2961347573186a7b7b35e3",
+        "7.1.120": "2f0430c48cb7d5d6bcafa4c2ac8cce05f14fc126e7a473a95d521cc8f0b07cc9"
       }
     }
   ]

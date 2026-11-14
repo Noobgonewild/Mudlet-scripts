@@ -515,17 +515,18 @@
       "id": "g_spellup",
       "package_name": "g_spellup",
       "filename": "g_spellup.mpackage",
-      "version": "1.0.19",
+      "version": "1.0.20",
       "description": "Level-aware spellup caster with tiered slots, silencing, and a hand-over that pauses Hadar while active.",
       "help": "gsp help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_spellup.mpackage",
-      "sha256": "eff7c70018242df097bf1dfc564970666b2d37a036e81f7804aafcbf9646c00a",
+      "sha256": "a98f03f074d2aa4deb692c85a4cbd3f36d82359a20032326446dfcd2bcbc899f",
       "known_hashes": {
         "1.0.15": "0b615f0f8457a94e7c02543b624bb219f50ccd56b25f487b637b0168591057bd",
         "1.0.16": "c4c6a40dbec82e5152358045be4dd1787b60c41d79aeb3a408e14f7f3b0701f3",
         "1.0.17": "4c39dc9d4b0bb1721501c67851ccbe99e256c574f0258b655d9a42f8bcd8eb8b",
         "1.0.18": "67ac5bfa506bc16f6a38974f39e9b1ef2401320f32e52c17090e866631467e9e",
-        "1.0.19": "eff7c70018242df097bf1dfc564970666b2d37a036e81f7804aafcbf9646c00a"
+        "1.0.19": "eff7c70018242df097bf1dfc564970666b2d37a036e81f7804aafcbf9646c00a",
+        "1.0.20": "a98f03f074d2aa4deb692c85a4cbd3f36d82359a20032326446dfcd2bcbc899f"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_spellup.xml"
@@ -743,11 +744,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.86",
+      "version": "1.0.89",
       "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, quiet path execution, navigation and portal-sheet analysis.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "8d13b20809b0e61fcc9010b2af9ae0168d2dd145a067db11cb7ece643168fefe",
+      "sha256": "aa644e73a53e75b7739fd29466f6d970b3c4a27901cc685907d607f27885f450",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -823,7 +824,10 @@
         "1.0.83": "a360216275ff8424a8af13a520814a2f4311c12691ff565a0ef2cd104347008a",
         "1.0.84": "ad2d7213e6f1b78effe3403f0e9371b452da594a0f037b709b6b333ef0422331",
         "1.0.85": "06e83929da06b431da4f2d739f112bc5b437b8d1e12f0ceeff85088cc4a8ffce",
-        "1.0.86": "8d13b20809b0e61fcc9010b2af9ae0168d2dd145a067db11cb7ece643168fefe"
+        "1.0.86": "8d13b20809b0e61fcc9010b2af9ae0168d2dd145a067db11cb7ece643168fefe",
+        "1.0.87": "fe5dd094bc479c2ced7bcde3bbabfbd1bc9c80c272479577da7429b8e7bce318",
+        "1.0.88": "b0be58559d8540ccbedc8ee7f552cf068d658e1a56095a1870d17eceb483ec67",
+        "1.0.89": "aa644e73a53e75b7739fd29466f6d970b3c4a27901cc685907d607f27885f450"
       }
     },
     {

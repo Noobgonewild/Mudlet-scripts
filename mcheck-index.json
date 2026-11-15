@@ -32,11 +32,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.154.0",
-      "description": "Inventory manager: tracks, searches and scores your gear; refreshes and identifies new items when you stay idle in a room; with the identify wish it identifies received items instantly, even in combat; an inventory window with search, worn gear, wield-by-damage-type and quaff buttons; required by several other add-ons.",
-      "help": "dinv (short command list), dinv long (full list), dinv help <command>, dinv window (inventory window)",
+      "version": "2.158.0",
+      "description": "Tracks and scores gear; stores unused items one at a time with progress, abort and automatic prompt off/on.",
+      "help": "dinv (short list), dinv long (full list), dinv help unused, dinv unused store abort, dinv window",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "2c145411d84740d1876c76539a1e45d3d27b41adaeed27aae5c916a591f37b0d",
+      "sha256": "e7f309e1f232a48f11348b5fb2e31bafddeb5e590547f0ce19c9c6a6a1247780",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -102,7 +102,11 @@
         "2.151.0": "d9d356c08fef7846b3e63599608457bde42b183bef06ce2d64f16257f1e53436",
         "2.152.0": "542b7db93ce82f232879b0103d6b6699230e877f166d9389e370c15272e3869c",
         "2.153.0": "46806edde1201e6e1ad44631ddd7887308c2b3ec52bee61ea419f4f12b1d339f",
-        "2.154.0": "2c145411d84740d1876c76539a1e45d3d27b41adaeed27aae5c916a591f37b0d"
+        "2.154.0": "2c145411d84740d1876c76539a1e45d3d27b41adaeed27aae5c916a591f37b0d",
+        "2.155.0": "c80ff08fab7b0a6b1d6ad909de08f7cd01f29c2046c636a1dff66e3eaa0bccce",
+        "2.156.0": "41b23471e745bbd8387fc52c63e9030ea536624bdee976efbe2cecf5ecc9e221",
+        "2.157.0": "57193ed961acd4f33e77896363584b3e1def6eed8d219ec440211b941f53e5c6",
+        "2.158.0": "e7f309e1f232a48f11348b5fb2e31bafddeb5e590547f0ce19c9c6a6a1247780"
       }
     },
     {
@@ -744,11 +748,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.96",
+      "version": "1.0.97",
       "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, quiet path execution, navigation and portal-sheet analysis. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls).",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "98699f58e9675b450cde840c639169c728a85a5225d54ccfd14ca0792349eca3",
+      "sha256": "f0869559333451898f735af03c54eaed4ead6d6a0443f416a4fd982a47ea3d7f",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -829,7 +833,8 @@
         "1.0.88": "b0be58559d8540ccbedc8ee7f552cf068d658e1a56095a1870d17eceb483ec67",
         "1.0.89": "aa644e73a53e75b7739fd29466f6d970b3c4a27901cc685907d607f27885f450",
         "1.0.90": "1fad2addeb230b2ae905d26662609de8feaf3ea49c9bc71e34b558a859cc22cb",
-        "1.0.96": "98699f58e9675b450cde840c639169c728a85a5225d54ccfd14ca0792349eca3"
+        "1.0.96": "98699f58e9675b450cde840c639169c728a85a5225d54ccfd14ca0792349eca3",
+        "1.0.97": "f0869559333451898f735af03c54eaed4ead6d6a0443f416a4fd982a47ea3d7f"
       }
     },
     {

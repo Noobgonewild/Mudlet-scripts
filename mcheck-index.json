@@ -744,11 +744,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.90",
-      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, quiet path execution, navigation and portal-sheet analysis.",
+      "version": "1.0.96",
+      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, quiet path execution, navigation and portal-sheet analysis. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls).",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "1fad2addeb230b2ae905d26662609de8feaf3ea49c9bc71e34b558a859cc22cb",
+      "sha256": "98699f58e9675b450cde840c639169c728a85a5225d54ccfd14ca0792349eca3",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -828,7 +828,8 @@
         "1.0.87": "fe5dd094bc479c2ced7bcde3bbabfbd1bc9c80c272479577da7429b8e7bce318",
         "1.0.88": "b0be58559d8540ccbedc8ee7f552cf068d658e1a56095a1870d17eceb483ec67",
         "1.0.89": "aa644e73a53e75b7739fd29466f6d970b3c4a27901cc685907d607f27885f450",
-        "1.0.90": "1fad2addeb230b2ae905d26662609de8feaf3ea49c9bc71e34b558a859cc22cb"
+        "1.0.90": "1fad2addeb230b2ae905d26662609de8feaf3ea49c9bc71e34b558a859cc22cb",
+        "1.0.96": "98699f58e9675b450cde840c639169c728a85a5225d54ccfd14ca0792349eca3"
       }
     },
     {

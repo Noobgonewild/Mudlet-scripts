@@ -749,11 +749,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.100",
-      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls); with S&D, you turn red with a player count when other players share your room.",
+      "version": "1.0.106",
+      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "9cd203902c17a1311c5a55b45263853b2f89ba5c1cf710d7761bf461fa9bd53f",
+      "sha256": "40df9c9111eafa0599e259cbc91a12887764757f5cfdb074b85f79357b2f1a52",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -837,7 +837,8 @@
         "1.0.96": "98699f58e9675b450cde840c639169c728a85a5225d54ccfd14ca0792349eca3",
         "1.0.97": "f0869559333451898f735af03c54eaed4ead6d6a0443f416a4fd982a47ea3d7f",
         "1.0.99": "399fbc0f0f76d8c4a95318c64976668c04d9cb8bbdaaaf447e94c868b3d612be",
-        "1.0.100": "9cd203902c17a1311c5a55b45263853b2f89ba5c1cf710d7761bf461fa9bd53f"
+        "1.0.100": "9cd203902c17a1311c5a55b45263853b2f89ba5c1cf710d7761bf461fa9bd53f",
+        "1.0.106": "40df9c9111eafa0599e259cbc91a12887764757f5cfdb074b85f79357b2f1a52"
       }
     },
     {
@@ -898,11 +899,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.123",
+      "version": "7.1.124",
       "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX, configurable ConWin number keys, a ConWin warning with a count when other players are in your room, and aggro mob tagging from scan for the bigmap (uses mmapper).",
       "help": "snd help (topics), snd help search <term>; snd conwin help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "ee2a32ec49c38338e61d07035a44b103a43e79f130420e2adacf390562889cbe",
+      "sha256": "87cbda97a91b5c07d509ef1eda8539dbe68dc7ae4ee88534a2bd8c55c5e57b4f",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -989,7 +990,8 @@
         "7.1.117": "388353f01fcd1aa20080f3ff1436f34e9ac33de7bf2961347573186a7b7b35e3",
         "7.1.120": "2f0430c48cb7d5d6bcafa4c2ac8cce05f14fc126e7a473a95d521cc8f0b07cc9",
         "7.1.121": "2a3e8d532a185107883d803d5ba5f4dca7dfdbf297825de9663bb582f71115f7",
-        "7.1.123": "ee2a32ec49c38338e61d07035a44b103a43e79f130420e2adacf390562889cbe"
+        "7.1.123": "ee2a32ec49c38338e61d07035a44b103a43e79f130420e2adacf390562889cbe",
+        "7.1.124": "87cbda97a91b5c07d509ef1eda8539dbe68dc7ae4ee88534a2bd8c55c5e57b4f"
       }
     }
   ]

@@ -9,17 +9,18 @@
       "id": "aard_sounds",
       "package_name": "aard_sounds",
       "filename": "aard_sounds.mpackage",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Shared sounds for SnD, g_channels, m_dulltracker, m_aarchaeology and m_marketwatch, plus a window to switch each one.",
       "help": "msounds help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/aard_sounds.mpackage",
-      "sha256": "9b559f45e72b4e29c5ca313356efc9d9cb0267bcfc942fc577517e8d7500beae",
+      "sha256": "09089f4d0a387c25aebc053821720606e2a026e88b03deaafec7355b6233d8b3",
       "known_hashes": {
         "1.0.0": "a83166d330f723cfd9de2241ed593dc6f7a62f9ea6fc16d7d5caeca090f61d20",
         "1.0.1": "df77ef3da841ee779019246f9d2d3bafcdb349005d498b94c4ecaa8f215103af",
         "1.0.2": "376d669ce6b7a8fe7743130f84bbd6382711a14e7dff0edd25f6617f9a515cb3",
         "1.0.3": "da3aaabf51b788057fca364cfe9ae40e08df7cd8ed0316245906cc4b6633f391",
-        "1.0.4": "9b559f45e72b4e29c5ca313356efc9d9cb0267bcfc942fc577517e8d7500beae"
+        "1.0.4": "9b559f45e72b4e29c5ca313356efc9d9cb0267bcfc942fc577517e8d7500beae",
+        "1.0.5": "09089f4d0a387c25aebc053821720606e2a026e88b03deaafec7355b6233d8b3"
       },
       "artifact_type": "mpackage",
       "source_xml": "aard_sounds.xml",

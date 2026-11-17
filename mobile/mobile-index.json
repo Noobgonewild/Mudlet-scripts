@@ -3,8 +3,20 @@
   "repository_id": "aardwolf-apk-mobile",
   "engine_api": 1,
   "public_key": "1ee213308a4efc697ab4e8d8aca7fc55af356635520e30dc19c9a2ec7d3f016c",
-  "signature": "dde806f31d036364add3c4f34f38fa37f59de8060792db660b96f1fbc6c176e2833386009d16ad63ec26dea57d348ae1cee0565e224df2eca2bfc80bf3bf2608",
+  "signature": "010b592874e052d6b7d6a02f93523adc917094b962e1009bae2ef0a8c29efaf0b10d7cd6bfbf996a4eda90baa8d13b826f2eb52b36f45f34701eeae77da8110d",
   "addons": [
+    {
+      "id": "aard_sounds",
+      "package_name": "aard_sounds",
+      "filename": "aard_sounds.mpackage",
+      "version": "1.0.5",
+      "min_engine": 1,
+      "sha256": "79f1dfc575985424b2d1be986bb0857749f48abd9f657c61ffd8896e9c3e44c1",
+      "size": 617279,
+      "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/aard_sounds.mpackage",
+      "description": "Shared sound files for the add-ons, and the sound settings (Config > Sounds).",
+      "help": "msounds: the add-ons' sounds; set them in Config > Sounds."
+    },
     {
       "id": "bypass_mudlet",
       "package_name": "Bypass_Mudlet",
@@ -21,13 +33,13 @@
       "id": "dinv",
       "package_name": "DINV",
       "filename": "DINV.mpackage",
-      "version": "2.149.0.2",
+      "version": "2.159.0.2",
       "min_engine": 1,
-      "sha256": "e43a0cbeacf1fd41bcde4173eb6e5f4dc13bb4e7001680823c4e640816dcc989",
-      "size": 372226,
+      "sha256": "53204d54970b0e670f89032f983e697926b0e7aa5b8b81f93b26964f5117b2e5",
+      "size": 375347,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/DINV.mpackage",
-      "description": "Inventory manager: tracks, searches and scores your gear; refreshes and identifies new items when you stay idle in a room; with the identify wish it identifies received items instantly, even in combat; required by several other add-ons.",
-      "help": "dinv (short command list), dinv long (full list), dinv help <command>"
+      "description": "Tracks and scores gear; stores unused items one at a time with progress, abort and automatic prompt off/on.",
+      "help": "dinv (short list), dinv long (full list), dinv help unused, dinv unused store abort, dinv window"
     },
     {
       "id": "g_areapicker",
@@ -69,10 +81,10 @@
       "id": "g_channels",
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
-      "version": "1.1.8.1",
+      "version": "1.1.10.1",
       "min_engine": 1,
-      "sha256": "964134b241640ce43f93f72b0e2d70fa5ed444c06849634aaa04993b76e987ad",
-      "size": 63114,
+      "sha256": "7378a6bb17841862c07daebb36d47e35f1ba6175dff2cebe6cc54d7f1b341175",
+      "size": 38816,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/g_channels.mpackage",
       "description": "Tabbed channel history with bubbles, Stream cards, and Lanes with pinned tells.",
       "help": "gcom help"
@@ -105,10 +117,10 @@
       "id": "g_group_monitor",
       "package_name": "g_group_monitor",
       "filename": "g_group_monitor.mpackage",
-      "version": "1.3.9",
+      "version": "1.3.10",
       "min_engine": 1,
-      "sha256": "989c75514d0083ab1e0baceeb7c78a694e9ed2f9907b2fa9bccfb1ed8ea301c1",
-      "size": 33572,
+      "sha256": "20b1fb5a4b0b7d1169dcd34e03d764cbccf9a28bc874c352164534faf9ace773",
+      "size": 26636,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/g_group_monitor.mpackage",
       "description": "Draggable GMCP group monitor with invites, filters, and health alerts.",
       "help": "gmon help"
@@ -177,10 +189,10 @@
       "id": "g_spellup",
       "package_name": "g_spellup",
       "filename": "g_spellup.mpackage",
-      "version": "1.0.19",
+      "version": "1.0.21",
       "min_engine": 1,
-      "sha256": "db221ddc26101c3027908c8ddb8993da76b6056f7ccb51ed8bc51ec7628654e3",
-      "size": 50187,
+      "sha256": "6a8d196e7a3696dce42502c996e28f8214406e062567a3efdf5109d45c66d991",
+      "size": 50338,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/g_spellup.mpackage",
       "description": "Level-aware spellup caster with tiered slots, silencing, and a hand-over that pauses Hadar while active.",
       "help": "gsp help"
@@ -191,8 +203,8 @@
       "filename": "gmobilelayout.mpackage",
       "version": "0.1.0",
       "min_engine": 1,
-      "sha256": "eec4df96e8f0b0eb3b94340832954baeb56befa361e92937d4740cdb4af0bb22",
-      "size": 2395,
+      "sha256": "4e952614155759880eb7ba74668b3382dbf0da8df100227be0f26cf23af21e25",
+      "size": 2410,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/gmobilelayout.mpackage",
       "description": "Mobile add-on: gmobilelayout.",
       "help": ""
@@ -213,10 +225,10 @@
       "id": "m_aarchaeology",
       "package_name": "m_aarchaeology",
       "filename": "m_aarchaeology.mpackage",
-      "version": "1.6.3",
+      "version": "1.6.4",
       "min_engine": 1,
-      "sha256": "85150542c257fe3f7bfd58b1541e6989cd7f94836f130c9d28d2b5809e22f5fe",
-      "size": 20881,
+      "sha256": "a2a4b99843c5939488f576628384b3dff943e2c7da6a38d2843b6539ec969113",
+      "size": 21390,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/m_aarchaeology.mpackage",
       "description": "Tracks archaeology collections, bags, reports, sounds, and optional market costs.",
       "help": "arch help"
@@ -249,12 +261,12 @@
       "id": "mmapper",
       "package_name": "mmapper",
       "filename": "mmapper.mpackage",
-      "version": "1.0.85.2",
+      "version": "1.0.106.2",
       "min_engine": 1,
-      "sha256": "628c6b10539cb0da7622a8aea031d5070c7196bdb7689129bdb05521f9a9a87f",
-      "size": 258526,
+      "sha256": "8184f6badef016de4648252d12ecf4d0797936173e56079e8be8cc13cbe9548f",
+      "size": 248901,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/mmapper.mpackage",
-      "description": "Aardwolf mapper: quiet path execution, navigation and portal-sheet analysis with flexible room columns and TP prices.",
+      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire.",
       "help": "mapper help"
     },
     {
@@ -273,13 +285,13 @@
       "id": "search_and_destroy",
       "package_name": "SearchAndDestroy",
       "filename": "SearchAndDestroy.mpackage",
-      "version": "7.1.112.5",
+      "version": "7.1.126.5",
       "min_engine": 1,
-      "sha256": "4c9483ccb77fbf29a3b444ef97c3a3811d03953add5cd16d8ffcbabcc5153e1d",
-      "size": 620344,
+      "sha256": "b81cb52a86b2ca04758b05623ef64c9152e575f6443be2837513f049c4a5d825",
+      "size": 626677,
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/mobile/SearchAndDestroy.mpackage",
-      "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX room locks and nohunt overrides (uses mmapper).",
-      "help": "snd help (topics), snd help search <term>"
+      "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX, configurable ConWin number keys, a ConWin warning with a count when other players are in your room, and aggro mob tagging from scan for the bigmap (uses mmapper).",
+      "help": "snd help (topics), snd help search <term>; snd conwin help"
     }
   ]
 }

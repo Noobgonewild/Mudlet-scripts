@@ -53,11 +53,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.159.0",
-      "description": "Tracks and scores gear; stores unused items one at a time with progress, abort and automatic prompt off/on.",
+      "version": "2.160.0",
+      "description": "Tracks and scores gear, stores unused items with progress and abort, and reports identify completion after the keyring.",
       "help": "dinv (short list), dinv long (full list), dinv help unused, dinv unused store abort, dinv window",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "bce6f3a5da515e7381d1368b5c6a60991b0c4a608ea384ebfd861702da90e79d",
+      "sha256": "12f5207d08500bf8a373c3d7e7731d4679005b0823ad6b97dd619a0e62f19608",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -128,7 +128,8 @@
         "2.156.0": "41b23471e745bbd8387fc52c63e9030ea536624bdee976efbe2cecf5ecc9e221",
         "2.157.0": "57193ed961acd4f33e77896363584b3e1def6eed8d219ec440211b941f53e5c6",
         "2.158.0": "e7f309e1f232a48f11348b5fb2e31bafddeb5e590547f0ce19c9c6a6a1247780",
-        "2.159.0": "bce6f3a5da515e7381d1368b5c6a60991b0c4a608ea384ebfd861702da90e79d"
+        "2.159.0": "bce6f3a5da515e7381d1368b5c6a60991b0c4a608ea384ebfd861702da90e79d",
+        "2.160.0": "12f5207d08500bf8a373c3d7e7731d4679005b0823ad6b97dd619a0e62f19608"
       }
     },
     {
@@ -382,11 +383,11 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.4.18",
+      "version": "1.4.20",
       "description": "Window layouts, tab groups, HALO/Lumina/Vanguard/Meridian themes, backgrounds, and a toggleable layout dock.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "bc21ce316820ded2b138fc008d977add07abafb7bbd56553fa3f2004395e69be",
+      "sha256": "92c1232863c06edbaceb7daf0531133abddebdec2458b14fb84a4f27a5c53c46",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
         "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
@@ -423,7 +424,9 @@
         "1.4.15": "209b6fa26b54d09194f3b04693858f22552d5e04c913fc922b0e6624355d57f4",
         "1.4.16": "f99ccc95091d65910f72d7777465ff889a790bfbede7a0394af8a12779f7d5bb",
         "1.4.17": "a7fe69769b70b653526d1049b57338855da8d8730665f7a2281fe9a326d781c3",
-        "1.4.18": "bc21ce316820ded2b138fc008d977add07abafb7bbd56553fa3f2004395e69be"
+        "1.4.18": "bc21ce316820ded2b138fc008d977add07abafb7bbd56553fa3f2004395e69be",
+        "1.4.19": "8dd78195c3b7e81b28686c5b277ee08a846645feff3fcd3e3293b8a007ae581f",
+        "1.4.20": "92c1232863c06edbaceb7daf0531133abddebdec2458b14fb84a4f27a5c53c46"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"
@@ -432,11 +435,11 @@
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
-      "version": "2.0.45",
+      "version": "2.0.46",
       "description": "Maze helper driven by room GMCP: finds mobs and rooms, plus Deathtrap master chains (mm dt).",
       "help": "#maze_help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
-      "sha256": "59624fcac71f1651782e251235f5c1e08dac3d8fc22908a78ecaf96e411a87d5",
+      "sha256": "d8a9e657da1fe0866ff0998898852716641e6d2de4b2d516c789be97f4eee994",
       "known_hashes": {
         "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
@@ -454,7 +457,8 @@
         "2.0.31": "2589a42a0b2bb612388f45afe7f0885bdad883784f72b543becee411f5522065",
         "2.0.43": "6cf9abdbc20a106f380f4bcbc6deae5fedecf6e6583df2ba6485ac7aedee3309",
         "2.0.44": "3743e957f2b7c519c4ac86c6807ebab46c77acf43295bdde4668b85f82049915",
-        "2.0.45": "59624fcac71f1651782e251235f5c1e08dac3d8fc22908a78ecaf96e411a87d5"
+        "2.0.45": "59624fcac71f1651782e251235f5c1e08dac3d8fc22908a78ecaf96e411a87d5",
+        "2.0.46": "d8a9e657da1fe0866ff0998898852716641e6d2de4b2d516c789be97f4eee994"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_maze_solver/g_maze solver.xml"
@@ -544,18 +548,19 @@
       "id": "g_spellup",
       "package_name": "g_spellup",
       "filename": "g_spellup.mpackage",
-      "version": "1.0.20",
+      "version": "1.0.21",
       "description": "Level-aware spellup caster with tiered slots, silencing, and a hand-over that pauses Hadar while active.",
       "help": "gsp help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_spellup.mpackage",
-      "sha256": "a98f03f074d2aa4deb692c85a4cbd3f36d82359a20032326446dfcd2bcbc899f",
+      "sha256": "1fe94d3a8eca4d8ff508b43166103c3486063aa2872f8553f4cf7118da371f43",
       "known_hashes": {
         "1.0.15": "0b615f0f8457a94e7c02543b624bb219f50ccd56b25f487b637b0168591057bd",
         "1.0.16": "c4c6a40dbec82e5152358045be4dd1787b60c41d79aeb3a408e14f7f3b0701f3",
         "1.0.17": "4c39dc9d4b0bb1721501c67851ccbe99e256c574f0258b655d9a42f8bcd8eb8b",
         "1.0.18": "67ac5bfa506bc16f6a38974f39e9b1ef2401320f32e52c17090e866631467e9e",
         "1.0.19": "eff7c70018242df097bf1dfc564970666b2d37a036e81f7804aafcbf9646c00a",
-        "1.0.20": "a98f03f074d2aa4deb692c85a4cbd3f36d82359a20032326446dfcd2bcbc899f"
+        "1.0.20": "a98f03f074d2aa4deb692c85a4cbd3f36d82359a20032326446dfcd2bcbc899f",
+        "1.0.21": "1fe94d3a8eca4d8ff508b43166103c3486063aa2872f8553f4cf7118da371f43"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_spellup.xml"
@@ -776,11 +781,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.106",
-      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire.",
+      "version": "1.0.107",
+      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls), kept centred on you with mouse-wheel zoom (mapper minimap zoom); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "40df9c9111eafa0599e259cbc91a12887764757f5cfdb074b85f79357b2f1a52",
+      "sha256": "9ae99935552c57edfb10b04013048b460f9f3f2d7c58a25745a55ebf4ccadf2e",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -865,7 +870,8 @@
         "1.0.97": "f0869559333451898f735af03c54eaed4ead6d6a0443f416a4fd982a47ea3d7f",
         "1.0.99": "399fbc0f0f76d8c4a95318c64976668c04d9cb8bbdaaaf447e94c868b3d612be",
         "1.0.100": "9cd203902c17a1311c5a55b45263853b2f89ba5c1cf710d7761bf461fa9bd53f",
-        "1.0.106": "40df9c9111eafa0599e259cbc91a12887764757f5cfdb074b85f79357b2f1a52"
+        "1.0.106": "40df9c9111eafa0599e259cbc91a12887764757f5cfdb074b85f79357b2f1a52",
+        "1.0.107": "9ae99935552c57edfb10b04013048b460f9f3f2d7c58a25745a55ebf4ccadf2e"
       }
     },
     {
@@ -926,11 +932,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.125",
+      "version": "7.1.126",
       "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX, configurable ConWin number keys, a ConWin warning with a count when other players are in your room, and aggro mob tagging from scan for the bigmap (uses mmapper).",
       "help": "snd help (topics), snd help search <term>; snd conwin help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "97d6ffaf81d9b21cd4e08dfc9cb1775e4beeb24e8c87e4e0406218e4cc656bda",
+      "sha256": "c1c8a6abc817a2a7b7df96d3d2b92be11daf44ca22fbcc9c860ffda0078269a0",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -1019,7 +1025,8 @@
         "7.1.121": "2a3e8d532a185107883d803d5ba5f4dca7dfdbf297825de9663bb582f71115f7",
         "7.1.123": "ee2a32ec49c38338e61d07035a44b103a43e79f130420e2adacf390562889cbe",
         "7.1.124": "87cbda97a91b5c07d509ef1eda8539dbe68dc7ae4ee88534a2bd8c55c5e57b4f",
-        "7.1.125": "97d6ffaf81d9b21cd4e08dfc9cb1775e4beeb24e8c87e4e0406218e4cc656bda"
+        "7.1.125": "97d6ffaf81d9b21cd4e08dfc9cb1775e4beeb24e8c87e4e0406218e4cc656bda",
+        "7.1.126": "c1c8a6abc817a2a7b7df96d3d2b92be11daf44ca22fbcc9c860ffda0078269a0"
       }
     }
   ]

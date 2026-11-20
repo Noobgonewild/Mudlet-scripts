@@ -54,11 +54,11 @@
       "filename": "DINV.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mudlet-dinv",
-      "version": "2.171.0",
+      "version": "2.179.0",
       "description": "Tracks and scores gear. In the inventory window, click items or pick a whole analysis set and move them between inventory and bags.",
       "help": "dinv window, dinv help window, dinv help unused, dinv unused store abort, dinv long",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-DINV/main/DINV.mpackage",
-      "sha256": "441646c3b7c4b6ef8055605bc2cfcfe000d406f4d6a3b02b5ff3f583159a4d59",
+      "sha256": "ee9fe4627541b9b577563044153f739c69bc46fc26fb39b37cdf9f339755997a",
       "known_hashes": {
         "2.82.0": "dfb92f4f506b4bf6f9fd10378ed5aa82eb167a1436be8f11cfa09768be6973c1",
         "2.83.0": "da019ae068a6400cf8a8f7c35ebacce03e7252ff1d8926efb5887b6d4387a215",
@@ -141,7 +141,15 @@
         "2.168.0": "00db5f495d05e1d9f3668c3b042d5bf9afb73c4ccee518b5ffbafc941e55ee8d",
         "2.169.0": "a5f80f7f5019bb681701d421ab22ccdf8e8c7cb11fbfea165ce748b25d8b4ad0",
         "2.170.0": "92eeb21d42f3cb9e2058fd6e4ca24451976d88f57e8dc84bcc999dc0f9b53e41",
-        "2.171.0": "441646c3b7c4b6ef8055605bc2cfcfe000d406f4d6a3b02b5ff3f583159a4d59"
+        "2.171.0": "441646c3b7c4b6ef8055605bc2cfcfe000d406f4d6a3b02b5ff3f583159a4d59",
+        "2.172.0": "f0fc887453819518c5a54c84c18e1e4b9e8c4f46ce70d7ec88871f751aab31f2",
+        "2.173.0": "a368af981e4699ff9c9726ac4a284d0d39a1bee04c82acca6dda5b37074dc444",
+        "2.174.0": "f7df417300c81bae778d4d454f2620d06f3b703bbb723a1679c3eed88fd276b4",
+        "2.175.0": "1e42115270468878a290e560c548c5b72873233bbc8dcb746d88f6aa378a4b0d",
+        "2.176.0": "d26a1cf738c0789082057f24aeaa70d523bd09178cc11604e5e32979c36782a5",
+        "2.177.0": "bb469ff5c29c42609ddae200b3fe5bc6ba6a2cabfa68b52e6e899d2b34b2cb79",
+        "2.178.0": "c86297f2085386b4587988962f5e264672d5198961126dbadac2b755bf967598",
+        "2.179.0": "ee9fe4627541b9b577563044153f739c69bc46fc26fb39b37cdf9f339755997a"
       }
     },
     {
@@ -623,11 +631,11 @@
       "id": "m_aarchaeology",
       "package_name": "m_aarchaeology",
       "filename": "m_aarchaeology.mpackage",
-      "version": "1.6.4",
+      "version": "1.6.7",
       "description": "Tracks archaeology collections, bags, reports, sounds, and optional market costs.",
       "help": "arch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.mpackage",
-      "sha256": "3c80de0dce8797836556e9d8fcf9fc12b7fcd3529558fdd2f06925b2375b82f2",
+      "sha256": "878dc5d4724d0050a8b2e5738516e2fe54628023ca2c0baf2b12e71f90e2dae1",
       "known_hashes": {
         "1.4.3": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0",
         "1.4.4": "a7debe20b85f6e9736f1fdbdb01b63e464d0f955aad14b4fac67a5002fbb88ea",
@@ -636,7 +644,10 @@
         "1.6.1": "a6ade148cc01a38d842d8555036b549e4aaa97d4831d8b4f4f96d4dbed2a8240",
         "1.6.2": "c6414545e092f0d9e187f2351f7884641037b3d30b81e01a65b7cb04535f6b0a",
         "1.6.3": "67a8ed6f90ae8ef56aa0c4bd68a1be3ef30d81d606d6a42a13796f5e3d0f492c",
-        "1.6.4": "3c80de0dce8797836556e9d8fcf9fc12b7fcd3529558fdd2f06925b2375b82f2"
+        "1.6.4": "3c80de0dce8797836556e9d8fcf9fc12b7fcd3529558fdd2f06925b2375b82f2",
+        "1.6.5": "e7aab53d92b21b92fe78d1a85fe8a65ca3b0f789b1e4b2088011db3f5f418780",
+        "1.6.6": "ef1f9b5c3bf9deeabb37f13a0b9ff84f87f16b0615959dc41e201319c168146a",
+        "1.6.7": "878dc5d4724d0050a8b2e5738516e2fe54628023ca2c0baf2b12e71f90e2dae1"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_aarchaeology.xml"
@@ -796,11 +807,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.107",
-      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls), kept centred on you with mouse-wheel zoom (mapper minimap zoom); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire.",
+      "version": "1.0.109",
+      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, shop ($) and bank (bag) icons with gold borders where a room is busy, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls), kept centred on you with mouse-wheel zoom (mapper minimap zoom); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire. Right-click a mapper cexitkeys row to accept the key or copy its conditional exit command.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "9ae99935552c57edfb10b04013048b460f9f3f2d7c58a25745a55ebf4ccadf2e",
+      "sha256": "01c952404a2c0b620bd332a3ccdda810dcff79639c9c5e2e1826ec58bda94b2c",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -886,7 +897,9 @@
         "1.0.99": "399fbc0f0f76d8c4a95318c64976668c04d9cb8bbdaaaf447e94c868b3d612be",
         "1.0.100": "9cd203902c17a1311c5a55b45263853b2f89ba5c1cf710d7761bf461fa9bd53f",
         "1.0.106": "40df9c9111eafa0599e259cbc91a12887764757f5cfdb074b85f79357b2f1a52",
-        "1.0.107": "9ae99935552c57edfb10b04013048b460f9f3f2d7c58a25745a55ebf4ccadf2e"
+        "1.0.107": "9ae99935552c57edfb10b04013048b460f9f3f2d7c58a25745a55ebf4ccadf2e",
+        "1.0.108": "2d9203de3a7bf1d98335e27beed99f49517f568f96c502bc419707c112fc10b0",
+        "1.0.109": "01c952404a2c0b620bd332a3ccdda810dcff79639c9c5e2e1826ec58bda94b2c"
       }
     },
     {

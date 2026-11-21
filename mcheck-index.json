@@ -742,11 +742,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.16.3",
+      "version": "1.16.4",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "e5064420497be37dad786e86e53f396f0d9bb74b3a9f9a44c24b608558c885f2",
+      "sha256": "be101579c2ac247cfa7e4091d4c3abcf8b8878f6f221b5844dfeeaf900910304",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -793,7 +793,8 @@
         "1.16.0": "ba878910dc60e41752ffed04773a4ff9a60e43ad8f848951d158fa671f78d822",
         "1.16.1": "9d6c2d73dc5fd6cc6634f1ec65aa1f02a189776b79af518dd862b0db1107becb",
         "1.16.2": "31de801eb1845e4ce23532ce9ee434c63d07b9f6543b320cfcd7f6293a199813",
-        "1.16.3": "e5064420497be37dad786e86e53f396f0d9bb74b3a9f9a44c24b608558c885f2"
+        "1.16.3": "e5064420497be37dad786e86e53f396f0d9bb74b3a9f9a44c24b608558c885f2",
+        "1.16.4": "be101579c2ac247cfa7e4091d4c3abcf8b8878f6f221b5844dfeeaf900910304"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"

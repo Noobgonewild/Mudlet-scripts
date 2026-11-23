@@ -405,11 +405,11 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.4.21",
+      "version": "1.4.22",
       "description": "Window layouts, tab groups, HALO/Lumina/Vanguard/Meridian themes, backgrounds, and a toggleable layout dock.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "73ad944b87deed08a09a7a9eefe8a86b7ec918531a2dd148cde3efcac26b903c",
+      "sha256": "04c88b4cdd3584053e2c2b866d2fc7d89bb40275e12c914361d1894041581f74",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
         "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
@@ -449,7 +449,8 @@
         "1.4.18": "bc21ce316820ded2b138fc008d977add07abafb7bbd56553fa3f2004395e69be",
         "1.4.19": "8dd78195c3b7e81b28686c5b277ee08a846645feff3fcd3e3293b8a007ae581f",
         "1.4.20": "92c1232863c06edbaceb7daf0531133abddebdec2458b14fb84a4f27a5c53c46",
-        "1.4.21": "73ad944b87deed08a09a7a9eefe8a86b7ec918531a2dd148cde3efcac26b903c"
+        "1.4.21": "73ad944b87deed08a09a7a9eefe8a86b7ec918531a2dd148cde3efcac26b903c",
+        "1.4.22": "04c88b4cdd3584053e2c2b866d2fc7d89bb40275e12c914361d1894041581f74"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"
@@ -742,11 +743,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.16.4",
+      "version": "1.17.3",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "be101579c2ac247cfa7e4091d4c3abcf8b8878f6f221b5844dfeeaf900910304",
+      "sha256": "4ae7de41b796c3b26f4fd0de9d042e43b676c99bc9145bd97bb638a1d7f44f0d",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -794,7 +795,13 @@
         "1.16.1": "9d6c2d73dc5fd6cc6634f1ec65aa1f02a189776b79af518dd862b0db1107becb",
         "1.16.2": "31de801eb1845e4ce23532ce9ee434c63d07b9f6543b320cfcd7f6293a199813",
         "1.16.3": "e5064420497be37dad786e86e53f396f0d9bb74b3a9f9a44c24b608558c885f2",
-        "1.16.4": "be101579c2ac247cfa7e4091d4c3abcf8b8878f6f221b5844dfeeaf900910304"
+        "1.16.4": "be101579c2ac247cfa7e4091d4c3abcf8b8878f6f221b5844dfeeaf900910304",
+        "1.16.5": "3bdbd48d5774e863dfcec9e734564425173b62a98a303837501da40c145cf016",
+        "1.16.6": "7653abe53269003b036b8eb009262d3fb6e286165be92cf8fbcff4c5ac3c0b6c",
+        "1.17.0": "1f4da794ec71fd45f448d1fbee126afcf12a1fbc32956f81e4c0e2c10a95e441",
+        "1.17.1": "f24d4abc98af05958dadf7cda6e615ea08e651fcf8ddbf18642cee0e4951e853",
+        "1.17.2": "0759bb1275ccbc04840b7958242a649fd1c222617f005211ffdb3a4ee35e33ef",
+        "1.17.3": "4ae7de41b796c3b26f4fd0de9d042e43b676c99bc9145bd97bb638a1d7f44f0d"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"

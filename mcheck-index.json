@@ -32,11 +32,11 @@
       "id": "bypass_mudlet",
       "package_name": "Bypass_Mudlet",
       "filename": "Bypass_Mudlet.mpackage",
-      "version": "1.3.13",
+      "version": "1.3.15",
       "description": "Bypasses areas per ten-level band; settings window to pick areas, with level reach, maze hints and wish detection.",
       "help": "bypass help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/Bypass_Mudlet.mpackage",
-      "sha256": "a7171a2a1b482e9e8bcd96bc7d73a0b5baf761f4683d5d1a93f8b8ba7c1a51d5",
+      "sha256": "7884897aa5a2a7d7ed50a8f9e3007140a54de29b1611bef198d2d9d78477cd59",
       "known_hashes": {
         "1.1.3": "6d3283c21f22004e0d18636b1272ae1cd67cbf8eff7afd1b6f7f816ffc9c0829",
         "1.1.4": "398a8da9e3a9b8a7430012e7aa6465090e801b395e4924f0b963e89734845daf",
@@ -45,7 +45,9 @@
         "1.2.2": "61a1fa1acb561e5981041c5f4fb6cd88badeca4f666f7c7f6c2eb42a407a20bf",
         "1.2.3": "77bfdaf5abb34bca9471be59c0ccbe0447e88f5f66048f5bf174353f8035854f",
         "1.2.4": "0c38572faed5a0abe52fd02ebf9af99dcb6572b49aa401ed72917f86bc460f4a",
-        "1.3.13": "a7171a2a1b482e9e8bcd96bc7d73a0b5baf761f4683d5d1a93f8b8ba7c1a51d5"
+        "1.3.13": "a7171a2a1b482e9e8bcd96bc7d73a0b5baf761f4683d5d1a93f8b8ba7c1a51d5",
+        "1.3.14": "2d1e04d115c98f4c9debf69d60a46ad996b8eb4a17aa8c3aaf7ef113644cbd87",
+        "1.3.15": "7884897aa5a2a7d7ed50a8f9e3007140a54de29b1611bef198d2d9d78477cd59"
       },
       "artifact_type": "mpackage",
       "source_xml": "Bypass_Mudlet.xml"
@@ -240,11 +242,11 @@
       "id": "g_channels",
       "package_name": "g_channels",
       "filename": "g_channels.mpackage",
-      "version": "1.1.12",
+      "version": "1.1.14",
       "description": "Tabbed channel history with bubbles, Stream cards, and Lanes with pinned tells.",
       "help": "gcom help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_channels.mpackage",
-      "sha256": "6f13bbd3c6d4f0b86a345e6ed4e5861dd617c383d4bd8b7bf1181c57d97055d5",
+      "sha256": "0ac407b8c143ca35a401a68fe8191358c18b4ff26a4882b9933a69e86fe6fa83",
       "known_hashes": {
         "1.0.1": "d1c5d31d7046594ea7cb448f0b3805b5ad67324be795864ecba8ed46c29b4b12",
         "1.0.2": "9f93856812a45c733e9e646a871e61a0798ea199cbcccf94e097a1b7de3132df",
@@ -278,7 +280,9 @@
         "1.1.8": "00d9984e6d2bd1cc13120487915dcf6c1b6af81e754c37663ed952621a8fb956",
         "1.1.9": "9a3add12487e3f06cb314ac29cfc6a4a57ab015ea2fd5944103e4a78da86105e",
         "1.1.10": "09c2c78ee24f28f29f312304248384946468c6aa4185f53c47a92edbb5ce322a",
-        "1.1.12": "6f13bbd3c6d4f0b86a345e6ed4e5861dd617c383d4bd8b7bf1181c57d97055d5"
+        "1.1.12": "6f13bbd3c6d4f0b86a345e6ed4e5861dd617c383d4bd8b7bf1181c57d97055d5",
+        "1.1.13": "a682257339f76915ef272fd51e9a8d434dec846838f4d65790a0527fbfadad3e",
+        "1.1.14": "0ac407b8c143ca35a401a68fe8191358c18b4ff26a4882b9933a69e86fe6fa83"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_channels.xml"
@@ -410,11 +414,11 @@
       "id": "g_layout",
       "package_name": "g_layout",
       "filename": "g_layout.mpackage",
-      "version": "1.4.26",
+      "version": "1.4.29",
       "description": "Window layouts, tab groups, HALO/Lumina/Vanguard/Meridian themes, backgrounds, and a toggleable layout dock.",
       "help": "layout help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_layout.mpackage",
-      "sha256": "6955c7bc4f66d860bfdea1259a9831ad8f03506ccdfef5be17dedda5549bfc0f",
+      "sha256": "d5746f22a288594ed840145d96fcf023c06f73bd0c1be4be2562fe91b99a9200",
       "known_hashes": {
         "1.0.17": "b1d70a4b323b61d333d62ecce0519d465d66740130515a95f6a693643ff19c9b",
         "1.0.19": "c138b2a71ad142253910a6d9940a08db5b140c7866638523432c4ed59fb1cd00",
@@ -456,7 +460,10 @@
         "1.4.20": "92c1232863c06edbaceb7daf0531133abddebdec2458b14fb84a4f27a5c53c46",
         "1.4.21": "73ad944b87deed08a09a7a9eefe8a86b7ec918531a2dd148cde3efcac26b903c",
         "1.4.22": "04c88b4cdd3584053e2c2b866d2fc7d89bb40275e12c914361d1894041581f74",
-        "1.4.26": "6955c7bc4f66d860bfdea1259a9831ad8f03506ccdfef5be17dedda5549bfc0f"
+        "1.4.26": "6955c7bc4f66d860bfdea1259a9831ad8f03506ccdfef5be17dedda5549bfc0f",
+        "1.4.27": "1f2d90092d5554e423ac4288b2f8a2d7d31be6abb2c77192b9f04eafd2e97b65",
+        "1.4.28": "2f36dcd575910d56cf99d7b7a7657e438ce2103465592d341ef9d76f8219b18e",
+        "1.4.29": "d5746f22a288594ed840145d96fcf023c06f73bd0c1be4be2562fe91b99a9200"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_layout.xml"
@@ -465,11 +472,11 @@
       "id": "g_maze_solver",
       "package_name": "g_maze solver",
       "filename": "g_maze solver.mpackage",
-      "version": "2.0.47",
+      "version": "2.0.48",
       "description": "Maze helper driven by room GMCP: finds mobs and rooms, plus Deathtrap master chains (mm dt).",
       "help": "#maze_help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/g_maze%20solver.mpackage",
-      "sha256": "0017111041d9c6bdd3c5c41ca329b2ca4cd5506ede292df8471b5a4e1eb57134",
+      "sha256": "1a03c45eae362cc281371e9b361a68792e004f13d1918567a651395ef2157d69",
       "known_hashes": {
         "1.1.1": "467f196ec76ccae5527fea834e433572894824c2942c4bb3ab90968e4e5d2a79",
         "1.1.2": "e59f1491ff9233f7d1d54ae9ec54db9b3bdb77f1a69352d46a9b481e3c2972b8",
@@ -489,7 +496,8 @@
         "2.0.44": "3743e957f2b7c519c4ac86c6807ebab46c77acf43295bdde4668b85f82049915",
         "2.0.45": "59624fcac71f1651782e251235f5c1e08dac3d8fc22908a78ecaf96e411a87d5",
         "2.0.46": "d8a9e657da1fe0866ff0998898852716641e6d2de4b2d516c789be97f4eee994",
-        "2.0.47": "0017111041d9c6bdd3c5c41ca329b2ca4cd5506ede292df8471b5a4e1eb57134"
+        "2.0.47": "0017111041d9c6bdd3c5c41ca329b2ca4cd5506ede292df8471b5a4e1eb57134",
+        "2.0.48": "1a03c45eae362cc281371e9b361a68792e004f13d1918567a651395ef2157d69"
       },
       "artifact_type": "mpackage",
       "source_xml": "g_maze_solver/g_maze solver.xml"
@@ -641,11 +649,11 @@
       "id": "m_aarchaeology",
       "package_name": "m_aarchaeology",
       "filename": "m_aarchaeology.mpackage",
-      "version": "1.6.7",
+      "version": "1.6.8",
       "description": "Tracks archaeology collections, bags, reports, sounds, and optional market costs.",
       "help": "arch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_aarchaeology.mpackage",
-      "sha256": "878dc5d4724d0050a8b2e5738516e2fe54628023ca2c0baf2b12e71f90e2dae1",
+      "sha256": "f1e9917e273df4011ee264b0a6c6da47e4c622aafe6fd129c35f09ea3f70da84",
       "known_hashes": {
         "1.4.3": "4cc30316753f487403952be751395ad629b32cf74c8de695d99cede00f6cbfc0",
         "1.4.4": "a7debe20b85f6e9736f1fdbdb01b63e464d0f955aad14b4fac67a5002fbb88ea",
@@ -657,7 +665,8 @@
         "1.6.4": "3c80de0dce8797836556e9d8fcf9fc12b7fcd3529558fdd2f06925b2375b82f2",
         "1.6.5": "e7aab53d92b21b92fe78d1a85fe8a65ca3b0f789b1e4b2088011db3f5f418780",
         "1.6.6": "ef1f9b5c3bf9deeabb37f13a0b9ff84f87f16b0615959dc41e201319c168146a",
-        "1.6.7": "878dc5d4724d0050a8b2e5738516e2fe54628023ca2c0baf2b12e71f90e2dae1"
+        "1.6.7": "878dc5d4724d0050a8b2e5738516e2fe54628023ca2c0baf2b12e71f90e2dae1",
+        "1.6.8": "f1e9917e273df4011ee264b0a6c6da47e4c622aafe6fd129c35f09ea3f70da84"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_aarchaeology.xml"
@@ -751,11 +760,11 @@
       "id": "m_marketwatch",
       "package_name": "m_marketwatch",
       "filename": "m_marketwatch.mpackage",
-      "version": "1.17.5",
+      "version": "1.20.1",
       "description": "Watches the market and live auction for items you want and alerts you. Uses mbot prices and DINV scores if installed.",
       "help": "mwatch help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mudlet-scripts/main/m_marketwatch.mpackage",
-      "sha256": "e054cbe358cac1b6654867bf16a0d2d11ec2d7f167bfefffdafed15ecb757b2a",
+      "sha256": "e4dc74c3fda2263d9d638f9af48c10aa737651cfef192c2816639fd48ab5166f",
       "known_hashes": {
         "1.1.0": "c99865ecce957520733f265ef90c5daf9f4044bb769462e108b7440cdd36fcaa",
         "1.4.0": "b5c6835d04c37c403cf6fd66be6ca1e9586dbcd92ba063bd54a66878e0bbc3e0",
@@ -810,7 +819,24 @@
         "1.17.1": "f24d4abc98af05958dadf7cda6e615ea08e651fcf8ddbf18642cee0e4951e853",
         "1.17.2": "0759bb1275ccbc04840b7958242a649fd1c222617f005211ffdb3a4ee35e33ef",
         "1.17.3": "4ae7de41b796c3b26f4fd0de9d042e43b676c99bc9145bd97bb638a1d7f44f0d",
-        "1.17.5": "e054cbe358cac1b6654867bf16a0d2d11ec2d7f167bfefffdafed15ecb757b2a"
+        "1.17.5": "e054cbe358cac1b6654867bf16a0d2d11ec2d7f167bfefffdafed15ecb757b2a",
+        "1.17.6": "1b96de7cfd130a9e3cbd55ba1ff0195ef9f409e678febf48b0967b449871422a",
+        "1.18.0": "b551da920cc5de1d5f9ea8edefef6d96ee439d83bb317e42afc78020b0c73e19",
+        "1.18.1": "ffedf9780aa91ac2cfc024fd1971c9e5cf1ffb89ab41ce37664d449cc2dbf44e",
+        "1.18.2": "3de5f4d78e8b4b6db3eca2f673889297ca07226b5d53fba85a7affa1790710e3",
+        "1.18.3": "9369c95783a318f2a59e46fc52beaec34311619c814719d5d12ce87923084379",
+        "1.18.4": "2684be8c8412cd8c06f1c1180e85091af516809c647180cde673f8267d4160ac",
+        "1.18.5": "498e4c7c00939a625dfc85b2e91b7552a0d5e963a5e5c8c200cd19f80e60b586",
+        "1.18.6": "0b6e6f275e2ef8c538a3484f4a7f87e625d8d799c6bb11662f6b6286a534c8bc",
+        "1.19.0": "a364ea936688fc6ae15e100ccf0011b7672ed75a50cbba61c46e5d073e1d4c94",
+        "1.19.1": "b90f2c61ea174916eea6dc44b110a5cd6d889e02b839dbe75ecb06b8d393c612",
+        "1.19.2": "3a6025faa7ac399fad21a95233e036ebad798a3289d01ab45df3030c840f0c6e",
+        "1.19.3": "46b35e635516d42edaec014dba589cce64ebdba115aa03e16081ef45f239a438",
+        "1.19.4": "668f27c4a234e63e15d5e508f95b221c9ae0f4e5fcb5e7c603802a92c9850076",
+        "1.19.5": "f1e7541c646f1d6c3cd49e9a2643e0d695e05e5924b64d88bb8b88eb50fd6f08",
+        "1.19.6": "6a5eb44a1214456e4a49fb8437b4a167774e696203e361adfe132e2cb18d7068",
+        "1.19.7": "cba6b133d54ecd349287e98cfd12b618d62ed3ba4e39288721d9916168b05761",
+        "1.20.1": "e4dc74c3fda2263d9d638f9af48c10aa737651cfef192c2816639fd48ab5166f"
       },
       "artifact_type": "mpackage",
       "source_xml": "m_marketwatch.xml"
@@ -838,11 +864,11 @@
       "filename": "mmapper.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "1.0.109",
-      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, shop ($) and bank (bag) icons with gold borders where a room is busy, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls), kept centred on you with mouse-wheel zoom (mapper minimap zoom); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire. Right-click a mapper cexitkeys row to accept the key or copy its conditional exit command.",
+      "version": "1.0.112",
+      "description": "Aardwolf mapper: SVG bigmap for areas and continents (no Mudlet native map), PK, aggro and quest/GQ/CP room marks, shop ($) and bank (bag) icons with gold borders where a room is busy, live angry-mob and player marks taken from the minimap, quiet path execution, navigation and portal-sheet analysis. With DINV, mapper addportal <id> uses a portal you can use at your level and tier and maps it to the room you land in. The minimap shows the server ASCII map as Raw, Picture (rooms as tiles) or Symbols (map characters with drawn walls), kept centred on you with mouse-wheel zoom (mapper minimap zoom); with S&D, you turn red with a player count when other players share your room. Temporary portals (mapper portalexpire) are removed automatically before they expire. Right-click a mapper cexitkeys row to accept the key or copy its conditional exit command. mapper mazeentries lists maze entrances and the crossings observed through them, and lets you accept, add or delete entrances.",
       "help": "mapper help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/mmapper.mpackage",
-      "sha256": "01c952404a2c0b620bd332a3ccdda810dcff79639c9c5e2e1826ec58bda94b2c",
+      "sha256": "0f813d677a4a6c22a7ca9d5b0b4a13ea5d601a9487283df1b48422b55ba4b80b",
       "legacy_package_names": [
         "mm_package"
       ],
@@ -930,7 +956,9 @@
         "1.0.106": "40df9c9111eafa0599e259cbc91a12887764757f5cfdb074b85f79357b2f1a52",
         "1.0.107": "9ae99935552c57edfb10b04013048b460f9f3f2d7c58a25745a55ebf4ccadf2e",
         "1.0.108": "2d9203de3a7bf1d98335e27beed99f49517f568f96c502bc419707c112fc10b0",
-        "1.0.109": "01c952404a2c0b620bd332a3ccdda810dcff79639c9c5e2e1826ec58bda94b2c"
+        "1.0.109": "01c952404a2c0b620bd332a3ccdda810dcff79639c9c5e2e1826ec58bda94b2c",
+        "1.0.111": "e6555c66e4fc2b2bc862586710b0518a21618f8cf6697d48a9bef288711dc198",
+        "1.0.112": "0f813d677a4a6c22a7ca9d5b0b4a13ea5d601a9487283df1b48422b55ba4b80b"
       }
     },
     {
@@ -991,11 +1019,11 @@
       "filename": "SearchAndDestroy.mpackage",
       "artifact_type": "mpackage",
       "repository_id": "noobgonewild-mapper-and-s-d",
-      "version": "7.1.127",
+      "version": "7.1.129",
       "description": "Search & Destroy: target tracking, hybrid CP hunting, Smart NX, configurable ConWin number keys, a ConWin warning with a count when other players are in your room, and aggro mob tagging from scan for the bigmap (uses mmapper).",
       "help": "snd help (topics), snd help search <term>; snd conwin help",
       "url": "https://raw.githubusercontent.com/Noobgonewild/Mapper-and-S-D/main/SearchAndDestroy.mpackage",
-      "sha256": "a0e8ffc333415600d19693cf718a76e3382cc88ceba57755345bbd91dfbc3945",
+      "sha256": "6a4026b399edeabe3c9802be4aa1573721097f24111f0956b3a69e4aa812a582",
       "known_hashes": {
         "7.1.7": "c1a92cfc3cc8a5a123753d8a915712de58f99efe38f94b0ced4a67046ebe5d67",
         "7.1.8": "308005d3d4d6c2e1d19946ec3ba4b83ef93a3a71799e85e94080e42da6d3444c",
@@ -1086,7 +1114,8 @@
         "7.1.124": "87cbda97a91b5c07d509ef1eda8539dbe68dc7ae4ee88534a2bd8c55c5e57b4f",
         "7.1.125": "97d6ffaf81d9b21cd4e08dfc9cb1775e4beeb24e8c87e4e0406218e4cc656bda",
         "7.1.126": "c1c8a6abc817a2a7b7df96d3d2b92be11daf44ca22fbcc9c860ffda0078269a0",
-        "7.1.127": "a0e8ffc333415600d19693cf718a76e3382cc88ceba57755345bbd91dfbc3945"
+        "7.1.127": "a0e8ffc333415600d19693cf718a76e3382cc88ceba57755345bbd91dfbc3945",
+        "7.1.129": "6a4026b399edeabe3c9802be4aa1573721097f24111f0956b3a69e4aa812a582"
       }
     }
   ]
